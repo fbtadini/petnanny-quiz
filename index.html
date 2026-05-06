@@ -1,19 +1,27 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
+<!-- Google Analytics 4 -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-VHYR0X2K9F"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-VHYR0X2K9F');
+</script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>PetNanny — Encontre seu aumigo e gerencie tudo sobre ele</title>
-<meta name="description" content="Quiz inteligente que cruza seu estilo de vida com 53 raças para encontrar o cachorro ideal pra você. Baseado em ciência canina, fala português do Brasil, feito pra a realidade brasileira.">
+<meta name="description" content="Quiz inteligente que cruza seu estilo de vida com 64 raças para encontrar o cachorro ideal pra você. Baseado em ciência canina, fala português do Brasil, feito pra a realidade brasileira.">
 <meta name="theme-color" content="#e8733a">
 <meta property="og:type" content="website">
 <meta property="og:title" content="PetNanny — Encontre seu aumigo ideal">
-<meta property="og:description" content="Quiz que cruza seu estilo de vida com 53 raças para encontrar o cachorro ideal. Feito pra realidade brasileira.">
+<meta property="og:description" content="Quiz que cruza seu estilo de vida com 64 raças para encontrar o cachorro ideal. Feito pra realidade brasileira.">
 <meta property="og:site_name" content="PetNanny">
 <meta property="og:locale" content="pt_BR">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="PetNanny — Encontre seu aumigo ideal">
-<meta name="twitter:description" content="Quiz que cruza seu estilo de vida com 53 raças para encontrar o cachorro ideal.">
+<meta name="twitter:description" content="Quiz que cruza seu estilo de vida com 64 raças para encontrar o cachorro ideal.">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='15' fill='%23e8733a'/%3E%3Cg fill='white' stroke='white' stroke-width='0.5'%3E%3Ccircle cx='10' cy='14' r='2'/%3E%3Ccircle cx='22' cy='14' r='2'/%3E%3Ccircle cx='12' cy='9' r='1.5'/%3E%3Ccircle cx='20' cy='9' r='1.5'/%3E%3Cellipse cx='16' cy='21' rx='4' ry='3'/%3E%3C/g%3E%3C/svg%3E">
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
@@ -158,6 +166,12 @@
   .btn-cta-wrap{margin-top:28px;text-align:center}
   .btn-share{display:block;background:var(--white);color:var(--brown);border:1.5px solid #e8ddd2;border-radius:13px;padding:13px 28px;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:500;cursor:pointer;transition:all 0.2s;width:100%;max-width:400px;margin:0 auto 10px}
   .btn-share:hover{border-color:var(--brown-light)}
+  .share-buttons-row{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-bottom:10px}
+  .share-buttons-row .btn-share{flex:1;min-width:240px;max-width:300px;margin:0}
+  @media (max-width: 560px){
+    .share-buttons-row{flex-direction:column;align-items:center}
+    .share-buttons-row .btn-share{width:100%;max-width:400px;min-width:0}
+  }
   .results-actions-top{display:flex;gap:10px;justify-content:center;margin:-8px auto 22px;max-width:400px;flex-wrap:wrap}
   .btn-action-compact{flex:1;min-width:130px;background:var(--white);color:var(--brown);border:1.5px solid #e8ddd2;border-radius:11px;padding:10px 14px;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;cursor:pointer;transition:all 0.2s;display:inline-flex;align-items:center;justify-content:center;gap:7px}
   .btn-action-compact:hover{border-color:var(--brown-light);background:var(--warm)}
@@ -433,13 +447,13 @@
       <p class="results-sub" id="resultsSub"></p>
     </div>
     <div class="results-actions-top">
-      <button class="btn-action-compact" onclick="shareWhatsApp()"><svg class="ui-ico" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M17.6 6.3A7.85 7.85 0 0 0 12 4a7.95 7.95 0 0 0-6.9 11.9L4 20l4.2-1.1a7.95 7.95 0 0 0 11.7-7 7.85 7.85 0 0 0-2.3-5.6Zm-5.6 12.2a6.6 6.6 0 0 1-3.4-.9l-.2-.1-2.5.6.7-2.4-.2-.3a6.6 6.6 0 1 1 5.6 3.1Zm3.6-4.9c-.2-.1-1.2-.6-1.4-.7-.2-.1-.3-.1-.4.1-.1.2-.5.6-.6.7-.1.1-.2.1-.4 0a5.4 5.4 0 0 1-2.7-2.4c-.2-.4.2-.3.6-1 .1-.1 0-.2 0-.3 0-.1-.4-1-.6-1.3-.1-.3-.3-.3-.4-.3h-.4c-.1 0-.3 0-.5.2-.2.2-.7.7-.7 1.7s.7 2 .8 2.1a8 8 0 0 0 3 2.7c.4.2.7.3 1 .4.4.1.8.1 1.1 0 .3-.1 1-.4 1.2-.8.1-.4.1-.7.1-.8 0-.1-.2-.1-.4-.2Z"/></svg> WhatsApp</button>
-      <button class="btn-action-compact" onclick="scrollToFeedback()"><svg class="ui-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H9l-5 4V6a2 2 0 0 1 2-2Z"/></svg> Deixar feedback</button>
+      <button class="btn-action-compact" onclick="shareWhatsApp(event)"><svg class="ui-ico" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M17.6 6.3A7.85 7.85 0 0 0 12 4a7.95 7.95 0 0 0-6.9 11.9L4 20l4.2-1.1a7.95 7.95 0 0 0 11.7-7 7.85 7.85 0 0 0-2.3-5.6Zm-5.6 12.2a6.6 6.6 0 0 1-3.4-.9l-.2-.1-2.5.6.7-2.4-.2-.3a6.6 6.6 0 1 1 5.6 3.1Zm3.6-4.9c-.2-.1-1.2-.6-1.4-.7-.2-.1-.3-.1-.4.1-.1.2-.5.6-.6.7-.1.1-.2.1-.4 0a5.4 5.4 0 0 1-2.7-2.4c-.2-.4.2-.3.6-1 .1-.1 0-.2 0-.3 0-.1-.4-1-.6-1.3-.1-.3-.3-.3-.4-.3h-.4c-.1 0-.3 0-.5.2-.2.2-.7.7-.7 1.7s.7 2 .8 2.1a8 8 0 0 0 3 2.7c.4.2.7.3 1 .4.4.1.8.1 1.1 0 .3-.1 1-.4 1.2-.8.1-.4.1-.7.1-.8 0-.1-.2-.1-.4-.2Z"/></svg> WhatsApp</button>
+      <button class="btn-action-compact" onclick="scrollToFeedback()"><svg class="ui-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H9l-5 4V6a2 2 0 0 1 2-2Z"/></svg> Feedback</button>
     </div>
     <div id="expectationSection" class="expectation-section" style="display:none"></div>
     <div id="breedCards"></div>
     <div class="btn-cta-wrap">
-      <button class="btn-share" onclick="shareWhatsApp()"><svg style="width:18px;height:18px;vertical-align:-3px;margin-right:6px" viewBox="0 0 24 24" fill="currentColor"><path d="M17.6 6.3A7.85 7.85 0 0 0 12 4a7.95 7.95 0 0 0-6.9 11.9L4 20l4.2-1.1a7.95 7.95 0 0 0 11.7-7 7.85 7.85 0 0 0-2.3-5.6Zm-5.6 12.2a6.6 6.6 0 0 1-3.4-.9l-.2-.1-2.5.6.7-2.4-.2-.3a6.6 6.6 0 1 1 5.6 3.1Zm3.6-4.9c-.2-.1-1.2-.6-1.4-.7-.2-.1-.3-.1-.4.1-.1.2-.5.6-.6.7-.1.1-.2.1-.4 0a5.4 5.4 0 0 1-2.7-2.4c-.2-.4.2-.3.6-1 .1-.1 0-.2 0-.3 0-.1-.4-1-.6-1.3-.1-.3-.3-.3-.4-.3h-.4c-.1 0-.3 0-.5.2-.2.2-.7.7-.7 1.7s.7 2 .8 2.1a8 8 0 0 0 3 2.7c.4.2.7.3 1 .4.4.1.8.1 1.1 0 .3-.1 1-.4 1.2-.8.1-.4.1-.7.1-.8 0-.1-.2-.1-.4-.2Z"/></svg>Mandar resultado pra alguém no WhatsApp</button>
+      <button class="btn-share btn-share-wa" onclick="shareWhatsApp(event)"><svg style="width:18px;height:18px;vertical-align:-3px;margin-right:6px" viewBox="0 0 24 24" fill="currentColor"><path d="M17.6 6.3A7.85 7.85 0 0 0 12 4a7.95 7.95 0 0 0-6.9 11.9L4 20l4.2-1.1a7.95 7.95 0 0 0 11.7-7 7.85 7.85 0 0 0-2.3-5.6Zm-5.6 12.2a6.6 6.6 0 0 1-3.4-.9l-.2-.1-2.5.6.7-2.4-.2-.3a6.6 6.6 0 1 1 5.6 3.1Zm3.6-4.9c-.2-.1-1.2-.6-1.4-.7-.2-.1-.3-.1-.4.1-.1.2-.5.6-.6.7-.1.1-.2.1-.4 0a5.4 5.4 0 0 1-2.7-2.4c-.2-.4.2-.3.6-1 .1-.1 0-.2 0-.3 0-.1-.4-1-.6-1.3-.1-.3-.3-.3-.4-.3h-.4c-.1 0-.3 0-.5.2-.2.2-.7.7-.7 1.7s.7 2 .8 2.1a8 8 0 0 0 3 2.7c.4.2.7.3 1 .4.4.1.8.1 1.1 0 .3-.1 1-.4 1.2-.8.1-.4.1-.7.1-.8 0-.1-.2-.1-.4-.2Z"/></svg>Compartilhar resultado no WhatsApp</button>
       <div class="secondary-actions">
         <button class="btn-secondary" onclick="restart()"><svg class="ui-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 15.5-6.3M21 4v5h-5M21 12a9 9 0 0 1-15.5 6.3M3 20v-5h5"/></svg> Refazer o quiz</button>
       </div>
@@ -581,7 +595,7 @@ const QUESTIONS = [
     {icon:"🧒",label:"Sim, acima de 6 anos",desc:"Já sabem lidar com animal — mais opções",value:"criancas"},
     {icon:"👶",label:"Sim, até 6 anos",desc:"Preciso de raça muito paciente e resistente",value:"criancas_pequenas"}]},
 
-  {id:"necessidades_especiais",text:"Tem alguém em casa com necessidades especiais ou maior fragilidade?",sub:"Idoso fragilizado, autismo, deficiência física ou intelectual, sensibilidade a barulho. Algumas raças se adaptam muito melhor a cuidar de pessoas mais sensíveis — paciência, calma e treinabilidade são essenciais.",multi:false,options:[
+  {id:"necessidades_especiais",text:"Há alguém na casa com necessidades específicas de conforto, sensibilidade ou rotina?",sub:"Pessoas neurodivergentes, idosos fragilizados ou pessoas com deficiência podem se conectar melhor com cães de temperamento mais calmo e previsível.",multi:false,options:[
     {icon:"❤️",label:"Sim",desc:"Preciso de raça muito paciente, calma e fácil de educar",value:"sim"},
     {icon:"✅",label:"Não",desc:"Sem necessidade especial nesse sentido",value:"nao"}]},
 
@@ -1868,8 +1882,44 @@ function calculateBreeds(){
     const ordered=[...compatible,...incompatible];
     ordered.slice(0,5-pool.length).forEach(k=>{pool.push(k);fallbackBreeds.add(k);});
   }
-  if(pool.length===0 && archetype && ARCHETYPES[archetype]){
-    pool=ARCHETYPES[archetype].breeds.filter(k=>BREEDS[k]);
+  // FALLBACK DE ÚLTIMA INSTÂNCIA — pool ainda vazio depois de tudo.
+  // Não relaxamos hardFilters de SAÚDE/SEGURANÇA: alergia, criança pequena+experiência,
+  // gato/aves/coelho com cão de prey drive alto, sozinho 8h+ com cão grudento (ind<=2),
+  // primeiro cão com raça avançada. Restrições "soft" (clima, vizinhos, orçamento) são
+  // relaxadas pra retornar pelo menos algo, mas marcamos como fallback pra visual avisar.
+  if(pool.length===0){
+    // Reconstruir hardFilters mantendo só os críticos
+    const criticalFilters = new Set();
+    if(has('alergia','alergia')) Object.keys(BREEDS).forEach(k=>{if(!BREEDS[k].hypo)criticalFilters.add(k);});
+    if(has('criancas','criancas_pequenas')){
+      Object.keys(BREEDS).forEach(k=>{
+        if((BREEDS[k].kid||3)<=2) criticalFilters.add(k);
+        if(BREEDS[k].dificuldade==='avancado') criticalFilters.add(k);
+      });
+    }
+    if(has('experiencia','primeiro_cao')||has('experiencia','experiencia_basica')){
+      Object.keys(BREEDS).forEach(k=>{if(BREEDS[k].dificuldade==='avancado')criticalFilters.add(k);});
+    }
+    if(has('sozinho','sozinho_demais')) Object.keys(BREEDS).forEach(k=>{if((BREEDS[k].ind||3)<=2)criticalFilters.add(k);});
+    if(has('sozinho','sozinho_muito')) Object.keys(BREEDS).forEach(k=>{if((BREEDS[k].ind||3)<=2)criticalFilters.add(k);});
+    if(has('animais','gato')||has('animais','pequenos')) PREY_DRIVE_BREEDS.forEach(k=>criticalFilters.add(k));
+    if(has('necessidades_especiais','sim')){
+      Object.keys(BREEDS).forEach(k=>{
+        if((BREEDS[k].kid||3)<=3) criticalFilters.add(k);
+        if(BREEDS[k].dificuldade==='avancado') criticalFilters.add(k);
+        if(BREEDS[k].nrg>=5) criticalFilters.add(k);
+      });
+    }
+    // Pega do arquétipo escolhido (ou todas) que passa nos filtros críticos
+    const tryArch = archetype && ARCHETYPES[archetype] ? ARCHETYPES[archetype].breeds : Object.keys(BREEDS);
+    pool = tryArch.filter(k=>BREEDS[k] && !criticalFilters.has(k));
+    pool.forEach(k=>fallbackBreeds.add(k)); // tudo nesse caminho é fallback
+    fallbackUsed = pool.length>0;
+  }
+  // Se MESMO mantendo só filtros críticos não sobra nada, é cenário verdadeiramente
+  // incompatível com qualquer raça. Retorna lista vazia — UI mostra mensagem honesta.
+  if(pool.length===0){
+    return []; // showResults() detecta e mostra mensagem especial
   }
 
   // ═══ FASE 3: RE-RANKING (distância ponderada euclidiana) ═══
@@ -2296,6 +2346,29 @@ function showResults(){
   // desiredBreed was captured at intro (updateQuizCTA stores it in answers.desiredBreed)
   saveResults();
   const isAdotar=answers.origem==='adotar';
+
+  // CASO ESPECIAL: pool vazio mesmo após relaxar filtros não-críticos.
+  // Cenário com restrições de saúde/segurança incompatíveis com qualquer raça.
+  // Honesto: não recomendar nada errado. Sugere reavaliação ou adoção.
+  if(!isAdotar && (!recommendedBreeds || recommendedBreeds.length===0)){
+    document.getElementById('resultsTitle').textContent='Seu perfil é muito específico';
+    document.getElementById('resultsSub').textContent='Suas restrições combinadas não bateram com nenhuma raça no nosso catálogo.';
+    const container=document.getElementById('breedCards');
+    container.innerHTML=`
+      <div style="background:#fff4e8;border:2px solid #e89058;border-radius:14px;padding:20px;margin:16px 0;color:#3a2e22;line-height:1.6">
+        <p style="margin:0 0 12px 0;font-weight:600">Caminhos sugeridos:</p>
+        <ul style="margin:0;padding:0 0 0 18px">
+          <li style="margin-bottom:8px"><strong>Considerar adoção</strong> (cão adulto = personalidade conhecida)</li>
+          <li style="margin-bottom:8px"><strong>Reavaliar 1-2 critérios</strong> (ex: creche pra resolver "8h sozinho")</li>
+          <li><strong>Conversar com veterinário</strong> (alergia merece teste real)</li>
+        </ul>
+      </div>`;
+    document.getElementById('expectationSection').style.display='none';
+    document.querySelector('.results-actions-top').style.display='none';
+    showScreen('results');
+    return;
+  }
+
   // Título dinâmico:
   //   - Adoção: foco no perfil pra ONG, não em quantidade de raças
   //   - Compra: número real de raças que casaram (filtros podem reduzir abaixo de 5)
@@ -3011,23 +3084,231 @@ function saveResults(){
   try{localStorage.setItem('petnanny_quiz_result',JSON.stringify(data));}catch(e){}
 }
 
-function shareWhatsApp(){
-  const top=recommendedBreeds[0];
-  const breedName=top.breed.name.split(' —')[0];
-  const text='Encontrei meu aumigo ideal na PetNanny: '+breedName+' com '+top.matchPct+'% de match! Qual é o seu? 🐾';
-  const url=window.location.href;
-  // wa.me funciona em qualquer device: app no mobile, web no desktop
-  window.open('https://wa.me/?text='+encodeURIComponent(text+'\n\n'+url), '_blank');
+// Gera imagem PNG do resultado e oferece compartilhar (mobile) ou baixar (desktop).
+// Carrega html2canvas só quando clicado pela primeira vez (lazy load).
+let html2canvasLoaded = false;
+function loadHtml2Canvas(){
+  return new Promise((resolve, reject) => {
+    if(html2canvasLoaded || typeof html2canvas !== 'undefined'){resolve(); return;}
+    const s = document.createElement('script');
+    s.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
+    s.onload = () => { html2canvasLoaded = true; resolve(); };
+    s.onerror = reject;
+    document.head.appendChild(s);
+  });
+}
+
+// Compartilha resultado pelo WhatsApp com IMAGEM (não só texto).
+// Mobile: gera imagem + Web Share API → menu nativo → WhatsApp aparece como opção
+// Desktop: gera imagem + baixa + abre WhatsApp Web pra pessoa colar (Ctrl+V)
+async function shareWhatsApp(ev){
+  const btn = ev && ev.currentTarget;
+  const originalText = btn ? btn.innerHTML : '';
+  const setBtn = (txt) => { if(btn){btn.innerHTML = txt;} };
+  const restoreBtn = () => { if(btn){btn.innerHTML = originalText; btn.disabled = false;} };
+  if(btn){btn.disabled = true;}
+  setBtn('Gerando imagem...');
+
+  try {
+    await loadHtml2Canvas();
+    if(typeof html2canvas === 'undefined'){
+      throw new Error('html2canvas não carregou');
+    }
+    setBtn('Carregando fotos...');
+
+    const top3 = recommendedBreeds.slice(0,3);
+
+    // Pre-carrega fotos reais das raças via fetchBreedPhoto.
+    // CrossOrigin=anonymous é essencial pra html2canvas não dar tainted canvas.
+    // Se Wikipedia falhar/timeout, fallback gracioso pra emoji.
+    const photoData = await Promise.all(top3.map(async (r) => {
+      try {
+        const url = await fetchBreedPhoto(r.key);
+        if(!url) return null;
+        // Pré-carrega com crossOrigin pra garantir CORS no canvas
+        return await new Promise((resolve) => {
+          const img = new Image();
+          img.crossOrigin = 'anonymous';
+          img.onload = () => resolve(url);
+          img.onerror = () => resolve(null);
+          img.src = url;
+          setTimeout(() => resolve(null), 5000); // timeout 5s
+        });
+      } catch(e){ return null; }
+    }));
+
+    setBtn('Gerando imagem...');
+
+    const top1 = top3[0];
+    const breedTags = (b) => (b.tags||[]).slice(0,3).join(' · ');
+
+    // Renderiza foto OU emoji (fallback). Foto top1 = 160x160 round; top2/3 = 90x90 round.
+    const photoOrEmoji = (r, idx, size) => {
+      const url = photoData[idx];
+      if(url){
+        return `<img crossorigin="anonymous" src="${url}" style="width:${size}px;height:${size}px;border-radius:50%;object-fit:cover;display:block;border:3px solid white;box-shadow:0 4px 12px rgba(58,46,34,0.15)">`;
+      }
+      return `<div style="font-size:${Math.round(size*0.65)}px;line-height:1;filter:drop-shadow(0 4px 8px rgba(58,46,34,0.12))">${r.breed.emoji}</div>`;
+    };
+
+    const wrap = document.createElement('div');
+    wrap.style.cssText = 'position:absolute;left:-99999px;top:0;width:540px;height:720px;background:linear-gradient(135deg,#fdfaf6 0%,#f5ede0 100%);padding:36px 32px;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;color:#3a2e22;box-sizing:border-box;overflow:hidden';
+    wrap.innerHTML = `
+      <!-- Patinhas decorativas no fundo -->
+      <div style="position:absolute;top:24px;right:32px;font-size:24px;opacity:0.14;transform:rotate(15deg);pointer-events:none">🐾</div>
+      <div style="position:absolute;top:280px;right:18px;font-size:18px;opacity:0.12;transform:rotate(28deg);pointer-events:none">🐾</div>
+      <div style="position:absolute;bottom:140px;left:22px;font-size:20px;opacity:0.13;transform:rotate(-22deg);pointer-events:none">🐾</div>
+      <div style="position:absolute;bottom:56px;right:30px;font-size:16px;opacity:0.1;transform:rotate(8deg);pointer-events:none">🐾</div>
+
+      <!-- Header -->
+      <div style="text-align:center;margin-bottom:18px;position:relative">
+        <div style="font-size:11px;color:#a08a78;letter-spacing:3px;text-transform:uppercase;margin-bottom:8px;font-weight:600">🐾 Pet<span style="color:#7a9970">Nanny</span> 🐾</div>
+        <div style="font-size:19px;color:#3a2e22;font-weight:700;letter-spacing:-0.3px">Encontrei meu aumigo!</div>
+        <div style="display:flex;align-items:center;justify-content:center;gap:10px;margin-top:8px">
+          <div style="height:1px;width:50px;background:linear-gradient(to right,transparent,#c4b5a3,transparent)"></div>
+          <div style="font-size:13px;color:#e89058">✦</div>
+          <div style="height:1px;width:50px;background:linear-gradient(to right,transparent,#c4b5a3,transparent)"></div>
+        </div>
+      </div>
+
+      <!-- Top match: card grande destacado -->
+      <div style="background:linear-gradient(135deg,#fff4e8 0%,#ffe1c8 100%);border:3px solid #e89058;border-radius:22px;padding:22px 20px 18px;margin-bottom:14px;box-shadow:0 10px 28px rgba(232,144,88,0.22),inset 0 1px 0 rgba(255,255,255,0.5);text-align:center;position:relative">
+        <div style="position:absolute;top:-13px;left:50%;transform:translateX(-50%);background:linear-gradient(135deg,#e89058,#d77a44);color:white;font-size:10px;font-weight:700;padding:5px 16px;border-radius:20px;letter-spacing:1.5px;box-shadow:0 3px 8px rgba(232,144,88,0.4)">★ TOP MATCH ★</div>
+        <div style="display:flex;justify-content:center;margin:6px 0 8px">
+          ${photoOrEmoji(top1, 0, 130)}
+        </div>
+        <div style="font-size:21px;font-weight:700;color:#3a2e22;margin-bottom:2px;letter-spacing:-0.3px">${top1.breed.name.split(' —')[0]}</div>
+        ${breedTags(top1.breed) ? `<div style="font-size:11px;color:#7a6f63;margin-bottom:8px;letter-spacing:0.3px">${breedTags(top1.breed)}</div>` : '<div style="height:6px"></div>'}
+        <div style="display:inline-flex;align-items:baseline;gap:4px;margin-top:2px">
+          <div style="font-size:42px;font-weight:800;color:#e89058;line-height:1;letter-spacing:-1px">${top1.matchPct}</div>
+          <div style="font-size:22px;font-weight:700;color:#e89058">%</div>
+        </div>
+        <div style="font-size:10px;color:#a08a78;letter-spacing:1.5px;margin-top:2px;font-weight:600">DE COMPATIBILIDADE</div>
+      </div>
+
+      <!-- Top 2 e 3 lado a lado -->
+      <div style="display:flex;gap:10px;margin-bottom:16px">
+        ${top3.slice(1).map((r, i) => `
+          <div style="flex:1;background:#fff;border:2px solid #e8ddd2;border-radius:16px;padding:12px 10px 12px;text-align:center;box-shadow:0 4px 12px rgba(58,46,34,0.05)">
+            <div style="display:flex;justify-content:center;margin-bottom:6px">
+              ${photoOrEmoji(r, i+1, 70)}
+            </div>
+            <div style="font-size:13px;font-weight:700;color:#3a2e22;line-height:1.2;min-height:32px;display:flex;align-items:center;justify-content:center;padding:0 4px">${r.breed.name.split(' —')[0]}</div>
+            ${breedTags(r.breed) ? `<div style="font-size:9px;color:#a08a78;margin:3px 0 4px;letter-spacing:0.2px;line-height:1.3">${breedTags(r.breed)}</div>` : '<div style="height:7px"></div>'}
+            <div style="display:inline-flex;align-items:baseline;gap:2px">
+              <div style="font-size:22px;font-weight:800;color:#7a9970;line-height:1">${r.matchPct}</div>
+              <div style="font-size:13px;font-weight:700;color:#7a9970">%</div>
+            </div>
+          </div>
+        `).join('')}
+      </div>
+
+      <!-- Footer com CTA -->
+      <div style="text-align:center;border-top:1.5px dashed #c4b5a3;padding-top:14px">
+        <div style="font-size:14px;color:#3a2e22;font-weight:600;margin-bottom:5px">Faça o seu em <span style="color:#7a9970;font-weight:700">petnanny.com.br</span> 🐾</div>
+        <div style="font-size:10px;color:#a08a78;letter-spacing:1.2px;text-transform:uppercase;font-weight:600">Quiz grátis · 64 raças avaliadas · ~5 min</div>
+      </div>
+    `;
+    document.body.appendChild(wrap);
+
+    let canvas;
+    try {
+      canvas = await html2canvas(wrap, {scale:2, backgroundColor:'#fdfaf6', logging:false, useCORS:true});
+    } finally {
+      if(wrap.parentNode) document.body.removeChild(wrap);
+    }
+
+    const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/png', 0.95));
+    if(!blob){ throw new Error('Não conseguimos gerar a imagem'); }
+
+    const fileName = 'meu-aumigo-petnanny.png';
+    const isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+    const file = new File([blob], fileName, {type:'image/png'});
+    const canWebShare = navigator.canShare && navigator.canShare({files:[file]});
+
+    // Mobile com Web Share: menu nativo (WhatsApp aparece como opção)
+    if(isMobile && canWebShare){
+      try {
+        await navigator.share({
+          files:[file],
+          title:'Meu aumigo — PetNanny',
+          text:'Encontrei meu aumigo ideal! 🐾 Faça o seu:',
+          url:'https://petnanny.com.br'
+        });
+        setBtn('✓ Compartilhado!');
+        setTimeout(restoreBtn, 2500);
+        return;
+      } catch(e){
+        // Usuário cancelou — só restaura botão, não abre WhatsApp Web
+        if(e.name === 'AbortError'){ restoreBtn(); return; }
+        // Outro erro: fallback pra download + WhatsApp Web
+      }
+    }
+
+    // Desktop ou fallback: baixa imagem + abre WhatsApp Web
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = fileName;
+    a.style.display = 'none';
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => {
+      if(a.parentNode) document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }, 200);
+
+    // Abre WhatsApp Web em nova aba com mensagem pronta — pessoa cola a imagem (Ctrl+V)
+    // URL completa com https:// vira link clicável automaticamente no WhatsApp
+    const text = 'Encontrei meu aumigo ideal na PetNanny 🐾\nFaça o seu: https://petnanny.com.br';
+    setTimeout(() => {
+      window.open('https://web.whatsapp.com/send?text=' + encodeURIComponent(text), '_blank');
+    }, 400);
+
+    setBtn('✓ Imagem baixada — cole no WhatsApp (Ctrl+V)');
+    setTimeout(restoreBtn, 4000);
+  } catch(err){
+    console.error('Erro ao compartilhar:', err);
+    setBtn('✕ Erro — tente novamente');
+    setTimeout(restoreBtn, 2500);
+  }
+}
+
+// Mantida pra compatibilidade caso ainda exista referência — chama shareWhatsApp
+async function shareResultImage(ev){
+  return shareWhatsApp(ev);
 }
 
 function showFeedback(){document.getElementById('feedbackBox').style.display='block';document.getElementById('feedbackText').focus();}
 function scrollToFeedback(){const box=document.getElementById('feedbackBox');const invite=document.getElementById('feedbackInvite');box.style.display='block';invite.scrollIntoView({behavior:'smooth',block:'center'});setTimeout(()=>document.getElementById('feedbackText').focus(),400);}
+// Formspree endpoint para receber feedback do usuário.
+// Pra ativar: criar conta grátis em formspree.io, criar form, copiar URL tipo
+// https://formspree.io/f/XXXXXXXX e colar abaixo. Sem isso, feedback fica só
+// em localStorage (não chega em ninguém).
+const FORMSPREE_ENDPOINT = ''; // ← cola aqui sua URL Formspree
+
 function submitFeedback(){
   var fb=document.getElementById('feedbackText').value.trim();
   if(!fb)return;
-  // Merge into the unified answers payload so everything about this user is together
+  // Salva localmente (sempre)
   answers.feedback=fb;
   saveResults();
+  // Manda pra Formspree se endpoint estiver configurado
+  if(FORMSPREE_ENDPOINT){
+    const top=recommendedBreeds[0]?recommendedBreeds[0].breed.name.split(' —')[0]:'(sem resultado)';
+    const matchPct=recommendedBreeds[0]?recommendedBreeds[0].matchPct:0;
+    fetch(FORMSPREE_ENDPOINT, {
+      method:'POST',
+      headers:{'Content-Type':'application/json','Accept':'application/json'},
+      body:JSON.stringify({
+        feedback:fb,
+        topBreed:top,
+        matchPct:matchPct,
+        origem:answers.origem||'',
+        timestamp:new Date().toISOString()
+      })
+    }).catch(()=>{}); // se falhar, silencioso — pessoa já viu confirmação
+  }
   document.getElementById('feedbackBox').innerHTML='<p style="color:var(--green);font-size:13px;padding:12px">Obrigado pelo feedback! Isso nos ajuda a melhorar o quiz.</p>';
 }
 
