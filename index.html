@@ -596,8 +596,8 @@ const QUESTIONS = [
     {icon:"👶",label:"Sim, até 6 anos",desc:"Preciso de raça muito paciente e resistente",value:"criancas_pequenas"}]},
 
   {id:"necessidades_especiais",text:"Há alguém na casa com necessidades específicas de conforto, sensibilidade ou rotina?",sub:"Pessoas neurodivergentes, idosos fragilizados ou pessoas com deficiência podem se conectar melhor com cães de temperamento mais calmo e previsível.",multi:false,options:[
-    {icon:"❤️",label:"Sim",desc:"Preciso de raça muito paciente, calma e fácil de educar",value:"sim"},
-    {icon:"✅",label:"Não",desc:"Sem necessidade especial nesse sentido",value:"nao"}]},
+    {icon:"💜",label:"Sim",desc:"Preciso de raça muito paciente, calma e fácil de educar",value:"sim"},
+    {icon:"➖",label:"Não",desc:"Sem necessidade especial nesse sentido",value:"nao"}]},
 
   {id:"animais",text:"Tem outros animais em casa?",sub:"Marque todos que se aplicam. Algumas raças têm instinto forte de caça — perigoso com pets pequenos. Outras brigam com cães.",multi:true,options:[
     {icon:"🚫",label:"Não, será o único pet",desc:"Sem preocupação com convivência",value:"sem_animais",exclusive:true},
@@ -1099,9 +1099,9 @@ const BREED_PHOTO_PREFER_EN = new Set([
 // Importante: validar licença (CC-BY, CC0, domínio público) antes de hardcodar.
 // Pra Dachshund Standard especificamente: forçar URL diferente do Mini.
 const BREED_PHOTO_DIRECT_URLS = {
-  // Dachshund Mini — Wikimedia Commons (curado pelo Felipe)
-  dachshund: 'https://upload.wikimedia.org/wikipedia/commons/thumb/f/f4/MiniDachshund1_wb.jpg/600px-MiniDachshund1_wb.jpg',
-  // Dachshund Standard — Wikimedia Commons (curado pelo Felipe)
+  // Dachshund Mini — Wikimedia Commons
+  dachshund: 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/8a/Black_and_Tan_Smooth_Dachshund_portrait.jpg/600px-Black_and_Tan_Smooth_Dachshund_portrait.jpg',
+  // Dachshund Standard — Wikimedia Commons (file mais estável)
   dachshund_standard: 'https://upload.wikimedia.org/wikipedia/commons/thumb/2/27/Short-haired-Dachshund.jpg/600px-Short-haired-Dachshund.jpg'
 };
 
@@ -1600,11 +1600,9 @@ function goNext(){
   } else {
     // Último: calcula e vai direto pro resultado.
     try {
-      recommendedBreeds=calculateBreeds();
-      if(!recommendedBreeds||recommendedBreeds.length===0){
-        alert('Algo deu errado ao calcular os resultados. Por favor recarregue a página e tente novamente.');
-        return;
-      }
+      recommendedBreeds=calculateBreeds()||[];
+      // Pool vazio é caso ESPERADO em cenário pessimista — showResults mostra mensagem honesta.
+      // Não bloqueamos com erro como antes.
       document.getElementById('progressWrap').style.display='none';
       showResults();
       clearProgress();
@@ -3163,7 +3161,7 @@ async function shareWhatsApp(ev){
     }));
 
     if(timedOut) return;
-    setBtn('Gerando imagem...');
+    setBtn('Renderizando...');
 
     const top1 = top3[0];
     const breedTags = (b) => (b.tags||[]).slice(0,3).join(' · ');
@@ -3172,46 +3170,46 @@ async function shareWhatsApp(ev){
     const photoOrEmoji = (r, idx, size) => {
       const url = photoData[idx];
       if(url){
-        return `<img crossorigin="anonymous" src="${url}" style="width:${size}px;height:${size}px;border-radius:50%;object-fit:cover;display:block;border:3px solid white;box-shadow:0 4px 12px rgba(58,46,34,0.15)">`;
+        return `<img crossorigin="anonymous" src="${url}" style="width:${size}px;height:${size}px;border-radius:50%;object-fit:cover;display:block;border:3px solid #fff">`;
       }
-      return `<div style="font-size:${Math.round(size*0.65)}px;line-height:1;filter:drop-shadow(0 4px 8px rgba(58,46,34,0.12))">${r.breed.emoji}</div>`;
+      return `<div style="font-size:${Math.round(size*0.65)}px;line-height:1">${r.breed.emoji}</div>`;
     };
 
+    // Container ON-SCREEN (não off-screen) — html2canvas no mobile às vezes não renderiza
+    // off-screen content corretamente. Usamos opacity:0 + pointer-events:none pra ficar
+    // invisível mas DENTRO do viewport.
+    // Cores sólidas (não gradients) — gradients quebram html2canvas em iOS Safari.
     const wrap = document.createElement('div');
-    wrap.style.cssText = 'position:absolute;left:-99999px;top:0;width:540px;height:720px;background:linear-gradient(135deg,#fdfaf6 0%,#f5ede0 100%);padding:36px 32px;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;color:#3a2e22;box-sizing:border-box;overflow:hidden';
+    wrap.style.cssText = 'position:fixed;left:0;top:0;width:540px;height:720px;background:#fdfaf6;padding:36px 32px;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;color:#3a2e22;box-sizing:border-box;overflow:hidden;opacity:0;pointer-events:none;z-index:-1';
     wrap.innerHTML = `
-      <div style="position:absolute;top:24px;right:32px;font-size:24px;opacity:0.14;transform:rotate(15deg);pointer-events:none">🐾</div>
-      <div style="position:absolute;top:280px;right:18px;font-size:18px;opacity:0.12;transform:rotate(28deg);pointer-events:none">🐾</div>
-      <div style="position:absolute;bottom:140px;left:22px;font-size:20px;opacity:0.13;transform:rotate(-22deg);pointer-events:none">🐾</div>
-      <div style="position:absolute;bottom:56px;right:30px;font-size:16px;opacity:0.1;transform:rotate(8deg);pointer-events:none">🐾</div>
-      <div style="text-align:center;margin-bottom:18px;position:relative">
+      <div style="text-align:center;margin-bottom:18px">
         <div style="font-size:11px;color:#a08a78;letter-spacing:3px;text-transform:uppercase;margin-bottom:8px;font-weight:600">🐾 Pet<span style="color:#7a9970">Nanny</span> 🐾</div>
-        <div style="font-size:19px;color:#3a2e22;font-weight:700;letter-spacing:-0.3px">Encontrei meu aumigo!</div>
+        <div style="font-size:19px;color:#3a2e22;font-weight:700">Encontrei meu aumigo!</div>
         <div style="display:flex;align-items:center;justify-content:center;gap:10px;margin-top:8px">
-          <div style="height:1px;width:50px;background:linear-gradient(to right,transparent,#c4b5a3,transparent)"></div>
+          <div style="height:1px;width:50px;background:#c4b5a3"></div>
           <div style="font-size:13px;color:#e89058">✦</div>
-          <div style="height:1px;width:50px;background:linear-gradient(to right,transparent,#c4b5a3,transparent)"></div>
+          <div style="height:1px;width:50px;background:#c4b5a3"></div>
         </div>
       </div>
-      <div style="background:linear-gradient(135deg,#fff4e8 0%,#ffe1c8 100%);border:3px solid #e89058;border-radius:22px;padding:22px 20px 18px;margin-bottom:14px;box-shadow:0 10px 28px rgba(232,144,88,0.22),inset 0 1px 0 rgba(255,255,255,0.5);text-align:center;position:relative">
-        <div style="position:absolute;top:-13px;left:50%;transform:translateX(-50%);background:linear-gradient(135deg,#e89058,#d77a44);color:white;font-size:10px;font-weight:700;padding:5px 16px;border-radius:20px;letter-spacing:1.5px;box-shadow:0 3px 8px rgba(232,144,88,0.4)">★ TOP MATCH ★</div>
+      <div style="background:#fff4e8;border:3px solid #e89058;border-radius:22px;padding:22px 20px 18px;margin-bottom:14px;text-align:center;position:relative">
+        <div style="position:absolute;top:-13px;left:50%;transform:translateX(-50%);background:#e89058;color:white;font-size:10px;font-weight:700;padding:5px 16px;border-radius:20px;letter-spacing:1.5px">★ TOP MATCH ★</div>
         <div style="display:flex;justify-content:center;margin:6px 0 8px">${photoOrEmoji(top1, 0, 130)}</div>
-        <div style="font-size:21px;font-weight:700;color:#3a2e22;margin-bottom:2px;letter-spacing:-0.3px">${top1.breed.name.split(' —')[0]}</div>
-        ${breedTags(top1.breed) ? `<div style="font-size:11px;color:#7a6f63;margin-bottom:8px;letter-spacing:0.3px">${breedTags(top1.breed)}</div>` : '<div style="height:6px"></div>'}
+        <div style="font-size:21px;font-weight:700;color:#3a2e22;margin-bottom:2px">${top1.breed.name.split(' —')[0]}</div>
+        ${breedTags(top1.breed) ? `<div style="font-size:11px;color:#7a6f63;margin-bottom:8px">${breedTags(top1.breed)}</div>` : '<div style="height:6px"></div>'}
         <div style="display:inline-flex;align-items:baseline;gap:4px;margin-top:2px">
-          <div style="font-size:42px;font-weight:800;color:#e89058;line-height:1;letter-spacing:-1px">${top1.matchPct}</div>
+          <div style="font-size:42px;font-weight:800;color:#e89058;line-height:1">${top1.matchPct}</div>
           <div style="font-size:22px;font-weight:700;color:#e89058">%</div>
         </div>
         <div style="font-size:10px;color:#a08a78;letter-spacing:1.5px;margin-top:2px;font-weight:600">DE COMPATIBILIDADE</div>
       </div>
       <div style="display:flex;gap:10px;margin-bottom:16px">
         ${top3.slice(1).map((r, i) => `
-          <div style="flex:1;background:#fff;border:2px solid #e8ddd2;border-radius:16px;padding:12px 10px 12px;text-align:center;box-shadow:0 4px 12px rgba(58,46,34,0.05)">
+          <div style="flex:1;background:#fff;border:2px solid #e8ddd2;border-radius:16px;padding:12px 10px;text-align:center">
             <div style="display:flex;justify-content:center;margin-bottom:6px">${photoOrEmoji(r, i+1, 70)}</div>
             <div style="font-size:13px;font-weight:700;color:#3a2e22;line-height:1.2;min-height:32px;display:flex;align-items:center;justify-content:center;padding:0 4px">${r.breed.name.split(' —')[0]}</div>
-            ${breedTags(r.breed) ? `<div style="font-size:9px;color:#a08a78;margin:3px 0 4px;letter-spacing:0.2px;line-height:1.3">${breedTags(r.breed)}</div>` : '<div style="height:7px"></div>'}
+            ${breedTags(r.breed) ? `<div style="font-size:9px;color:#a08a78;margin:3px 0 4px;line-height:1.3">${breedTags(r.breed)}</div>` : '<div style="height:7px"></div>'}
             <div style="display:inline-flex;align-items:baseline;gap:2px">
-              <div style="font-size:22px;font-weight:800;color:#7a9970;line-height:1">${r.matchPct}</div>
+              <div style="font-size:22px;font-weight:800;color:#7a9970">${r.matchPct}</div>
               <div style="font-size:13px;font-weight:700;color:#7a9970">%</div>
             </div>
           </div>
@@ -3224,19 +3222,26 @@ async function shareWhatsApp(ev){
     `;
     document.body.appendChild(wrap);
 
+    setBtn('Salvando imagem...');
     let canvas;
     try {
       canvas = await html2canvas(wrap, {scale:2, backgroundColor:'#fdfaf6', logging:false, useCORS:true, allowTaint:false});
     } catch(canvasErr){
+      console.warn('[shareWhatsApp] Canvas tainted, retry sem fotos:', canvasErr);
       // Tainted canvas (foto bloqueou CORS) — refazer SEM fotos, só emoji
-      console.warn('Canvas tainted, retrying with emoji only', canvasErr);
       wrap.querySelectorAll('img').forEach(img => {
         const ph = document.createElement('div');
-        ph.style.cssText = 'font-size:'+(img.style.width.replace('px','')*0.65)+'px;line-height:1';
+        const sz = parseInt(img.style.width.replace('px',''));
+        ph.style.cssText = 'font-size:'+(sz*0.65)+'px;line-height:1';
         ph.textContent = '🐶';
         img.parentNode.replaceChild(ph, img);
       });
-      canvas = await html2canvas(wrap, {scale:2, backgroundColor:'#fdfaf6', logging:false});
+      try {
+        canvas = await html2canvas(wrap, {scale:2, backgroundColor:'#fdfaf6', logging:false});
+      } catch(retryErr){
+        if(wrap.parentNode) document.body.removeChild(wrap);
+        throw new Error('html2canvas falhou: '+retryErr.message);
+      }
     } finally {
       if(wrap.parentNode) document.body.removeChild(wrap);
     }
