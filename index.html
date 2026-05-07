@@ -259,10 +259,22 @@
   /* Print: quando "salvar como PDF" da ficha de adoção, esconde todo o resto.
      Mostra só a ficha (com header da PetNanny pra contexto) numa página limpa. */
   @media print{
-    body.printing-ficha *{visibility:hidden}
-    body.printing-ficha #adoptionFicha,
-    body.printing-ficha #adoptionFicha *{visibility:visible}
-    body.printing-ficha #adoptionFicha{position:absolute;left:0;top:0;width:100%;margin:0;padding:24px;border:none;box-shadow:none;background:#fff !important;color:#000 !important}
+    /* Estratégia: ficha é movida pra raiz do body via JS antes de printar.
+       Aí escondemos com display:none tudo que NÃO é a ficha. visibility:hidden
+       não basta — preserva o layout e gera páginas em branco. display:none
+       colapsa de verdade. */
+    body.printing-ficha > *:not(#adoptionFicha){display:none !important}
+    body.printing-ficha #adoptionFicha{
+      display:block !important;
+      position:static !important;
+      width:auto !important;
+      margin:0;
+      padding:24px;
+      border:none;
+      box-shadow:none;
+      background:#fff !important;
+      color:#000 !important;
+    }
     body.printing-ficha #adoptionFicha .adoption-ficha-pdf-btn{display:none !important}
     body.printing-ficha #adoptionFicha::before{content:'PetNanny — Ficha de adoção';display:block;font-family:'Playfair Display',serif;font-size:14px;color:#888;margin-bottom:14px;border-bottom:1px solid #ddd;padding-bottom:10px}
     body.printing-ficha .adoption-ficha-rows{background:#f9f9f5 !important;border:1px solid #ddd !important}
@@ -1099,10 +1111,8 @@ const BREED_PHOTO_PREFER_EN = new Set([
 // Importante: validar licença (CC-BY, CC0, domínio público) antes de hardcodar.
 // Pra Dachshund Standard especificamente: forçar URL diferente do Mini.
 const BREED_PHOTO_DIRECT_URLS = {
-  // Dachshund Mini — Wikimedia Commons
-  dachshund: 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/8a/Black_and_Tan_Smooth_Dachshund_portrait.jpg/600px-Black_and_Tan_Smooth_Dachshund_portrait.jpg',
-  // Dachshund Standard — Wikimedia Commons (file mais estável)
-  dachshund_standard: 'https://upload.wikimedia.org/wikipedia/commons/thumb/2/27/Short-haired-Dachshund.jpg/600px-Short-haired-Dachshund.jpg'
+  // Removidos dachshund e dachshund_standard — URLs do Wikimedia ficaram instáveis.
+  // Sem entrada aqui, fetchBreedPhoto cai no fallback via Wikipedia API.
 };
 
 async function fetchBreedPhoto(breedKey){
@@ -2598,6 +2608,74 @@ function explainBreedExclusion(breedKey){
 }
 
 
+// Constrói o array de [label, valor] que descreve o perfil ideal de cão pra adoção.
+// Reutilizado por: (1) ficha pra ONG na tela de resultado, (2) imagem de
+// compartilhamento WhatsApp do fluxo de adoção. Lê só de `answers` global.
+function buildAdoptionFichaData(){
+  const ficha=[];
+  // Porte
+  if(answers.porte_imaginado==='imag_pequeno'){
+    ficha.push(['Porte','Pequeno (até 10kg) — colo, apartamento, fácil de transportar']);
+  } else if(answers.porte_imaginado==='imag_medio'){
+    ficha.push(['Porte','Médio (10-25kg) — equilíbrio entre presença e praticidade']);
+  } else if(answers.porte_imaginado==='imag_grande'){
+    ficha.push(['Porte','Grande (25kg+) — presença forte, precisa de espaço']);
+  }
+  // Energia
+  if(answers.energia_imaginada==='imag_calmo'||answers.atividade==='sedentario'){
+    ficha.push(['Energia','Calma a moderada — passeios curtos, gosta de descansar']);
+  } else if(answers.energia_imaginada==='imag_ativo'||answers.atividade==='muito_ativo'){
+    ficha.push(['Energia','Alta — precisa correr, brincar, gastar energia diariamente']);
+  } else {
+    ficha.push(['Energia','Moderada — passeios diários sem virar rotina de academia']);
+  }
+  // Idade ideal
+  if(answers.experiencia==='primeiro_cao'){
+    ficha.push(['Idade ideal','Adulto (2+ anos) — temperamento já formado, sem surpresas; ideal pra primeiro tutor']);
+  } else {
+    ficha.push(['Idade ideal','Adulto (2+ anos) preferencialmente — temperamento estabelecido. Filhote vira loteria']);
+  }
+  // Convivência
+  const conviveBits=[];
+  if(answers.criancas==='criancas_pequenas'){
+    conviveBits.push('paciente com criança pequena (testado, não "parece tranquilo")');
+  } else if(answers.criancas==='criancas'||answers.criancas==='planeja_criancas'){
+    conviveBits.push('tolerante com criança');
+  }
+  if(has('animais','gato')){
+    conviveBits.push('testado com gato (sem instinto de caça)');
+  }
+  if(has('animais','outro_cao')){
+    const portResid=has('cao_porte','cao_grande')?'porte parecido com cão grande residente'
+                   :has('cao_porte','cao_medio')?'porte parecido com cão médio residente'
+                   :'porte parecido com cão pequeno residente';
+    conviveBits.push('socializa com outro cão ('+portResid+')');
+  }
+  if(conviveBits.length===0){
+    conviveBits.push('dócil com estranhos, sem reatividade');
+  }
+  ficha.push(['Convivência',conviveBits.join('; ')]);
+  // Pelagem
+  if(answers.alergia==='alergia'){
+    ficha.push(['Pelagem','"Pelo de cabelo" — cresce contínuo, baixa muda, pouco alergeno (parecido com Poodle, Maltês, Bichon, Schnauzer). Pelo curto NÃO serve: Pug, Beagle e Boxer soltam muito subpelo']);
+  } else if(answers.grooming==='grooming_minimo'||answers.atividade==='sedentario'){
+    ficha.push(['Pelagem','Curta a média, baixa manutenção (banho mensal, escovação semanal)']);
+  } else {
+    ficha.push(['Pelagem','Sem preferência forte — adapte conforme o cão']);
+  }
+  // Temperamento
+  let temperamento='Equilibrado, sociável com a família';
+  if(answers.experiencia==='primeiro_cao'){
+    temperamento='Dócil, paciente, fácil de treinar — primeiro cão pede temperamento previsível';
+  } else if(answers.sozinho==='sozinho_muito'||answers.sozinho==='sozinho_demais'){
+    temperamento='Independente, sem ansiedade de separação severa';
+  } else if(answers.criancas==='criancas_pequenas'){
+    temperamento='Paciente, tolerante a barulho e movimento brusco';
+  }
+  ficha.push(['Temperamento',temperamento]);
+  return ficha;
+}
+
 function renderExpectationSection(){
   const section=document.getElementById('expectationSection');
   if(!section)return;
@@ -2721,67 +2799,7 @@ function renderExpectationSection(){
     // CÃO. Essa ficha traduz o perfil dela em traços observáveis no animal concreto:
     // porte, energia, idade, sociabilidade, pelagem. É o que ela "entrega" mentalmente
     // pra ONG: "olha, to buscando um cão assim".
-    const ficha=[];
-    // Porte
-    if(answers.porte_imaginado==='imag_pequeno'){
-      ficha.push(['Porte','Pequeno (até 10kg) — colo, apartamento, fácil de transportar']);
-    } else if(answers.porte_imaginado==='imag_medio'){
-      ficha.push(['Porte','Médio (10-25kg) — equilíbrio entre presença e praticidade']);
-    } else if(answers.porte_imaginado==='imag_grande'){
-      ficha.push(['Porte','Grande (25kg+) — presença forte, precisa de espaço']);
-    }
-    // Energia
-    if(answers.energia_imaginada==='imag_calmo'||answers.atividade==='sedentario'){
-      ficha.push(['Energia','Calma a moderada — passeios curtos, gosta de descansar']);
-    } else if(answers.energia_imaginada==='imag_ativo'||answers.atividade==='muito_ativo'){
-      ficha.push(['Energia','Alta — precisa correr, brincar, gastar energia diariamente']);
-    } else {
-      ficha.push(['Energia','Moderada — passeios diários sem virar rotina de academia']);
-    }
-    // Idade ideal (recomendação universal pra adoção: adulto > filhote)
-    if(answers.experiencia==='primeiro_cao'){
-      ficha.push(['Idade ideal','Adulto (2+ anos) — temperamento já formado, sem surpresas; ideal pra primeiro tutor']);
-    } else {
-      ficha.push(['Idade ideal','Adulto (2+ anos) preferencialmente — temperamento estabelecido. Filhote vira loteria']);
-    }
-    // Convivência (só campos relevantes)
-    const conviveBits=[];
-    if(answers.criancas==='criancas_pequenas'){
-      conviveBits.push('paciente com criança pequena (testado, não "parece tranquilo")');
-    } else if(answers.criancas==='criancas'||answers.criancas==='planeja_criancas'){
-      conviveBits.push('tolerante com criança');
-    }
-    if(has('animais','gato')){
-      conviveBits.push('testado com gato (sem instinto de caça)');
-    }
-    if(has('animais','outro_cao')){
-      const portResid=has('cao_porte','cao_grande')?'porte parecido com cão grande residente'
-                     :has('cao_porte','cao_medio')?'porte parecido com cão médio residente'
-                     :'porte parecido com cão pequeno residente';
-      conviveBits.push('socializa com outro cão ('+portResid+')');
-    }
-    if(conviveBits.length===0){
-      conviveBits.push('dócil com estranhos, sem reatividade');
-    }
-    ficha.push(['Convivência',conviveBits.join('; ')]);
-    // Pelagem / grooming
-    if(answers.alergia==='alergia'){
-      ficha.push(['Pelagem','"Pelo de cabelo" — cresce contínuo, baixa muda, pouco alergeno (parecido com Poodle, Maltês, Bichon, Schnauzer). Pelo curto NÃO serve: Pug, Beagle e Boxer soltam muito subpelo']);
-    } else if(answers.grooming==='grooming_minimo'||answers.atividade==='sedentario'){
-      ficha.push(['Pelagem','Curta a média, baixa manutenção (banho mensal, escovação semanal)']);
-    } else {
-      ficha.push(['Pelagem','Sem preferência forte — adapte conforme o cão']);
-    }
-    // Temperamento desejado (uma linha que junta o tom geral)
-    let temperamento='Equilibrado, sociável com a família';
-    if(answers.experiencia==='primeiro_cao'){
-      temperamento='Dócil, paciente, fácil de treinar — primeiro cão pede temperamento previsível';
-    } else if(answers.sozinho==='sozinho_muito'||answers.sozinho==='sozinho_demais'){
-      temperamento='Independente, sem ansiedade de separação severa';
-    } else if(answers.criancas==='criancas_pequenas'){
-      temperamento='Paciente, tolerante a barulho e movimento brusco';
-    }
-    ficha.push(['Temperamento',temperamento]);
+    const ficha=buildAdoptionFichaData();
 
     // ── Monta HTML ──
     let html=`<h3 class="expectation-title">💚 Guia personalizado de adoção</h3>`;
@@ -3047,13 +3065,90 @@ function renderExpectationSection(){
 function exportFichaPDF(){
   const ficha=document.getElementById('adoptionFicha');
   if(!ficha){console.warn('Ficha não encontrada');return;}
+
+  // Salva a posição original pra restaurar depois do print
+  const originalParent=ficha.parentNode;
+  const originalNextSibling=ficha.nextSibling;
+
+  // Move ficha pra raiz do body — sem isso, o display:none nos siblings
+  // de body não consegue esconder os ancestrais da ficha (screen-results,
+  // expectationSection, etc.) e voltam as páginas em branco.
+  document.body.appendChild(ficha);
   document.body.classList.add('printing-ficha');
+
   // Pequeno delay pra garantir que o reflow do CSS aconteceu antes do print
   setTimeout(()=>{
     window.print();
-    // Cleanup depois do print (usuário pode cancelar — limpa do mesmo jeito)
-    setTimeout(()=>document.body.classList.remove('printing-ficha'),100);
+    // Cleanup depois do print (usuário pode cancelar — limpa do mesmo jeito).
+    // Restaura ficha pra posição original no DOM.
+    setTimeout(()=>{
+      document.body.classList.remove('printing-ficha');
+      if(originalNextSibling){
+        originalParent.insertBefore(ficha,originalNextSibling);
+      } else {
+        originalParent.appendChild(ficha);
+      }
+    },100);
   },50);
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// WEBHOOK GOOGLE SHEETS
+// Envia perfil + resultados pra um Apps Script publicado como Web App.
+// fire-and-forget com mode:'no-cors' pra não bloquear UI nem precisar CORS.
+// Se WEBHOOK_URL estiver vazio, vira no-op (não quebra nada).
+// ═══════════════════════════════════════════════════════════════════════════
+const WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwVEj56mI7SxCtbL1k7fX-QhPbcWHuE-MpEGFJiPi8jkVjzzJGnnipSppJwqLJprEGoIA/exec';
+
+function pnSessionId(){
+  let id=null;
+  try{ id=localStorage.getItem('petnanny_session_id'); }catch(e){}
+  if(!id){
+    id='pn_'+Date.now()+'_'+Math.random().toString(36).slice(2,8);
+    try{ localStorage.setItem('petnanny_session_id',id); }catch(e){}
+  }
+  return id;
+}
+
+function pnUTM(){
+  try{
+    const p=new URLSearchParams(window.location.search);
+    return {
+      source:p.get('utm_source')||'',
+      medium:p.get('utm_medium')||'',
+      campaign:p.get('utm_campaign')||''
+    };
+  }catch(e){ return {source:'',medium:'',campaign:''}; }
+}
+
+// Conta quantas vezes essa sessão (= esse browser+user) já completou o quiz.
+// Persiste em localStorage, mesma vida que petnanny_session_id.
+// Útil pra dedupe na análise: submission_n==1 é o dataset limpo pro conjoint.
+function pnSubmissionN(){
+  let n=0;
+  try{ n=parseInt(localStorage.getItem('petnanny_submission_n')||'0',10)||0; }catch(e){}
+  n+=1;
+  try{ localStorage.setItem('petnanny_submission_n',String(n)); }catch(e){}
+  return n;
+}
+
+// Lê o valor atual SEM incrementar — usado pelo evento de feedback pra que ele
+// se associe à mesma submission do quiz_complete (e o Apps Script consiga fazer
+// UPDATE da linha em vez de criar linha nova).
+function pnLastSubmissionN(){
+  try{ return parseInt(localStorage.getItem('petnanny_submission_n')||'0',10)||0; }catch(e){ return 0; }
+}
+
+function pnSendWebhook(payload){
+  if(!WEBHOOK_URL) return;
+  try{
+    fetch(WEBHOOK_URL,{
+      method:'POST',
+      mode:'no-cors',
+      headers:{'Content-Type':'text/plain;charset=utf-8'},
+      body:JSON.stringify(payload)
+    }).catch(()=>{});
+  }catch(e){}
 }
 
 function saveResults(){
@@ -3086,6 +3181,24 @@ function saveResults(){
     expectationMatch:expectationMatch
   };
   try{localStorage.setItem('petnanny_quiz_result',JSON.stringify(data));}catch(e){}
+
+  // Envia pro Google Sheets — só uma vez por sessão de resultado, e só se
+  // tiver match calculado (não dispara nas chamadas pré-cálculo).
+  // adoção não tem recommendedBreeds, mas tem perfil completo — vale capturar.
+  const isAdotar = answers.origem==='adotar';
+  const hasResults = recommendedBreeds && recommendedBreeds.length>0;
+  if(!answers._webhookSent && (hasResults || isAdotar)){
+    answers._webhookSent = true;
+    pnSendWebhook({
+      event:'quiz_complete',
+      session_id: pnSessionId(),
+      submission_n: pnSubmissionN(),
+      data: data,
+      origem: answers.origem || 'comprar',
+      user_agent: navigator.userAgent,
+      utm: pnUTM()
+    });
+  }
 }
 
 // Gera imagem PNG do resultado e oferece compartilhar (mobile) ou baixar (desktop).
@@ -3106,6 +3219,11 @@ function loadHtml2Canvas(){
 // Mobile: gera imagem + Web Share API → menu nativo → WhatsApp aparece como opção
 // Desktop: gera imagem + baixa + abre WhatsApp Web pra pessoa colar (Ctrl+V)
 async function shareWhatsApp(ev){
+  // Fluxo de adoção precisa de template diferente — pessoa NÃO viu raças,
+  // viu ficha pra ONG. Compartilhar matchPct% de raças seria contradição.
+  if(answers.origem==='adotar'){
+    return shareWhatsAppAdocao(ev);
+  }
   const btn = ev && ev.currentTarget;
   const originalText = btn ? btn.innerHTML : '';
   const setBtn = (txt) => { if(btn){btn.innerHTML = txt;} };
@@ -3175,12 +3293,12 @@ async function shareWhatsApp(ev){
       return `<div style="font-size:${Math.round(size*0.65)}px;line-height:1">${r.breed.emoji}</div>`;
     };
 
-    // Container ON-SCREEN (não off-screen) — html2canvas no mobile às vezes não renderiza
-    // off-screen content corretamente. Usamos opacity:0 + pointer-events:none pra ficar
-    // invisível mas DENTRO do viewport.
+    // Container off-screen (left:-99999px) — html2canvas RESPEITA opacity:0
+    // e renderia conteúdo transparente sobre fundo bege (= imagem "vazia").
+    // Off-screen mantém opacity:1 e o usuário não vê. pointer-events:none por garantia.
     // Cores sólidas (não gradients) — gradients quebram html2canvas em iOS Safari.
     const wrap = document.createElement('div');
-    wrap.style.cssText = 'position:fixed;left:0;top:0;width:540px;height:720px;background:#fdfaf6;padding:36px 32px;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;color:#3a2e22;box-sizing:border-box;overflow:hidden;opacity:0;pointer-events:none;z-index:-1';
+    wrap.style.cssText = 'position:fixed;left:-99999px;top:0;width:540px;height:720px;background:#fdfaf6;padding:36px 32px;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;color:#3a2e22;box-sizing:border-box;overflow:hidden;pointer-events:none';
     wrap.innerHTML = `
       <div style="text-align:center;margin-bottom:18px">
         <div style="font-size:11px;color:#a08a78;letter-spacing:3px;text-transform:uppercase;margin-bottom:8px;font-weight:600">🐾 Pet<span style="color:#7a9970">Nanny</span> 🐾</div>
@@ -3221,6 +3339,17 @@ async function shareWhatsApp(ev){
       </div>
     `;
     document.body.appendChild(wrap);
+
+    // Aguarda as <img> dentro do wrap terminarem de carregar antes de gerar canvas.
+    // Sem isso, html2canvas pode capturar antes das fotos renderizarem (race condition).
+    const imgs = Array.from(wrap.querySelectorAll('img'));
+    await Promise.all(imgs.map(img =>
+      img.complete ? Promise.resolve() : new Promise(res => {
+        img.onload = res;
+        img.onerror = res;
+        setTimeout(res, 2500); // safety timeout
+      })
+    ));
 
     setBtn('Salvando imagem...');
     let canvas;
@@ -3275,7 +3404,9 @@ async function shareWhatsApp(ev){
       }
     }
 
-    // Desktop ou fallback: baixa imagem + abre WhatsApp Web
+    // Desktop ou fallback: tenta clipboard primeiro (cola direto no WhatsApp Web
+    // com Ctrl+V), com download de backup. Browsers modernos suportam ClipboardItem
+    // pra image/png; se falhar, fica só o download.
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
@@ -3288,13 +3419,23 @@ async function shareWhatsApp(ev){
       URL.revokeObjectURL(url);
     }, 200);
 
+    let copiedToClipboard = false;
+    try {
+      if(navigator.clipboard && window.ClipboardItem){
+        await navigator.clipboard.write([new ClipboardItem({'image/png': blob})]);
+        copiedToClipboard = true;
+      }
+    } catch(clipErr){ /* clipboard pode falhar por permissão — sem problema */ }
+
     const text = 'Encontrei meu aumigo ideal na PetNanny 🐾\nFaça o seu: https://petnanny.com.br';
     setTimeout(() => {
       window.open('https://web.whatsapp.com/send?text=' + encodeURIComponent(text), '_blank');
     }, 400);
 
-    setBtn('✓ Imagem baixada — cole no WhatsApp (Ctrl+V)');
-    setTimeout(restoreBtn, 4000);
+    setBtn(copiedToClipboard
+      ? '✓ Imagem copiada — cole com Ctrl+V no WhatsApp'
+      : '✓ Imagem baixada — abra e cole no WhatsApp');
+    setTimeout(restoreBtn, 4500);
   } catch(err){
     clearTimeout(timeoutHandle);
     console.error('Erro ao compartilhar:', err);
@@ -3310,40 +3451,190 @@ async function shareResultImage(ev){
   return shareWhatsApp(ev);
 }
 
+// ═══════════════════════════════════════════════════════════════════════════
+// SHARE WHATSAPP — FLUXO DE ADOÇÃO
+// Template diferente do compra: sem matchPct%, sem raças destacadas.
+// Mostra perfil ideal de cão (mesmas linhas da ficha pra ONG) + CTA do quiz.
+// Cores verdes (paleta de adoção) em vez de laranja/dourado da compra.
+// ═══════════════════════════════════════════════════════════════════════════
+async function shareWhatsAppAdocao(ev){
+  const btn = ev && ev.currentTarget;
+  const originalText = btn ? btn.innerHTML : '';
+  const setBtn = (txt) => { if(btn){btn.innerHTML = txt;} };
+  const restoreBtn = () => { if(btn){btn.innerHTML = originalText; btn.disabled = false;} };
+  if(btn){btn.disabled = true;}
+  setBtn('Gerando imagem...');
+
+  const TIMEOUT_MS = 15000;
+  let timedOut = false;
+  const timeoutHandle = setTimeout(() => {
+    timedOut = true;
+    setBtn('✕ Demorou — tente novamente');
+    setTimeout(restoreBtn, 2500);
+  }, TIMEOUT_MS);
+
+  try {
+    const loaded = await Promise.race([
+      loadHtml2Canvas().then(() => true),
+      new Promise(resolve => setTimeout(() => resolve(false), 8000))
+    ]);
+    if(!loaded || typeof html2canvas === 'undefined' || timedOut){
+      throw new Error('html2canvas não carregou (CDN bloqueada?)');
+    }
+
+    setBtn('Renderizando...');
+
+    // Reaproveita ficha da ONG. Pegamos label + valor curto (parte antes do " — ").
+    const ficha = buildAdoptionFichaData();
+
+    // Corta valor longo. Mantém só a parte essencial pra caber no card.
+    const shortVal = (val) => {
+      if(!val) return '';
+      // "Pequeno (até 10kg) — colo, apartamento" → "Pequeno (até 10kg)"
+      const dashIdx = val.indexOf(' — ');
+      return dashIdx > 0 ? val.slice(0, dashIdx) : val;
+    };
+
+    const wrap = document.createElement('div');
+    wrap.style.cssText = 'position:fixed;left:-99999px;top:0;width:540px;height:720px;background:#fdfaf6;padding:36px 32px;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;color:#3a2e22;box-sizing:border-box;overflow:hidden;pointer-events:none';
+    wrap.innerHTML = `
+      <div style="text-align:center;margin-bottom:18px">
+        <div style="font-size:11px;color:#a08a78;letter-spacing:3px;text-transform:uppercase;margin-bottom:8px;font-weight:600">🐾 Pet<span style="color:#7a9970">Nanny</span> 🐾</div>
+        <div style="font-size:19px;color:#3a2e22;font-weight:700">Vou adotar meu aumigo! 💚</div>
+        <div style="display:flex;align-items:center;justify-content:center;gap:10px;margin-top:8px">
+          <div style="height:1px;width:50px;background:#c4b5a3"></div>
+          <div style="font-size:13px;color:#7a9970">✦</div>
+          <div style="height:1px;width:50px;background:#c4b5a3"></div>
+        </div>
+      </div>
+      <div style="background:#eef4e8;border:3px solid #7a8e6c;border-radius:22px;padding:24px 22px 18px;margin-bottom:14px;position:relative">
+        <div style="position:absolute;top:-13px;left:50%;transform:translateX(-50%);background:#7a8e6c;color:white;font-size:10px;font-weight:700;padding:5px 16px;border-radius:20px;letter-spacing:1.5px">★ MEU PERFIL ★</div>
+        <div style="font-size:13px;color:#3d4f30;font-weight:700;margin-bottom:14px;text-align:center;margin-top:4px">🎯 Procuro um cão assim:</div>
+        ${ficha.map(([label, val]) => `
+          <div style="padding:9px 0;border-bottom:1px dotted #b8c8a9">
+            <div style="font-size:10px;color:#5d6b50;text-transform:uppercase;letter-spacing:1px;font-weight:700;margin-bottom:3px">${label}</div>
+            <div style="font-size:13px;color:#3a2e22;line-height:1.4">${shortVal(val)}</div>
+          </div>
+        `).join('')}
+      </div>
+      <div style="text-align:center;border-top:1.5px dashed #c4b5a3;padding-top:14px">
+        <div style="font-size:14px;color:#3a2e22;font-weight:600;margin-bottom:5px">Faça o seu em <span style="color:#7a9970;font-weight:700">petnanny.com.br</span> 🐾</div>
+        <div style="font-size:10px;color:#a08a78;letter-spacing:1.2px;text-transform:uppercase;font-weight:600">Quiz grátis · adoção · ~5 min</div>
+      </div>
+    `;
+    document.body.appendChild(wrap);
+
+    setBtn('Salvando imagem...');
+    let canvas;
+    try {
+      canvas = await html2canvas(wrap, {scale:2, backgroundColor:'#fdfaf6', logging:false});
+    } catch(canvasErr){
+      if(wrap.parentNode) document.body.removeChild(wrap);
+      throw new Error('html2canvas falhou: '+canvasErr.message);
+    } finally {
+      if(wrap.parentNode) document.body.removeChild(wrap);
+    }
+
+    if(timedOut) return;
+
+    const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/png', 0.95));
+    if(!blob){ throw new Error('Não conseguimos gerar a imagem'); }
+
+    clearTimeout(timeoutHandle);
+
+    const fileName = 'meu-perfil-adocao-petnanny.png';
+    const isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+    const file = new File([blob], fileName, {type:'image/png'});
+    const canWebShare = navigator.canShare && navigator.canShare({files:[file]});
+
+    if(isMobile && canWebShare){
+      try {
+        await navigator.share({
+          files:[file],
+          title:'Vou adotar um aumigo — PetNanny',
+          text:'Vou adotar meu aumigo! 🐾💚 Faça o seu perfil:',
+          url:'https://petnanny.com.br'
+        });
+        setBtn('✓ Compartilhado!');
+        setTimeout(restoreBtn, 2500);
+        return;
+      } catch(e){
+        if(e.name === 'AbortError'){ restoreBtn(); return; }
+      }
+    }
+
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = fileName;
+    a.style.display = 'none';
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => {
+      if(a.parentNode) document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }, 200);
+
+    let copiedToClipboard = false;
+    try {
+      if(navigator.clipboard && window.ClipboardItem){
+        await navigator.clipboard.write([new ClipboardItem({'image/png': blob})]);
+        copiedToClipboard = true;
+      }
+    } catch(clipErr){ /* permissão ou browser antigo — sem problema */ }
+
+    const text = 'Vou adotar meu aumigo na PetNanny 🐾💚\nFaça o seu perfil: https://petnanny.com.br';
+    setTimeout(() => {
+      window.open('https://web.whatsapp.com/send?text=' + encodeURIComponent(text), '_blank');
+    }, 400);
+
+    setBtn(copiedToClipboard
+      ? '✓ Imagem copiada — cole com Ctrl+V no WhatsApp'
+      : '✓ Imagem baixada — abra e cole no WhatsApp');
+    setTimeout(restoreBtn, 4500);
+  } catch(err){
+    clearTimeout(timeoutHandle);
+    console.error('Erro ao compartilhar (adoção):', err);
+    if(!timedOut){
+      setBtn('✕ Erro — tente novamente');
+      setTimeout(restoreBtn, 2500);
+    }
+  }
+}
+
 function showFeedback(){document.getElementById('feedbackBox').style.display='block';document.getElementById('feedbackText').focus();}
 function scrollToFeedback(){const box=document.getElementById('feedbackBox');const invite=document.getElementById('feedbackInvite');box.style.display='block';invite.scrollIntoView({behavior:'smooth',block:'center'});setTimeout(()=>document.getElementById('feedbackText').focus(),400);}
-// Formspree endpoint para receber feedback do usuário.
-// Pra ativar: criar conta grátis em formspree.io, criar form, copiar URL tipo
-// https://formspree.io/f/XXXXXXXX e colar abaixo. Sem isso, feedback fica só
-// em localStorage (não chega em ninguém).
-const FORMSPREE_ENDPOINT = ''; // ← cola aqui sua URL Formspree
+// Feedback do usuário vai pelo mesmo webhook do Google Sheets (event:'feedback').
+// FORMSPREE_ENDPOINT mantido vazio — descontinuado, removido em versão futura.
+const FORMSPREE_ENDPOINT = '';
 
 function submitFeedback(){
   var fb=document.getElementById('feedbackText').value.trim();
   if(!fb)return;
-  // Salva localmente (sempre)
+  // Salva localmente (sempre) — saveResults também dispara webhook quiz_complete
+  // se for a primeira vez (graças ao flag answers._webhookSent).
   answers.feedback=fb;
   saveResults();
-  // Manda pra Formspree se endpoint estiver configurado
-  if(FORMSPREE_ENDPOINT){
-    const top=recommendedBreeds[0]?recommendedBreeds[0].breed.name.split(' —')[0]:'(sem resultado)';
-    const matchPct=recommendedBreeds[0]?recommendedBreeds[0].matchPct:0;
-    fetch(FORMSPREE_ENDPOINT, {
-      method:'POST',
-      headers:{'Content-Type':'application/json','Accept':'application/json'},
-      body:JSON.stringify({
-        feedback:fb,
-        topBreed:top,
-        matchPct:matchPct,
-        origem:answers.origem||'',
-        timestamp:new Date().toISOString()
-      })
-    }).catch(()=>{}); // se falhar, silencioso — pessoa já viu confirmação
-  }
+  // Envia evento de feedback separado pra aba feedback do Sheet
+  const top=recommendedBreeds[0]?recommendedBreeds[0].breed.name.split(' —')[0]:'(sem resultado)';
+  const matchPct=recommendedBreeds[0]?recommendedBreeds[0].matchPct:0;
+  pnSendWebhook({
+    event:'feedback',
+    session_id: pnSessionId(),
+    submission_n: pnLastSubmissionN(),
+    feedback: fb,
+    topBreed: top,
+    matchPct: matchPct,
+    origem: answers.origem || 'comprar',
+    timestamp: new Date().toISOString()
+  });
   document.getElementById('feedbackBox').innerHTML='<p style="color:var(--green);font-size:13px;padding:12px">Obrigado pelo feedback! Isso nos ajuda a melhorar o quiz.</p>';
 }
 
 function restart(){
+  // answers={} já zera _webhookSent. Sessão_id persiste no localStorage
+  // (mesma pessoa fazendo quiz de novo = mesma cohort) — se quiser session
+  // nova por refazer, descomente: localStorage.removeItem('petnanny_session_id');
   currentQ=0; answers={}; recommendedBreeds=[];
   const intro=document.getElementById('introDesiredBreed');
   if(intro){intro.value='';updateQuizCTA();}
