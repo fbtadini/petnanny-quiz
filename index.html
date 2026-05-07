@@ -2713,7 +2713,10 @@ function renderExpectationSection(){
   const section=document.getElementById('expectationSection');
   if(!section)return;
   const desiredKey=answers.desiredBreedKey;
-  const archetype=window._chosenArchetype;
+  // Lê archetype direto da função (determinística) em vez de window._chosenArchetype.
+  // O cache só é setado quando calculateBreeds roda — fluxo de adoção pula calculateBreeds
+  // e a leitura cacheada vinha undefined, fazendo o guia de adoção sumir.
+  const archetype=getChosenArchetype();
   // Se a maioria do top 3 são fallbacks (raças vieram de fora do arquétipo),
   // significa que filtros eliminaram quase tudo do que a pessoa pediu.
   // Avisar é mais honesto que fingir que tudo combina.
