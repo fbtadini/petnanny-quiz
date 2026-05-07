@@ -1281,6 +1281,7 @@ function startQuiz(){
   answers={origem:'comprar'};
   if(desiredBreed)answers.desiredBreed=desiredBreed;
   if(desiredBreedKey)answers.desiredBreedKey=desiredBreedKey;
+  pnTrack('quiz_start', {origem:'comprar', desired_breed_key: desiredBreedKey || ''});
   showScreen('quiz');renderQuestion();
   document.getElementById('progressWrap').style.display='flex';
 }
@@ -1302,6 +1303,7 @@ function startAdoptionQuiz(){
   // não é sobre raça específica)
   currentQ=0;
   answers={origem:'adotar'};
+  pnTrack('quiz_start', {origem:'adotar'});
   showScreen('quiz');renderQuestion();
   document.getElementById('progressWrap').style.display='flex';
 }
@@ -3096,6 +3098,7 @@ function renderExpectationSection(){
 function exportFichaPDF(){
   const ficha=document.getElementById('adoptionFicha');
   if(!ficha){console.warn('Ficha não encontrada');return;}
+  pnTrack('pdf_export', {flow:'adoption_ficha'});
 
   // Salva a posição original pra restaurar depois do print
   const originalParent=ficha.parentNode;
@@ -3170,6 +3173,16 @@ function pnLastSubmissionN(){
   try{ return parseInt(localStorage.getItem('petnanny_submission_n')||'0',10)||0; }catch(e){ return 0; }
 }
 
+// Wrapper seguro pra gtag — não quebra se adblock bloquear ou se gtag ainda
+// não carregou. GA4 ID já tá tagueado na <head>; aqui só disparamos eventos.
+function pnTrack(name, params){
+  try{
+    if(typeof gtag === 'function'){
+      gtag('event', name, params || {});
+    }
+  }catch(e){}
+}
+
 function pnSendWebhook(payload){
   if(!WEBHOOK_URL) return;
   try{
@@ -3229,6 +3242,14 @@ function saveResults(){
       user_agent: navigator.userAgent,
       utm: pnUTM()
     });
+    // GA4 — completion + meta sobre o resultado pra cruzar com cohort do GA
+    pnTrack('quiz_complete', {
+      origem: answers.origem || 'comprar',
+      top1_breed: (recommendedBreeds[0] && recommendedBreeds[0].breed.name.split(' —')[0]) || '',
+      top1_match: (recommendedBreeds[0] && recommendedBreeds[0].matchPct) || 0,
+      num_results: recommendedBreeds.length,
+      desired_breed_matched: !!(data.expectationMatch && data.expectationMatch.matched)
+    });
   }
 }
 
@@ -3255,6 +3276,7 @@ async function shareWhatsApp(ev){
   if(answers.origem==='adotar'){
     return shareWhatsAppAdocao(ev);
   }
+  pnTrack('share_clicked', {flow:'comprar', top1_breed: (recommendedBreeds[0] && recommendedBreeds[0].breed.name.split(' —')[0]) || ''});
   const btn = ev && ev.currentTarget;
   const originalText = btn ? btn.innerHTML : '';
   const setBtn = (txt) => { if(btn){btn.innerHTML = txt;} };
@@ -3489,6 +3511,7 @@ async function shareResultImage(ev){
 // Cores verdes (paleta de adoção) em vez de laranja/dourado da compra.
 // ═══════════════════════════════════════════════════════════════════════════
 async function shareWhatsAppAdocao(ev){
+  pnTrack('share_clicked', {flow:'adotar'});
   const btn = ev && ev.currentTarget;
   const originalText = btn ? btn.innerHTML : '';
   const setBtn = (txt) => { if(btn){btn.innerHTML = txt;} };
@@ -3664,8 +3687,26 @@ function submitFeedback(){
     origem: answers.origem || 'comprar',
     timestamp: new Date().toISOString()
   });
+  pnTrack('feedback_submitted', {origem: answers.origem || 'comprar', top1_breed: top, length: fb.length});
   document.getElementById('feedbackBox').innerHTML='<p style="color:var(--green);font-size:13px;padding:12px">Obrigado pelo feedback! Isso nos ajuda a melhorar o quiz.</p>';
 }
+
+// Event delegation pros links de ação dos breed cards (Adotar / CBKC / Wikipedia / Buscar criador).
+// 1 listener pega todos sem precisar tocar em cada <a>. Categoriza pela classe modificadora.
+document.addEventListener('click', function(e){
+  const link = e.target && e.target.closest && e.target.closest('a.breed-link');
+  if(!link) return;
+  let action = 'other';
+  if(link.classList.contains('breed-link-adopt')) action = 'adotar';
+  else if(link.classList.contains('breed-link-cbkc')){
+    // 2 links com .cbkc: padrão (CBKC) e buscar criador (Google)
+    action = (link.textContent||'').toLowerCase().includes('criador') ? 'criador' : 'cbkc';
+  }
+  else if(link.classList.contains('breed-link-info')) action = 'wiki';
+  const card = link.closest('.breed-card');
+  const breedName = card ? ((card.querySelector('.breed-name')||{}).textContent || '') : '';
+  pnTrack('breed_action', {action: action, breed_name: (breedName||'').trim().split(' —')[0], origem: answers.origem || 'comprar'});
+});
 
 function restart(){
   // answers={} já zera _webhookSent. Sessão_id persiste no localStorage
@@ -3689,5 +3730,18 @@ function restart(){
 }
 
 </script>
+
+<footer style="text-align:center;padding:24px 16px 32px;border-top:1px solid #e8ddd2;margin-top:48px;font-size:11px;color:#a08a78;line-height:1.6;font-family:'DM Sans',-apple-system,BlinkMacSystemFont,sans-serif">
+  <span>🔒 Quiz anônimo · sem nome, e-mail, telefone ou IP. Respostas guardadas pra melhorar o sistema.</span>
+  <br>
+  <a href="#" onclick="var d=document.getElementById('privacyDetail');d.style.display=d.style.display==='block'?'none':'block';return false;" style="color:#7a9970;text-decoration:underline">Saiba mais ↓</a>
+  <span> · </span>
+  <a href="mailto:contato@petnanny.com.br" style="color:#7a9970;text-decoration:underline">contato@petnanny.com.br</a>
+  <div id="privacyDetail" style="display:none;max-width:520px;margin:14px auto 0;text-align:left;background:#fff;padding:14px 18px;border-radius:8px;border:1px solid #e8ddd2;color:#5d4f43;line-height:1.55;font-size:12px">
+    <strong style="color:#3a2e22">Privacidade — PetNanny</strong><br>
+    Coletamos suas respostas no quiz de forma <strong>anônima</strong> pra melhorar nosso sistema de matching de raças e gerar conteúdo agregado sobre comportamento de tutores no Brasil. <strong>Não armazenamos nome, e-mail, telefone ou endereço IP.</strong> Para pedir exclusão dos seus dados ou tirar dúvidas, escreva pra contato@petnanny.com.br.<br><br>
+    Quando ativarmos cadastro com e-mail ou funcionalidades que pedem dados pessoais, esse aviso será atualizado e você verá uma tela de consentimento.
+  </div>
+</footer>
 </body>
 </html>
