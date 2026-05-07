@@ -1752,22 +1752,41 @@ function calculateBreeds(){
   // específico de saúde (Shar Pei, Bulldog), temperamento muito territorial
   // (Akita, Chow, Cane Corso, Fila), ou precisam de trabalho intenso (Cattle Dog,
   // Belga Malinois). Pra experiencia=experiencia ('cuida mas não adestra'),
+  // NEED_EXPERT é uma lista hand-picked de raças que merecem experiência mesmo que sua
+  // ficha técnica diga "intermediário" — Pastor Belga Malinois, Akita, Cane Corso etc.
   // ainda são muito desafiadores.
   const NEED_EXPERT = ['shar_pei','akita','chow_chow','cane_corso','fila','husky','cattle_dog','pastor_belga_malinois','bull_terrier'];
   if(exp==='primeiro_cao'||exp==='experiencia_basica'||exp==='experiencia'){
     NEED_EXPERT.forEach(k=>hardFilters.add(k));
   }
+  // Primeiro cão: além de NEED_EXPERT, exclui qualquer raça marcada dificuldade=avancado.
+  // Pessoa nunca cuidou de cão não deveria começar com Akita, Pastor Alemão, Doberman,
+  // Pitbull ou similares — devolução/abandono é resultado quase certo.
+  if(exp==='primeiro_cao'){
+    Object.keys(BREEDS).forEach(k=>{
+      if(BREEDS[k].dificuldade==='avancado') hardFilters.add(k);
+    });
+  }
   if(has('criancas','criancas_pequenas')){
     Object.keys(BREEDS).forEach(k=>{
       if(BREEDS[k].kid<=2)hardFilters.add(k);
       if(BREEDS[k].dificuldade==='avancado')hardFilters.add(k);
+      // Energia alta + criança pequena = brincadeira brusca, knockdown, mordida no susto.
+      if(BREEDS[k].nrg>=4)hardFilters.add(k);
     });
+    // Prey drive forte + criança pequena (movimento errático, choro agudo) = risco real
+    // de mordida reflexa. Hard exclude regardless de outros traços.
+    PREY_DRIVE_BREEDS.forEach(k=>hardFilters.add(k));
   }
   if(has('criancas','criancas')||has('criancas','planeja_criancas')) Object.keys(BREEDS).forEach(k=>{if(BREEDS[k].kid<=1)hardFilters.add(k);});
   if(has('moradia','sem_externo')) Object.keys(BREEDS).forEach(k=>{if(BREEDS[k].apt<=1)hardFilters.add(k);});
   if(has('atividade','sedentario')) Object.keys(BREEDS).forEach(k=>{if(BREEDS[k].nrg>=4)hardFilters.add(k);});
   // sozinho_demais (>8h fora) + cão grudento (ind<=2) = ansiedade severa garantida.
-  if(has('sozinho','sozinho_demais')) Object.keys(BREEDS).forEach(k=>{if((BREEDS[k].ind||3)<=2)hardFilters.add(k);});
+  // Energia alta sozinho 8h+ = destruição da casa, depressão. Filtra ambos.
+  if(has('sozinho','sozinho_demais')) Object.keys(BREEDS).forEach(k=>{
+    if((BREEDS[k].ind||3)<=2) hardFilters.add(k);
+    if(BREEDS[k].nrg>=4) hardFilters.add(k);
+  });
   if(has('origem','comprar')) hardFilters.add('srd');
   if(has('orcamento','orcamento_baixo')) Object.keys(BREEDS).forEach(k=>{
     if(BREEDS[k].cst>=4) hardFilters.add(k);
@@ -1780,8 +1799,10 @@ function calculateBreeds(){
   if(has('clima','quente')) Object.keys(BREEDS).forEach(k=>{if(BREEDS[k].htl<=1)hardFilters.add(k);});
   // Clima frio extremo: raças com ctl=1 (Lebrel, Whippet, Pinscher) tremem sem roupa. Mesma lógica.
   if(has('clima','frio')) Object.keys(BREEDS).forEach(k=>{if(BREEDS[k].ctl<=1)hardFilters.add(k);});
-  // Vizinhos próximos + raça que late muito (bark>=5) = denúncia condominial. Não recomendar.
-  if(has('vizinhos','vizinhos_proximos')) Object.keys(BREEDS).forEach(k=>{const bark=(typeof BARK_LEVELS!=='undefined' && BARK_LEVELS[k])||3; if(bark>=5)hardFilters.add(k);});
+  // Vizinhos próximos + raça que late muito (BARK>=4) = denúncia condominial.
+  // BARK=5 (Beagle, Basset, Chihuahua, Corgi) é gritante; BARK=4 (Lulu, Jack
+  // Russell, Fox Paulistinha) ainda atravessa parede fina. Não recomendar.
+  if(has('vizinhos','vizinhos_proximos')) Object.keys(BREEDS).forEach(k=>{const bark=(typeof BARK_LEVELS!=='undefined' && BARK_LEVELS[k])||3; if(bark>=4)hardFilters.add(k);});
   // Sozinho 4-8h + cão grudento (ind<=2) = ansiedade severa. Bichon, Coton,
   // Cavalier, Maltês são todos ind=2 — sofrem se ficam fora 8h. Mesmo critério
   // do sozinho_demais agora.
@@ -1796,12 +1817,22 @@ function calculateBreeds(){
     PREY_DRIVE_BREEDS.forEach(k=>hardFilters.add(k));
   }
   // Necessidades especiais: cão precisa ser paciente, fácil de educar, energia controlável.
-  // Exclui: raças intolerantes a barulho/movimento (kid<=3), avançadas, e energia 5/5.
+  // Filters intencionalmente conservadores — o custo de recomendar errado (Beagle pra
+  // alguém autista, p.ex.) é alto; melhor cair em "perfil muito específico" e direcionar
+  // pra adoção do que entregar match ruim.
+  // Exclui:
+  //   - kid<=3 (não paciente o suficiente)
+  //   - dificuldade=avancado (treino exige paciência alta)
+  //   - nrg>=4 (energia alta = imprevisível em rotina)
+  //   - BARK>=4 (latido alto = gatilho sensorial sério)
+  //   - prey drive (instinto de caça = reatividade súbita, imprevisível)
   if(has('necessidades_especiais','sim')){
     Object.keys(BREEDS).forEach(k=>{
       if(BREEDS[k].kid<=3) hardFilters.add(k);
       if(BREEDS[k].dificuldade==='avancado') hardFilters.add(k);
-      if(BREEDS[k].nrg>=5) hardFilters.add(k);
+      if(BREEDS[k].nrg>=4) hardFilters.add(k);
+      if((BARK_LEVELS[k]||3)>=4) hardFilters.add(k);
+      if(PREY_DRIVE_BREEDS.includes(k)) hardFilters.add(k);
     });
   }
 
@@ -3496,7 +3527,10 @@ async function shareWhatsAppAdocao(ev){
     };
 
     const wrap = document.createElement('div');
-    wrap.style.cssText = 'position:fixed;left:-99999px;top:0;width:540px;height:720px;background:#fdfaf6;padding:36px 32px;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;color:#3a2e22;box-sizing:border-box;overflow:hidden;pointer-events:none';
+    // Sem height fixo + sem overflow:hidden — quando texto da pelagem (ou outro
+    // campo) wrappa pra 2 linhas, conteúdo passava de 720px e o card verde era
+    // clipado deixando TEMPERAMENTO fora dele. Deixa crescer naturalmente.
+    wrap.style.cssText = 'position:fixed;left:-99999px;top:0;width:540px;background:#fdfaf6;padding:36px 32px;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;color:#3a2e22;box-sizing:border-box;pointer-events:none';
     wrap.innerHTML = `
       <div style="text-align:center;margin-bottom:18px">
         <div style="font-size:11px;color:#a08a78;letter-spacing:3px;text-transform:uppercase;margin-bottom:8px;font-weight:600">🐾 Pet<span style="color:#7a9970">Nanny</span> 🐾</div>
@@ -3507,17 +3541,19 @@ async function shareWhatsAppAdocao(ev){
           <div style="height:1px;width:50px;background:#c4b5a3"></div>
         </div>
       </div>
-      <div style="background:#eef4e8;border:3px solid #7a8e6c;border-radius:22px;padding:24px 22px 18px;margin-bottom:14px;position:relative">
-        <div style="position:absolute;top:-13px;left:50%;transform:translateX(-50%);background:#7a8e6c;color:white;font-size:10px;font-weight:700;padding:5px 16px;border-radius:20px;letter-spacing:1.5px">★ MEU PERFIL ★</div>
-        <div style="font-size:13px;color:#3d4f30;font-weight:700;margin-bottom:14px;text-align:center;margin-top:4px">🎯 Procuro um cão assim:</div>
+      <div style="background:#eef4e8;border:3px solid #7a8e6c;border-radius:22px;padding:20px 22px 18px;margin-bottom:14px;display:block;box-sizing:border-box">
+        <div style="display:flex;justify-content:center;margin-top:-32px;margin-bottom:12px">
+          <div style="background:#7a8e6c;color:white;font-size:10px;font-weight:700;padding:5px 16px;border-radius:20px;letter-spacing:1.5px">★ MEU PERFIL ★</div>
+        </div>
+        <div style="font-size:13px;color:#3d4f30;font-weight:700;margin-bottom:10px;text-align:center">🎯 Procuro um cão assim:</div>
         ${ficha.map(([label, val]) => `
-          <div style="padding:9px 0;border-bottom:1px dotted #b8c8a9">
+          <div style="padding:8px 0;border-bottom:1px dotted #b8c8a9">
             <div style="font-size:10px;color:#5d6b50;text-transform:uppercase;letter-spacing:1px;font-weight:700;margin-bottom:3px">${label}</div>
-            <div style="font-size:13px;color:#3a2e22;line-height:1.4">${shortVal(val)}</div>
+            <div style="font-size:13px;color:#3a2e22;line-height:1.35">${shortVal(val)}</div>
           </div>
         `).join('')}
       </div>
-      <div style="text-align:center;border-top:1.5px dashed #c4b5a3;padding-top:14px">
+      <div style="text-align:center;border-top:1.5px dashed #c4b5a3;padding-top:14px;margin-top:8px">
         <div style="font-size:14px;color:#3a2e22;font-weight:600;margin-bottom:5px">Faça o seu em <span style="color:#7a9970;font-weight:700">petnanny.com.br</span> 🐾</div>
         <div style="font-size:10px;color:#a08a78;letter-spacing:1.2px;text-transform:uppercase;font-weight:600">Quiz grátis · adoção · ~5 min</div>
       </div>
@@ -3638,6 +3674,16 @@ function restart(){
   currentQ=0; answers={}; recommendedBreeds=[];
   const intro=document.getElementById('introDesiredBreed');
   if(intro){intro.value='';updateQuizCTA();}
+  // Reset do bloco de feedback — sem isso, depois de submeter feedback uma vez,
+  // o HTML do feedbackBox fica como "Obrigado!" e a pessoa não consegue dar novo
+  // feedback no quiz seguinte.
+  const fbBox=document.getElementById('feedbackBox');
+  if(fbBox){
+    fbBox.style.display='none';
+    fbBox.innerHTML='<textarea id="feedbackText" placeholder="Ex: amei o resultado, sempre quis um Golden. / Esperava um Pit Bull mas entendi a exclusão por causa do meu gato. / O Beagle que recomendaram acho que late demais pra meu apto." style="width:100%;padding:12px;border:1.5px solid #e8ddd2;border-radius:10px;font-family:inherit;font-size:13px;min-height:90px;resize:vertical;line-height:1.5"></textarea><button onclick="submitFeedback()" style="margin-top:8px;background:var(--accent);color:white;border:none;border-radius:10px;padding:11px 28px;font-family:inherit;font-size:14px;font-weight:500;cursor:pointer">Enviar feedback</button>';
+  }
+  const fbInvite=document.getElementById('feedbackInvite');
+  if(fbInvite){ fbInvite.style.display=''; }
   document.getElementById('progressWrap').style.display='none';
   showScreen('intro');
 }
