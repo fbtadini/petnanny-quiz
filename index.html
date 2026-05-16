@@ -87,27 +87,37 @@
   .question-text{font-family:'Playfair Display',serif;font-size:24px;line-height:1.3;margin-bottom:6px}
   .question-sub{font-size:13px;color:var(--brown-mid);margin-bottom:22px;line-height:1.5}
   .cj-progress{display:flex;justify-content:space-between;font-size:12px;color:var(--brown-light);margin-bottom:8px;letter-spacing:0.04em}
-  .cj-cards{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;grid-auto-rows:min-content;animation:cjFadeIn 0.25s ease-out}
-  @media (max-width:560px){.cj-cards{grid-template-columns:1fr}}
+  /* Layout B-clean: 2 colunas SEMPRE (inclusive mobile). Comparação simultânea
+     é a essência do conjoint — perder isso vira stated preference sequencial. */
+  .cj-cards{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:14px;animation:cjFadeIn 0.25s ease-out}
   @keyframes cjFadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
-  /* Subgrid: cada card herda o mesmo grid de 8 linhas (label + 6 attrs + button)
-     do parent. Resultado: linha N do card A alinha com linha N do card B,
-     mesmo se o conteúdo tem alturas diferentes. */
-  .cj-card{background:white;border:1.5px solid #e8d4b8;border-radius:14px;padding:16px;cursor:pointer;transition:transform 0.15s,box-shadow 0.15s,border-color 0.15s,background 0.15s;display:grid;grid-template-rows:subgrid;grid-row:span 8;gap:0}
+  /* Cards mais enxutos: padding e font reduzidos, sem subgrid (cards podem ter alturas diferentes,
+     o display:flex column resolve sem precisar de subgrid). Bordas suaves, hover sutil. */
+  .cj-card{background:white;border:1.5px solid #e8d4b8;border-radius:12px;padding:12px 10px;cursor:pointer;transition:transform 0.15s,box-shadow 0.15s,border-color 0.15s,background 0.15s;display:flex;flex-direction:column;gap:8px}
   .cj-card:hover{transform:translateY(-2px);box-shadow:0 8px 20px rgba(0,0,0,0.10);border-color:var(--accent);background:#fef9f0}
-  .cj-card-label{font-size:11px;color:var(--brown-light);letter-spacing:0.08em;margin-bottom:10px;text-transform:lowercase;font-weight:500}
-  /* Cada linha de atributo é grid de 2 colunas: label fixo + valor flex */
-  .cj-attr{padding:9px 0;border-bottom:1px solid #f5ebd9;display:grid;grid-template-columns:78px 1fr;gap:6px;align-items:center}
-  .cj-attr:last-of-type{border-bottom:none;padding-bottom:0}
-  .cj-attr.dim{opacity:0.4}
-  /* Linha "igual" — texto curto quando atributo é igual entre A e B */
-  .cj-attr-same{font-size:11px;color:var(--brown-light);font-style:italic}
-  .cj-card-cta{margin-top:14px;width:100%;background:var(--accent);color:white;border:none;border-radius:10px;padding:11px;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:600;cursor:pointer;transition:transform 0.15s,background 0.15s;align-self:end}
-  .cj-card-cta:hover{transform:translateY(-1px);background:#9d501a}
+  .cj-card-label{font-size:11px;color:var(--brown-light);letter-spacing:0.08em;text-transform:lowercase;font-weight:600;text-align:center;padding-bottom:7px;border-bottom:1px solid #f5ebd9;margin-bottom:1px}
   .cj-footer{font-size:11px;color:var(--brown-light);text-align:center;margin-top:12px;font-style:italic}
   /* Progress bar fina e contínua durante o conjoint, abaixo do banner de "par X de 9" */
   .cj-progress-bar{position:relative;height:4px;background:#f0e6d2;border-radius:2px;margin:8px 0 14px;overflow:hidden}
   .cj-progress-bar-fill{position:absolute;left:0;top:0;height:100%;background:var(--accent);border-radius:2px;transition:width 0.4s ease}
+  /* Chip único que sobe os atributos IGUAIS pro topo da tela, fora dos cards.
+     Libera espaço vertical dentro de cada card pra mostrar só os DIFFs. */
+  .cj-same-chip{font-size:11px;color:var(--brown-mid);background:#fbf6ec;border:1px solid #ede1c8;border-radius:18px;padding:6px 12px;display:flex;align-items:center;gap:6px;margin-bottom:12px;flex-wrap:wrap;line-height:1.4}
+  .cj-same-chip .cj-same-ck{color:#3B6D11;font-weight:700;flex-shrink:0}
+  .cj-same-chip .cj-same-label{color:var(--brown-light);font-weight:500}
+  .cj-same-chip .cj-same-item{color:var(--brown-mid);font-weight:600}
+  .cj-same-chip .cj-same-sep{color:var(--brown-light);margin:0 1px}
+  /* Atributo dentro do card: ícone à esquerda, ref à direita. Vertical, sem grid de 2 colunas internas. */
+  .cj-attr-line{display:flex;align-items:flex-start;gap:7px;padding:1px 0}
+  .cj-attr-line-icon{font-size:17px;line-height:1.1;flex-shrink:0;margin-top:1px}
+  .cj-attr-line-body{flex:1;min-width:0}
+  .cj-attr-line-name{font-size:9.5px;color:#7a614a;font-weight:600;text-transform:uppercase;letter-spacing:0.04em;line-height:1.2;margin-bottom:2px}
+  .cj-attr-line-ref{font-size:11.5px;color:#3d2c1e;font-weight:600;line-height:1.3}
+  /* CTAs fora dos cards, lado-a-lado embaixo: zona ergonômica do polegar. */
+  .cj-ctas-row{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:4px}
+  .cj-cta{background:var(--accent);color:white;border:none;border-radius:10px;padding:13px;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:600;cursor:pointer;transition:transform 0.15s,background 0.15s}
+  .cj-cta:hover{transform:translateY(-1px);background:#9d501a}
+  .cj-cta:active{transform:translateY(0)}
   /* Box destacada de trade-off na intro do conjoint */
   .conjoint-tradeoff-box{display:flex;align-items:flex-start;gap:12px;background:linear-gradient(135deg,#fdf6e6 0%,#faeeda 100%);border:1.5px solid #ef9f27;border-radius:14px;padding:16px 18px;margin-top:18px}
   .conjoint-tradeoff-icon{font-size:24px;flex-shrink:0;line-height:1.2}
@@ -139,22 +149,6 @@
   .terms-checkbox-text{font-size:14px;color:#3d2c1e;line-height:1.5;font-weight:500;flex:1}
   #termsAcceptBtn:disabled{opacity:0.4;cursor:not-allowed;background:#d5c4a8}
   #termsAcceptBtn:disabled:hover{background:#d5c4a8;transform:none}
-  /* Card mode VISUAL: grid de ícones com referência concreta + texto sintético embaixo */
-  .cj-card-visual{grid-template-rows:auto auto auto auto;grid-row:span 4}
-  .cj-attr-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px}
-  .cj-attr-tile{display:flex;align-items:center;gap:10px;padding:10px 11px;border-radius:9px;background:#fdfaf3;border:1px solid #ede1c8;transition:all .15s}
-  .cj-attr-tile-icon{font-size:22px;line-height:1;flex-shrink:0}
-  .cj-attr-tile-body{flex:1;min-width:0}
-  .cj-attr-tile-name{font-size:10.5px;color:var(--brown-mid);font-weight:600;text-transform:uppercase;letter-spacing:0.04em;line-height:1.2;margin-bottom:2px}
-  .cj-attr-tile-ref{font-size:13px;color:#3d2c1e;font-weight:600;line-height:1.25}
-  /* Color coding: atributos que MUDAM entre A e B ficam em destaque (cor de marca, fundo bege) */
-  .cj-attr-diff{background:#fef5e7;border-color:#f0c987;box-shadow:0 1px 0 rgba(232,144,88,0.08)}
-  .cj-attr-diff .cj-attr-tile-name{color:#b15e1a}
-  /* Atributos IGUAIS ficam dimmed — pessoa não precisa processar */
-  .cj-attr-same{opacity:0.4}
-  .cj-attr-same .cj-attr-tile-ref{font-weight:500}
-  /* Frase sintética abaixo dos ícones — descrição curta consolidada */
-  .cj-story-text{font-size:13.5px;color:var(--brown-mid);line-height:1.55;margin-bottom:14px;padding-top:10px;border-top:1px solid #f5ebd9;font-style:italic}
   .cj-result-card{background:linear-gradient(135deg,#eff5fb 0%,#e1ebf5 100%);border:1.5px solid #b5d4f4;border-radius:14px;padding:18px 22px;margin-bottom:16px}
   .cj-result-eyebrow{font-size:11px;color:#0c447c;letter-spacing:0.08em;font-weight:600;margin-bottom:6px;text-transform:uppercase}
   .cj-result-title{font-family:'Playfair Display',serif;font-size:19px;color:#0c447c;margin:0 0 10px;line-height:1.3}
@@ -1064,7 +1058,9 @@
         <div class="cj-progress"><span id="cjProgressLabel">par 1 de 9</span><span id="cjProgressPct">11%</span></div>
         <div class="cj-progress-bar"><div class="cj-progress-bar-fill" id="cjProgressBarFill" style="width:0%"></div></div>
         <h2 class="question-text" style="margin-bottom:18px">Qual desses dois cães você levaria pra casa?</h2>
+        <div id="cjSameChip"></div>
         <div class="cj-cards" id="cjCards"></div>
+        <div class="cj-ctas-row" id="cjCtasRow"></div>
         <p class="cj-footer">cada par é uma combinação diferente — pares "estranhos" são propositais</p>
       </div>
     </div>
@@ -1856,7 +1852,12 @@ function renderConjointPair(){
   const pct = Math.round((idx/9)*100);
   document.getElementById('cjProgressPct').textContent = `${pct}%`;
   document.getElementById('cjProgressBarFill').style.width = `${pct}%`;
-  
+
+  // Chip de iguais (sobe pro topo, fora dos cards)
+  document.getElementById('cjSameChip').innerHTML = renderConjointSameChip(profileA, profileB);
+  // CTAs grandes embaixo (fora dos cards, na zona do polegar)
+  document.getElementById('cjCtasRow').innerHTML = renderConjointCtas(false);
+
   // Re-renderiza cards com animação fade-in (re-aplica classe via remove+add)
   const cardsEl = document.getElementById('cjCards');
   cardsEl.style.animation = 'none';
@@ -1865,6 +1866,14 @@ function renderConjointPair(){
   cardsEl.innerHTML =
     renderConjointCard(profileA, profileB, 'A', idx) +
     renderConjointCard(profileB, profileA, 'B', idx);
+
+  // Tracking: registra qual versão de textos está em uso (útil pra A/B test futuro)
+  pnTrack('conjoint_pair_rendered', {
+    pair_idx: pairIdx,
+    text_version: 'v2_mece_balanced',
+    layout: 'b_clean'
+  });
+
   window.scrollTo(0,0);
 }
 
@@ -1880,13 +1889,18 @@ const CONJOINT_ATTR_NAME = {
 // dão valores tangíveis. Linguagem foolproof: sem ambiguidade ("2 semanas"
 // → "1× ao mês" ou "2× ao mês"), separa banho de tosa, especifica do que
 // se trata o tempo (caminhada vs exercício).
+// Refs concretas por nível — textos validados em 6 iterações de framing
+// (asymmetric framing → MECE → valência neutra → trindade MECE+V+P).
+// Caso especial `lat`: aceita leve overlap em troca de valência simétrica —
+// "avisa quem chega" tem fã clube real (alerta), "raramente late" também.
+// "late com frequência" foi rejeitado por dominância (ninguém escolhe).
 const CONJOINT_REF = {
-  siz: { 1: '~5 kg (de colo)',  2: '~15 kg (médio)',    3: '25 kg+ (grande)' },
-  nrg: { 1: 'caminhada 20min/dia', 2: 'caminhada 1h/dia', 3: 'exercício pesado 1h30+/dia' },
-  man: { 1: 'banho 1× ao mês',  2: 'banho 2× ao mês',   3: 'tosa profissional + escova diária' },
-  lat: { 1: 'silencioso',       2: 'late ao ouvir/ver coisas' },
-  conv: { 1: 'festeiro com visitas', 2: 'tímido com visitas' },
-  ind: { 1: 'quer ficar perto sempre', 2: 'tem horas próprias' }
+  siz:  { 1: '~5 kg (de colo)',           2: '~15 kg (médio)',           3: '25 kg+ (grande)' },
+  nrg:  { 1: '20min/dia atividade leve',  2: '45min/dia atividade média',3: '1h+/dia atividade pesada' },
+  man:  { 1: 'pelo curto, fácil de cuidar', 2: 'pelo médio, cuidado regular', 3: 'pelo longo, cuidado intenso' },
+  lat:  { 1: 'raramente late',            2: 'avisa quem chega' },
+  conv: { 1: 'abraça qualquer visita',    2: 'afeto na família' },
+  ind:  { 1: 'fica sempre por perto',     2: 'curte momentos sozinho' }
 };
 
 // HTML de um card de cão sintético.
@@ -1896,11 +1910,11 @@ const CONJOINT_REF = {
 // linguagem das referências concretas pra não criar dúvida ("alta" vs "tosa").
 const STORY_FRAGMENTS = {
   siz: { 1: 'pequeno', 2: 'médio', 3: 'grande' },
-  nrg: { 1: 'calmo', 2: 'ativo', 3: 'atlético' },
-  man: { 1: 'pelo fácil de cuidar', 2: 'pelo que pede banho regular', 3: 'pelo que pede tosa profissional' },
-  lat: { 1: 'silencioso', 2: 'alerta a barulhos' },
-  conv: { 1: 'festeiro com visitas', 2: 'tímido com visitas' },
-  ind: { 1: 'quer ficar perto', 2: 'tem horas próprias' }
+  nrg: { 1: 'tranquilo', 2: 'ativo', 3: 'atlético' },
+  man: { 1: 'pelo curto', 2: 'pelo médio', 3: 'pelo longo' },
+  lat: { 1: 'raramente late', 2: 'avisa quem chega' },
+  conv: { 1: 'abraça qualquer visita', 2: 'afetuoso com a família' },
+  ind: { 1: 'fica sempre por perto', 2: 'curte momentos sozinho' }
 };
 
 // Frase sintética curta — UMA linha que resume o cão.
@@ -1916,38 +1930,30 @@ function buildStory(profile){
   return `Cão ${siz} e ${nrg}. ${cap(man)}, ${lat}. ${cap(conv)}, ${ind}.`;
 }
 
-// Renderiza um ícone visual de um atributo com referência concreta.
-// `same` = true se atributo é IGUAL ao outro card (overlap) — fica dimmed
-//          e marcado como "igual ao outro", a pessoa não precisa processar.
-// `diff` = true se varia — fica em destaque (color coding).
-function renderConjointAttr(profile, attr, isSame){
+// Renderiza UMA linha de atributo dentro de um card (ícone + nome + ref).
+// Só recebe atributos DIFF — os SAME sobem pro chip de "ambos:" fora do card.
+function renderConjointAttr(profile, attr){
   const lvl = profile[attr];
   const emoji = CONJOINT_ATTR_EMOJI[attr];
   const name = CONJOINT_ATTR_NAME[attr];
   const ref = CONJOINT_REF[attr][lvl];
-  const stateClass = isSame ? 'cj-attr-same' : 'cj-attr-diff';
-  return `
-    <div class="cj-attr-tile ${stateClass}">
-      <div class="cj-attr-tile-icon">${emoji}</div>
-      <div class="cj-attr-tile-body">
-        <div class="cj-attr-tile-name">${name}</div>
-        <div class="cj-attr-tile-ref">${ref}</div>
-      </div>
-    </div>`;
+  return `<div class="cj-attr-line">
+    <div class="cj-attr-line-icon">${emoji}</div>
+    <div class="cj-attr-line-body">
+      <div class="cj-attr-line-name">${name}</div>
+      <div class="cj-attr-line-ref">${ref}</div>
+    </div>
+  </div>`;
 }
 
+// Renderiza um card individual — só com atributos DIFF, sem frase sintética
+// e SEM o botão CTA (que agora fica fora dos cards, na zona ergonômica do polegar).
+// O card inteiro continua clicável (mantém o comportamento do layout antigo).
 function renderConjointCard(profile, other, side, pairIdx, isHoldout){
   const ATTR_ORDER = ['siz','nrg','man','lat','conv','ind'];
-  // Renderiza primeiro os atributos que MUDAM (color coding visual = guia
-  // a atenção pro que importa decidir), depois os que ficam IGUAIS (dimmed).
-  // Ordem dos DIFF é embaralhada por par (seed determinístico do pairIdx,
-  // garantindo que A e B do MESMO par tenham ordem idêntica). Sem isso, siz
-  // e nrg sempre ficavam no top-left/right e dominavam a atenção visual,
-  // enfraquecendo o sinal de man/lat/conv/ind. Ordem dos SAME segue fixa
-  // (estão dimmed mesmo e não competem por atenção).
   const diffAttrs = ATTR_ORDER.filter(k => profile[k] !== other[k]);
-  const sameAttrs = ATTR_ORDER.filter(k => profile[k] === other[k]);
-  // Shuffle determinístico via seed do pairIdx (Fisher-Yates com PRNG simples)
+  // Shuffle determinístico via seed do pairIdx — A e B do mesmo par têm ordem
+  // idêntica de atributos. Sem isso, siz e nrg sempre dominariam o top.
   const shuffled = diffAttrs.slice();
   let seed = (pairIdx * 9301 + 49297) % 233280;
   for(let i = shuffled.length - 1; i > 0; i--){
@@ -1955,23 +1961,41 @@ function renderConjointCard(profile, other, side, pairIdx, isHoldout){
     const j = Math.floor((seed / 233280) * (i + 1));
     [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
   }
-  const orderedAttrs = [...shuffled, ...sameAttrs];
-  const attrsHtml = orderedAttrs.map(k => 
-    renderConjointAttr(profile, k, profile[k] === other[k])
-  ).join('');
-  
-  const story = buildStory(profile);
+  const attrsHtml = shuffled.map(k => renderConjointAttr(profile, k)).join('');
   // Hold-out task usa chooseHoldout em vez de chooseConjoint — direto no onclick
-  // pra evitar race condition (setTimeout pra trocar handler permite cliques antes
-  // do 50ms cair em chooseConjoint com current=9, gerando undefined access).
+  // pra evitar race condition (ver comentário em chooseConjoint).
   const handler = isHoldout ? 'chooseHoldout' : 'chooseConjoint';
-  
-  return `<div class="cj-card cj-card-visual" onclick="${handler}('${side}')">
+  return `<div class="cj-card" onclick="${handler}('${side}')">
     <div class="cj-card-label">Cão ${side}</div>
-    <div class="cj-attr-grid">${attrsHtml}</div>
-    <div class="cj-story-text">${story}</div>
-    <button class="cj-card-cta">Levaria o Cão ${side}</button>
+    ${attrsHtml}
   </div>`;
+}
+
+// Renderiza o chip "ambos:" no topo da tela com os atributos IGUAIS entre A e B.
+// Libera espaço vertical dentro dos cards. Se não houver same (caso teórico),
+// chip é omitido.
+function renderConjointSameChip(profileA, profileB){
+  const ATTR_ORDER = ['siz','nrg','man','lat','conv','ind'];
+  const sameAttrs = ATTR_ORDER.filter(k => profileA[k] === profileB[k]);
+  if(sameAttrs.length === 0) return '';
+  const items = sameAttrs.map(k => {
+    const emoji = CONJOINT_ATTR_EMOJI[k];
+    const ref = CONJOINT_REF[k][profileA[k]];
+    return `<span class="cj-same-item">${emoji} ${ref}</span>`;
+  }).join('<span class="cj-same-sep">·</span>');
+  return `<div class="cj-same-chip">
+    <span class="cj-same-ck">✓</span>
+    <span class="cj-same-label">ambos:</span>
+    ${items}
+  </div>`;
+}
+
+// Renderiza a linha de CTAs (2 botões grandes) embaixo, fora dos cards.
+// Zona ergonômica do polegar — mais fácil clicar que botão dentro do card.
+function renderConjointCtas(isHoldout){
+  const handler = isHoldout ? 'chooseHoldout' : 'chooseConjoint';
+  return `<button class="cj-cta" onclick="${handler}('A')">Cão A</button>
+    <button class="cj-cta" onclick="${handler}('B')">Cão B</button>`;
 }
 
 // Captura a escolha (A ou B) e avança
@@ -2065,7 +2089,12 @@ function renderHoldoutPair(){
   // Atualiza título da pergunta pra sinalizar que é a última (checagem)
   const qText = document.querySelector('#conjointPair .question-text');
   if(qText) qText.textContent = 'Última pergunta — uma checagem rápida 🐾';
-  
+
+  // Chip de iguais (hold-out tem só 1 atributo igual em 6 — pode ficar vazio)
+  document.getElementById('cjSameChip').innerHTML = renderConjointSameChip(profileA, profileB);
+  // CTAs (handler de holdout)
+  document.getElementById('cjCtasRow').innerHTML = renderConjointCtas(true);
+
   const cardsEl = document.getElementById('cjCards');
   cardsEl.style.animation = 'none';
   void cardsEl.offsetWidth;
