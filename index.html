@@ -706,12 +706,17 @@
     body.printing-perfil .perfil-print-title{font-family:'Playfair Display',serif;font-size:24px;color:#3a2e22;margin-bottom:4px}
     body.printing-perfil .perfil-print-date{font-size:11px;color:#888;font-style:italic}
     body.printing-perfil .perfil-print-footer{text-align:center;margin-top:24px;padding-top:14px;border-top:1px solid #e8ddd2;font-size:11px;color:#888;font-style:italic}
-    body.printing-perfil .perfil-tutor-section{background:#f4ede2 !important;border:1px solid #c4b5a3 !important;page-break-inside:avoid;margin-bottom:18px}
+    /* Bug fix: page-break-inside:avoid em blocos grandes (perfil-tutor-section,
+       expectation-section, cj-coherence-card) deixava primeira página em branco
+       quando bloco não cabia inteiro nela. Mesmo bug que já tinha no PDF da ficha.
+       Agora SÓ os blocos pequenos (breed-card individual) preservam avoid pra não
+       cortar uma raça no meio. */
+    body.printing-perfil .perfil-tutor-section{background:#f4ede2 !important;border:1px solid #c4b5a3 !important;margin-bottom:18px}
     body.printing-perfil .breed-card{page-break-inside:avoid;margin-bottom:14px;border:1px solid #ddd !important;background:#fff !important;box-shadow:none !important}
     body.printing-perfil .breed-image, body.printing-perfil .breed-photos{display:none !important}  /* fotos puxam APIs externas — não confiável em print offline */
     body.printing-perfil .breed-card-actions, body.printing-perfil .breed-action-btn{display:none !important}
-    body.printing-perfil .cj-coherence-card{background:#eef4e8 !important;page-break-inside:avoid;margin-bottom:14px}
-    body.printing-perfil .expectation-section{page-break-inside:avoid;margin-bottom:18px;border:1px solid #ddd !important;padding:14px !important}
+    body.printing-perfil .cj-coherence-card{background:#eef4e8 !important;margin-bottom:14px}
+    body.printing-perfil .expectation-section{margin-bottom:18px;border:1px solid #ddd !important;padding:14px !important}
 
     @page{margin:1.2cm}
   }
