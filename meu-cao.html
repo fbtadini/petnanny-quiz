@@ -71,6 +71,20 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent)}
 .hw-top{display:flex;gap:10px}.hw-ic{font-size:21px}.hw-t{font-weight:700;font-size:14.5px}.hw-i{font-size:13px;color:var(--brown-mid);margin-top:2px}
 .hw-q{font-size:13.5px;margin:11px 0 9px;font-weight:600}
 .hw-actions{display:flex;gap:8px;flex-wrap:wrap}
+.rm{background:none;border:none;color:var(--brown-mid);font-size:15px;cursor:pointer;opacity:.45;padding:4px 8px;align-self:center}.rm:hover{opacity:1;color:#c0392b}
+.ai-disc{font-size:11.5px;color:var(--brown-mid);opacity:.85;margin-top:12px;line-height:1.45;border-top:1px solid #f0e6da;padding-top:9px}
+.he-in{width:100%;padding:7px 9px;border:1px solid #e6dccd;border-radius:8px;font:inherit;margin-bottom:6px;box-sizing:border-box}
+.chip.sm{padding:5px 12px;font-size:12.5px}
+.pi-when.warn{color:#c87f2a;font-weight:600}
+.plan-item.edit{align-items:flex-start}
+.doc-thumbs{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.doc-thumb{width:64px;height:64px;border-radius:10px;object-fit:cover;border:1px solid #e6dccd;cursor:pointer}
+#lightbox{position:fixed;inset:0;background:rgba(40,30,20,.85);display:none;align-items:center;justify-content:center;z-index:50;padding:20px}
+#lightbox img{max-width:100%;max-height:90vh;border-radius:12px}
+.wlog{display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid #f3ece1;font-size:14px}
+.wlog .wd{color:var(--brown-mid);font-size:12.5px}
+#ficha{display:none}
+@media print{body *{visibility:hidden}#ficha,#ficha *{visibility:visible}#ficha{display:block!important;position:absolute;left:0;top:0;width:100%;padding:24px;color:#222;font-size:13px}.fh1{font-size:22px;font-weight:800;margin:0 0 2px}.fmeta{color:#666;margin-bottom:14px}.fsec{font-weight:700;margin:16px 0 6px;border-bottom:1px solid #ccc;padding-bottom:3px}.frow{padding:3px 0}}
 .chip{font-family:'DM Sans';font-size:12.5px;font-weight:600;padding:8px 12px;border-radius:10px;border:1.5px solid var(--line);background:#fff;color:var(--brown-mid);cursor:pointer;display:inline-flex;align-items:center;gap:6px}
 .chip.up{border-color:var(--accent);color:var(--accent-deep);background:var(--accent-light)}
 .chip input[type=file]{display:none}
@@ -139,6 +153,8 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent)}
     <p class="hint">A faixa define a dose certa do antiparasitário e o porte do seu cão — sem precisar pesar exato.</p>
     <label>Castrado(a)? <span class="opt">(opcional)</span></label>
     <div class="seg" id="f-neut"><button type="button" data-v="sim">Sim</button><button type="button" data-v="nao">Não</button></div>
+    <label>Microchip <span class="opt">(se tiver o número — a Nanny também lê da carteira)</span></label>
+    <input id="f-chip" placeholder="Ex.: 981000000000000" inputmode="numeric">
     <div class="err" id="f-error"></div>
     <div style="margin-top:22px"><button class="btn" id="reg-submit" onclick="submitDog()">Gerar guia e plano de cuidado →</button></div>
   </section>
@@ -146,10 +162,10 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent)}
   <section id="s-profile" class="screen">
     <div class="dog-head">
       <div class="avatar-wrap" id="p-avatar-wrap"><div class="avatar" id="p-avatar" onclick="avatarTap()"><span id="p-emoji">🐶</span></div><span class="cam" onclick="event.stopPropagation();pickPhoto()"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="3.5"/></svg></span><input id="p-photo" type="file" accept="image/*" style="display:none" onchange="onPhoto(this)"></div>
-      <div><div class="dog-name" id="p-name">—</div><div class="dog-meta" id="p-meta">—</div></div>
+      <div><div class="dog-name" id="p-name">—</div><div class="dog-meta" id="p-meta">—</div><div class="dog-meta" id="p-chip" style="display:none;margin-top:2px"></div></div>
     </div>
     <div class="repos-hint" id="reposHint">Arraste a foto pra ajustar · toque de novo pra salvar</div>
-    <button class="chip" onclick="editDog()" style="margin:2px 0 10px">✎ Editar dados do cão</button>
+    <div style="display:flex;gap:8px;margin:2px 0 10px;flex-wrap:wrap"><button class="chip" onclick="editDog()">✎ Editar dados</button><button class="chip" onclick="printFicha()">🖨️ Ficha (PDF)</button></div>
     <div class="tabs">
       <div class="tab on" data-tab="guia" onclick="setTab('guia')">Guia da raça</div>
       <div class="tab" data-tab="plano" onclick="setTab('plano')">Plano de cuidado</div>
@@ -260,7 +276,7 @@ const AI_DIRECT=false; // produção: a IA roda nas Vercel Functions, nunca no n
 const AI_ENDPOINT=''; // /api/nanny-chat (quando existir). A leitura de documento usa /api/nanny-read-doc
 const WRANGES={'0':{band:'< 2 kg',dose:null,porte:1},'1':{band:'2–4,5 kg',dose:'112,5 mg',porte:1},'2':{band:'4,5–10 kg',dose:'250 mg',porte:2},'3':{band:'10–20 kg',dose:'500 mg',porte:3},'4':{band:'20–40 kg',dose:'1000 mg',porte:4},'5':{band:'40–56 kg',dose:'1400 mg',porte:5}};
 function rangeOf(dog){if(dog.pesoFaixa!=null&&dog.pesoFaixa!==''&&WRANGES[dog.pesoFaixa])return WRANGES[dog.pesoFaixa];if(dog.pesoKg){const kg=dog.pesoKg,v=kg<2?'0':kg<=4.5?'1':kg<=10?'2':kg<=20?'3':kg<=40?'4':'5';return WRANGES[v]}return null}
-let dogs=[],currentId=null,sex='',neut='',porte=3,reposMode=false,editingId=null,dragged=false;
+let dogs=[],currentId=null,sex='',neut='',porte=3,reposMode=false,editingId=null,dragged=false,healthEdit=null;
 
 function loadDogs(){try{dogs=JSON.parse(localStorage.getItem(LS_KEY))||[]}catch(e){dogs=[]}}
 function saveDogs(){try{localStorage.setItem(LS_KEY,JSON.stringify(dogs))}catch(e){}}
@@ -296,7 +312,7 @@ function startRegister(){
   editingId=null;
   document.getElementById('reg-title').textContent='Vamos conhecer seu cão';
   document.getElementById('reg-submit').textContent='Gerar guia e plano de cuidado →';
-  ['f-name','f-breed','f-birth','f-age-y','f-age-m','f-weight','f-outra'].forEach(id=>{const e=document.getElementById(id);if(e)e.value=''});
+  ['f-name','f-breed','f-birth','f-age-y','f-age-m','f-weight','f-outra','f-chip'].forEach(id=>{const e=document.getElementById(id);if(e)e.value=''});
   sex='';neut='';porte=3;document.querySelectorAll('.seg button').forEach(x=>x.classList.remove('on'));
   document.getElementById('outra-name').style.display='none';
   document.getElementById('age-calc').style.display='none';document.getElementById('age-approx').style.display='block';
@@ -310,15 +326,16 @@ function submitDog(){
   const ay=parseInt(document.getElementById('f-age-y').value)||0,am=parseInt(document.getElementById('f-age-m').value)||0;
   const pesoFaixa=document.getElementById('f-weight').value;
   const custom=document.getElementById('f-outra').value.trim();
+  const chip=document.getElementById('f-chip').value.trim();
   if(!nome)return showErr('Como seu cão se chama?');
   if(!breedKey)return showErr('Escolha a raça (ou "Outra raça/mistura").');
   if(breedKey==='__outra'&&!custom)return showErr('Escreve a raça ou mistura do seu cão.');
   if(birth&&new Date(birth+'T00:00:00')>new Date())return showErr('A data de nascimento não pode ser no futuro.');
   if(pesoFaixa==='')return showErr('Escolha a faixa de peso do seu cão.');
-  const base={nome,breedKey,customBreed:breedKey==='__outra'?custom:null,pesoFaixa,sexo:sex,nascimento:birth||null,idadeMeses:birth?null:(ay*12+am),castrado:neut};
+  const base={nome,breedKey,customBreed:breedKey==='__outra'?custom:null,pesoFaixa,sexo:sex,nascimento:birth||null,idadeMeses:birth?null:(ay*12+am),castrado:neut,microchip:chip};
   if(editingId){const d=dogs.find(x=>x.id===editingId);if(d){Object.assign(d,base);saveDogs();currentId=editingId}editingId=null;renderProfile();show('s-profile');setTab('guia');return;}
   const dog=Object.assign({id:uid(),notes:'',photo:null,photoPos:{x:50,y:50},docs:[],done:{},criadoEm:new Date().toISOString()},base);
-  dogs.push(dog);saveDogs();currentId=dog.id;renderProfile();show('s-profile');setTab('guia');
+  dogs.push(dog);saveDogs();currentId=dog.id;renderProfile();show('s-profile');setTab('plano');
 }
 function editDog(){
   const dog=dogObj();if(!dog)return;editingId=dog.id;
@@ -332,6 +349,7 @@ function editDog(){
   if(dog.nascimento){document.getElementById('f-age-y').value='';document.getElementById('f-age-m').value='';}
   else{const m=dog.idadeMeses||0;document.getElementById('f-age-y').value=Math.floor(m/12)||'';document.getElementById('f-age-m').value=(m%12)||'';}
   document.getElementById('f-weight').value=(dog.pesoFaixa!=null?dog.pesoFaixa:'');
+  document.getElementById('f-chip').value=dog.microchip||'';
   sex=dog.sexo||'';neut=dog.castrado||'';
   document.querySelectorAll('#f-sex button').forEach(x=>x.classList.toggle('on',x.dataset.v===sex));
   document.querySelectorAll('#f-neut button').forEach(x=>x.classList.toggle('on',x.dataset.v===neut));
@@ -356,10 +374,10 @@ function startOfToday(){const d=new Date();d.setHours(0,0,0,0);return d}
 function carePlan(dog){
   const items=[],m=ageInMonths(dog),birth=dog.nascimento?new Date(dog.nascimento):null,r=rangeOf(dog);
   if(m!=null&&m<6){
-    [['v10_1','1ª dose V10 (polivalente)',6],['v10_2','2ª dose V10',9],['v10_3','3ª dose V10',12],['rabies','Antirrábica',16]].forEach(([key,nome,sem])=>items.push({key,nome,grupo:'Vacinas',ic:'💉',sugerido:birth?addDays(birth,sem*7):null,recorrente:false,nota:'protocolo de filhote'}));
-    items.push({key:'annual',nome:'Reforço anual (V10 + antirrábica)',grupo:'Vacinas',ic:'💉',sugerido:birth?addDays(birth,365):null,recorrente:true,intervalo:365,nota:'todo ano'});
+    [['v10_1','1ª dose V10 (polivalente)',8],['v10_2','2ª dose V10',12],['v10_3','3ª dose V10 (a mais importante)',16],['rabies','Antirrábica',16]].forEach(([key,nome,sem])=>items.push({key,nome,grupo:'Vacinas',ic:'💉',sugerido:birth?addDays(birth,sem*7):null,recorrente:false,nota:'protocolo de filhote'}));
+    items.push({key:'annual',nome:'Reforço anual (V10 + antirrábica)',grupo:'Vacinas',ic:'💉',sugerido:birth?addDays(birth,365):null,recorrente:true,intervalo:365,nota:'todo ano (lepto + antirrábica)'});
   } else {
-    items.push({key:'annual',nome:'Reforço anual (V10 + antirrábica)',grupo:'Vacinas',ic:'💉',sugerido:null,recorrente:true,intervalo:365,nota:'todo ano · registre a última dose'});
+    items.push({key:'annual',nome:'Reforço anual (V10 + antirrábica)',grupo:'Vacinas',ic:'💉',sugerido:null,recorrente:true,intervalo:365,nota:'todo ano (lepto + antirrábica) · registre a última dose'});
   }
   items.push({key:'anti',nome:'Antiparasitário (pulga/carrapato)',grupo:'Antiparasitário e vermífugo',ic:'🛡️',sugerido:null,recorrente:true,intervalo:84,det:(r&&r.dose)?`Faixa ${r.band}: comprimido de ${r.dose}, a cada 12 semanas. Ex.: Bravecto.`:'Peso abaixo do comprimido — alternativa tópica com o vet.',nota:'a cada 12 semanas'});
   items.push({key:'verm',nome:'Vermífugo',grupo:'Antiparasitário e vermífugo',ic:'💊',sugerido:null,recorrente:true,intervalo:(m!=null&&m<6)?30:120,det:(m!=null&&m<6)?'Filhote: ~a cada 30 dias até 6 meses.':'Adulto: a cada 3–4 meses.',nota:(m!=null&&m<6)?'a cada 30 dias':'a cada 3–4 meses'});
@@ -408,7 +426,7 @@ function renderGuide(dog){const b=getBreed(dog);let h='';
   // SOBRE O SEU CÃO (campo livre + Nanny lê)
   h+=`<div class="card"><div class="sec-label">Sobre o seu cão</div><p style="font-size:13px;color:var(--brown-mid);margin:0 0 9px">Conte o que a gente não sabe — manias, problemas, qualidades, histórico. A Nanny lê e personaliza os cuidados.</p>
   <textarea id="dogNotes" placeholder="Ex.: tem medo de fogos, já teve uma cirurgia no joelho, não gosta de outros cães machos, adora nadar…">${(dog.notes||'').replace(/</g,'&lt;')}</textarea>
-  <div style="display:flex;gap:8px;margin-top:10px"><button class="chip" onclick="saveNotes()">Salvar</button><button class="chip up" onclick="nannyReadNotes()">✨ Pedir pra Nanny personalizar</button></div>
+  <div style="display:flex;gap:8px;margin-top:10px"><button class="chip" onclick="saveNotes()">Salvar</button></div>
   <div class="ai-note" id="notesAi"></div></div>`;
   h+=`<div class="card" style="background:var(--green-light);border-color:#cfe3d4"><p style="margin:0;font-size:13.5px;color:#3a5e44">Cada cão é único — temperamento e saúde variam com genética, socialização e educação. Esta guia é um ponto de partida confiável, não um veredito.</p></div>`;
   document.getElementById('tab-guia').innerHTML=h;}
@@ -426,14 +444,110 @@ function planItemHTML(dog,it){const s=itemStatus(dog,it),today=new Date().toISOS
   }
   return `<div class="plan-item"><div class="pi-ic">${it.ic}</div><div style="flex:1"><div class="pi-t">${it.nome}</div><div class="pi-d">${it.det||it.nota}</div>${status}<div class="markwrap">${actions}</div></div></div>`;
 }
+function fmtISO(iso){if(!iso)return '';const p=(''+iso).split('-');if(p.length<3)return iso;const mi=parseInt(p[1])-1;return parseInt(p[2])+' '+(MES[mi]||'')+' '+p[0];}
+function mergeHealth(prev,ex){prev=prev||{};const out=Object.assign({},prev,ex);
+  ['vacinas','antiparasitario','condicoes','proximas_datas'].forEach(k=>{const seen=new Set(),m=[];[...(prev[k]||[]),...(ex[k]||[])].forEach(it=>{const key=JSON.stringify(it);if(!seen.has(key)){seen.add(key);m.push(it)}});out[k]=m;});
+  return out;}
+function nannySummary(dog,he){const v=(he.vacinas||[]).length;
+  let s=`<b>Nanny:</b> Fiz o check-up do ${dog.nome} 🐾 `;
+  if(v)s+=`Li ${v} vacina${v>1?'s':''} e já organizei no plano — as próximas datas se ajustaram sozinhas. `;
+  else s+=`Organizei o que encontrei no plano. `;
+  if(he.precisa_revisao)s+=`⚠️ Alguns itens estavam difíceis de ler, então confere os dados abaixo. `;
+  return s+`Veja o resumo 👇`;}
+function mostRecent(arr){const d=(arr||[]).filter(x=>x&&x.data).map(x=>x.data).sort();return d.length?d[d.length-1]:null;}
+function applyHealthToPlan(dog,he){
+  dog.done=dog.done||{};
+  const vac=he.vacinas||[];
+  const rabies=vac.filter(v=>/r[áa]b|raiva/i.test(v.nome||'')).map(v=>v.data).filter(Boolean).sort();
+  const multi=vac.filter(v=>/v\s?-?\s?\d|m[úu]ltipla|polivalente|d[ée]ctupla|[óo]ctupla|qu[íi]ntupla|nobivac|vanguard|puppy/i.test(v.nome||'')).map(v=>v.data).filter(Boolean).sort();
+  const todasVac=[...multi,...rabies].sort();
+  const m=ageInMonths(dog);
+  if(m!=null&&m<6){if(multi[0])dog.done.v10_1=multi[0];if(multi[1])dog.done.v10_2=multi[1];if(multi[2])dog.done.v10_3=multi[2];if(rabies[0])dog.done.rabies=rabies[0];}
+  if(todasVac.length)dog.done.annual=todasVac[todasVac.length-1];
+  const anti=mostRecent(he.antiparasitario);if(anti)dog.done.anti=anti;
+  const verm=mostRecent(he.vermifugo);if(verm)dog.done.verm=verm;
+}
+function healthInsights(dog,he){const out=[],today=startOfToday();
+  (he.proximas_datas||[]).forEach(p=>{if(p&&p.o_que)out.push(`📅 O vet anotou: ${p.o_que}${p.data?(' em '+fmtISO(p.data)):''}.`)});
+  carePlan(dog).forEach(it=>{const s=itemStatus(dog,it);
+    if(it.recorrente&&s.st==='rec-done'){
+      if(s.next<today)out.push(`⚠️ ${it.nome} está atrasado — última em ${fmt(new Date(s.doneDate+'T00:00:00'))}, já passou do intervalo.`);
+      else{const dias=Math.round((s.next-today)/864e5);if(dias<=45)out.push(`📅 Próxima dose de ${it.nome.toLowerCase()} em ${fmt(s.next)} (~${dias} dias).`);}
+    } else if(!it.recorrente&&s.st==='overdue')out.push(`⚠️ ${it.nome} consta como atrasada.`);
+  });
+  if(!(he.antiparasitario||[]).length)out.push('❓ Não vi registro de antipulga/carrapato — quando foi a última vez? Marca no plano.');
+  if(!(he.vermifugo||[]).length)out.push('❓ Não vi vermífugo no documento — quando foi a última dose?');
+  if(!dog.microchip)out.push('🔖 Esse cão tem microchip? É o que garante reencontrar ele se sumir — dá pra registrar o número em "Editar".');
+  const hw=healthWatch(dog);if(hw.length)out.push(`🩺 Por ser ${getBreed(dog).name}, vale ficar de olho em: ${hw.map(r=>r.cond.toLowerCase()).join(', ')}.`);
+  return out;}
+function insightsHTML(dog,he){const ins=healthInsights(dog,he);if(!ins.length)return '';
+  return `<div style="margin-top:12px"><div class="sec-label" style="margin:6px 0">O que a Nanny percebeu</div>`+ins.map(i=>`<div class="pi-d" style="padding:5px 0;line-height:1.45">${i}</div>`).join('')+`</div>`;}
+function healthRow(ic,name,dateISO,cat,i,withDate){
+  if(healthEdit&&healthEdit.cat===cat&&healthEdit.idx===i){
+    return `<div class="plan-item edit"><div class="pi-ic">${ic}</div><div style="flex:1"><input id="he-name" class="he-in" value="${(name||'').replace(/"/g,'&quot;')}" placeholder="${withDate?'nome / produto':'observação'}">${withDate?`<input id="he-date" class="he-in" type="date" value="${dateISO||''}">`:''}<div style="display:flex;gap:6px"><button class="chip sm" onclick="saveHealthEdit('${cat}',${i},${withDate})">Salvar</button><button class="chip sm" onclick="cancelHealthEdit()">Cancelar</button></div></div></div>`;
+  }
+  const sub=withDate?(dateISO?`<div class="pi-when">${fmtISO(dateISO)}</div>`:`<div class="pi-when warn">⚠ sem data — confira</div>`):'';
+  return `<div class="plan-item"><div class="pi-ic">${ic}</div><div style="flex:1"><div class="pi-t">${name}</div>${sub}</div><button class="rm" title="corrigir" onclick="editHealthItem('${cat}',${i})">✎</button><button class="rm" title="remover (leu errado)" onclick="removeHealthItem('${cat}',${i})">✕</button></div>`;
+}
+function healthHistoryHTML(he){let h='<div style="margin-top:12px">';
+  if((he.vacinas||[]).length){h+=`<div class="sec-label" style="margin:6px 0">Vacinas lidas</div>`+he.vacinas.map((v,i)=>healthRow('💉',v.nome||'Vacina',v.data,'vacinas',i,true)).join('');}
+  if((he.antiparasitario||[]).length){h+=`<div class="sec-label" style="margin:10px 0 6px">Antipulga / carrapato</div>`+he.antiparasitario.map((a,i)=>healthRow('🛡️',a.produto||'Antiparasitário',a.data,'antiparasitario',i,true)).join('');}
+  if((he.vermifugo||[]).length){h+=`<div class="sec-label" style="margin:10px 0 6px">Vermífugo</div>`+he.vermifugo.map((a,i)=>healthRow('💊',a.produto||'Vermífugo',a.data,'vermifugo',i,true)).join('');}
+  if((he.condicoes||[]).length){h+=`<div class="sec-label" style="margin:10px 0 6px">Observações de saúde</div>`+he.condicoes.map((c,i)=>healthRow('📝',typeof c==='string'?c:(c.nome||JSON.stringify(c)),null,'condicoes',i,false)).join('');}
+  if(he.vet)h+=`<div class="pi-d" style="margin-top:8px">🩺 Vet: ${he.vet}</div>`;
+  if(he.microchip)h+=`<div class="pi-d" style="margin-top:4px">🔖 Microchip lido: ${he.microchip}</div>`;
+  if((he.docThumbs||[]).length){h+=`<div class="sec-label" style="margin:12px 0 4px">Documento(s) enviado(s) · toque pra conferir</div><div class="doc-thumbs">`+he.docThumbs.map((src,i)=>`<img class="doc-thumb" src="${src}" onclick="showImg(${i})">`).join('')+`</div>`;}
+  return h+'</div>';}
+function editHealthItem(cat,idx){healthEdit={cat,idx};renderProfile();}
+function cancelHealthEdit(){healthEdit=null;renderProfile();}
+function saveHealthEdit(cat,idx,withDate){const dog=dogObj();if(!dog||!dog.health||!dog.health[cat])return;
+  const name=((document.getElementById('he-name')||{}).value||'').trim();
+  const date=withDate?((document.getElementById('he-date')||{}).value||''):'';
+  if(cat==='condicoes')dog.health[cat][idx]=name;
+  else if(cat==='vacinas'){dog.health[cat][idx].nome=name;dog.health[cat][idx].data=date;}
+  else{dog.health[cat][idx].produto=name;dog.health[cat][idx].data=date;}
+  healthEdit=null;
+  ['annual','anti','verm','v10_1','v10_2','v10_3','rabies'].forEach(k=>{if(dog.done)delete dog.done[k]});
+  applyHealthToPlan(dog,dog.health);saveDogs();renderProfile();}
+function showImg(i){const dog=dogObj();const src=dog&&dog.health&&dog.health.docThumbs&&dog.health.docThumbs[i];if(!src)return;let lb=document.getElementById('lightbox');lb.innerHTML='<img src="'+src+'">';lb.style.display='flex';lb.onclick=()=>{lb.style.display='none'};}
+function removeHealthItem(cat,idx){healthEdit=null;const dog=dogObj();if(!dog||!dog.health||!dog.health[cat])return;dog.health[cat].splice(idx,1);
+  ['annual','anti','verm','v10_1','v10_2','v10_3','rabies'].forEach(k=>{if(dog.done)delete dog.done[k]});
+  applyHealthToPlan(dog,dog.health);saveDogs();renderProfile();}
+function docCardHTML(dog){const he=dog.health;
+  const temDados=he&&((he.vacinas||[]).length||(he.condicoes||[]).length||he.vet);
+  let inner;
+  if(temDados){inner=`<div class="ai-note ok" style="display:block">${nannySummary(dog,he)}</div>${insightsHTML(dog,he)}${healthHistoryHTML(he)}<label class="chip up" style="margin-top:12px">📎 Anexar outro documento<input type="file" accept="image/*,.pdf" onchange="nannyReadDoc(this,'doc')"></label><div class="ai-note"></div>`;}
+  else{inner=`<p style="font-size:13.5px;color:var(--brown-mid);margin:0 0 10px">Tem a <b>carteira de vacinação</b> do ${dog.nome}? Manda uma foto que a Nanny lê e organiza o histórico — sem você digitar nada.</p><label class="chip up">📷 Mandar carteira / documento (Nanny lê)<input type="file" accept="image/*,.pdf" onchange="nannyReadDoc(this,'doc')"></label><div class="ai-note"></div>`;}
+  return `<div class="card" style="border-color:#f0d8c4"><div class="sec-label">📋 Documentos do seu cão · comece por aqui</div>${inner}<div class="ai-disc">⚠️ A Nanny é uma IA e pode errar na leitura — confira os dados (use o ✕ pra corrigir). Ela organiza informações e <b>não substitui seu veterinário</b>.</div></div>`;}
+function weightCardHTML(dog){const ws=(dog.weights||[]);let rows='';
+  if(ws.length){for(let i=ws.length-1;i>=0;i--){const w=ws[i];const prev=i>0?ws[i-1].kg:null;let tr='';if(prev!=null){const dlt=+(w.kg-prev).toFixed(2);tr=dlt>0?`<span style="color:#c87f2a">▲ ${dlt} kg</span>`:(dlt<0?`<span style="color:#4a7c59">▼ ${Math.abs(dlt)} kg</span>`:`<span style="color:var(--brown-mid)">→ igual</span>`);}
+    rows+=`<div class="wlog"><div style="flex:1"><b>${w.kg} kg</b> <span class="wd">· ${fmtISO(w.d)}</span></div><div style="font-size:12.5px">${tr}</div><button class="rm" onclick="removeWeight(${i})">✕</button></div>`;}
+  } else rows=`<p style="font-size:13px;color:var(--brown-mid);margin:0 0 10px">Acompanhe o peso ao longo do tempo — manter o peso ideal é a melhor proteção pras articulações${healthWatch(dog).length?' (importante pra essa raça)':''}.</p>`;
+  return `<div class="card"><div class="sec-label">⚖️ Peso</div>${rows}<div style="display:flex;gap:8px;margin-top:10px;align-items:center;flex-wrap:wrap"><input id="w-kg" class="he-in" type="number" step="0.1" min="0" placeholder="kg" style="max-width:90px;margin:0"><input id="w-date" class="he-in" type="date" style="max-width:160px;margin:0"><button class="chip" onclick="addWeight()">Registrar</button></div></div>`;}
+function addWeight(){const dog=dogObj();if(!dog)return;const kg=parseFloat((document.getElementById('w-kg')||{}).value);if(!kg||kg<=0)return;const d=((document.getElementById('w-date')||{}).value)||new Date().toISOString().slice(0,10);dog.weights=dog.weights||[];dog.weights.push({d,kg:+kg.toFixed(2)});dog.weights.sort((a,b)=>a.d<b.d?-1:1);saveDogs();renderProfile();}
+function removeWeight(i){const dog=dogObj();if(!dog||!dog.weights)return;dog.weights.splice(i,1);saveDogs();renderProfile();}
+function buildFicha(dog){const b=getBreed(dog);const raca=b._synthetic?dog.customBreed:b.name;const he=dog.health||{};
+  let h=`<div class="fh1">🐾 ${dog.nome}</div><div class="fmeta">${raca} · ${ageLabel(ageInMonths(dog))}${dog.sexo?(' · '+(dog.sexo==='femea'?'fêmea':'macho')):''}${dog.microchip?(' · Microchip '+dog.microchip):''}</div>`;
+  h+=`<div class="fsec">Plano de cuidado</div>`;
+  carePlan(dog).forEach(it=>{const s=itemStatus(dog,it);let st;if(it.recorrente)st=s.st==='rec-done'?('última '+fmtISO(s.doneDate)+' · próxima '+fmtISO(s.next.toISOString().slice(0,10))):'ainda não registrado';else st=s.st==='done'?('feito'+(s.doneDate?(' em '+fmtISO(s.doneDate)):'')):(s.st==='overdue'?'atrasado':'pendente');h+=`<div class="frow">• ${it.nome}: ${st}</div>`;});
+  if((he.vacinas||[]).length){h+=`<div class="fsec">Vacinas (do documento)</div>`;he.vacinas.forEach(v=>h+=`<div class="frow">• ${v.nome||'Vacina'}${v.data?(' — '+fmtISO(v.data)):''}</div>`);}
+  if((he.antiparasitario||[]).length){h+=`<div class="fsec">Antipulga / carrapato</div>`;he.antiparasitario.forEach(a=>h+=`<div class="frow">• ${a.produto||'—'}${a.data?(' — '+fmtISO(a.data)):''}</div>`);}
+  if((he.vermifugo||[]).length){h+=`<div class="fsec">Vermífugo</div>`;he.vermifugo.forEach(a=>h+=`<div class="frow">• ${a.produto||'—'}${a.data?(' — '+fmtISO(a.data)):''}</div>`);}
+  if((he.condicoes||[]).length){h+=`<div class="fsec">Observações de saúde</div>`;he.condicoes.forEach(c=>h+=`<div class="frow">• ${typeof c==='string'?c:(c.nome||'')}</div>`);}
+  if((dog.weights||[]).length){h+=`<div class="fsec">Peso</div>`;dog.weights.forEach(w=>h+=`<div class="frow">• ${fmtISO(w.d)}: ${w.kg} kg</div>`);}
+  if(he.vet)h+=`<div class="frow" style="margin-top:10px"><b>Veterinário:</b> ${he.vet}</div>`;
+  h+=`<div class="frow" style="margin-top:16px;color:#888;font-size:11px">Ficha gerada pela PetNanny em ${new Date().toLocaleDateString('pt-BR')} · dados organizados por IA — confirme com seu veterinário.</div>`;
+  return h;}
+function printFicha(){const dog=dogObj();if(!dog)return;document.getElementById('ficha').innerHTML=buildFicha(dog);window.print();}
 function renderPlan(dog){const items=carePlan(dog),hw=healthWatch(dog),b=getBreed(dog);
   let h=`<div class="disc">🩺 <div>Marque o que já foi feito — o plano recalcula sozinho (o que passou e não foi marcado fica como <b>atrasado</b>). As datas são guias; <b>confirme com seu veterinário</b>.</div></div>`;
-  ['Vacinas','Antiparasitário e vermífugo'].forEach(g=>{h+=`<div class="card"><div class="sec-label">${g}</div>`+items.filter(i=>i.grupo===g).map(i=>planItemHTML(dog,i)).join('')+`</div>`;});
+  h+=docCardHTML(dog);
+  ['Vacinas','Antiparasitário e vermífugo'].forEach(g=>{h+=`<div class="card"><div class="sec-label">${g}</div>`+items.filter(i=>i.grupo===g).map(i=>planItemHTML(dog,i)).join('')+(g==='Vacinas'?`<div class="ai-disc" style="border-top:1px solid #f0e6da">📚 Calendário baseado nas diretrizes WSAVA/AAHA. No Brasil reforça-se todo ano por causa da <b>leptospirose</b> e da <b>antirrábica</b> (imunidade curta); o componente de cinomose/parvovirose costuma durar mais. <b>Confirme o protocolo com seu veterinário.</b></div>`:'')+`</div>`;});
   h+=`<div class="card"><div class="sec-label">Saúde a acompanhar${b._synthetic?'':' — '+b.name}</div>`;
-  if(hw.length){h+=`<p style="margin:0 0 12px;font-size:13.5px;color:var(--brown-mid)">Pontos que essa raça costuma exigir atenção. Já checou com o vet? Anexe o laudo e a Nanny lê e organiza no histórico.</p>`;
-    hw.forEach(r=>{h+=`<div class="hw"><div class="hw-top"><div class="hw-ic">${r.ic}</div><div><div class="hw-t">${r.cond}</div><div class="hw-i">Comum em ${b._synthetic?'cães assim':b.name}.</div></div></div><div class="hw-q">${r.q}</div><div class="hw-actions"><label class="chip up">📎 Anexar laudo (Nanny lê)<input type="file" accept="image/*,.pdf" onchange="nannyReadDoc(this,'${r.cond.replace(/'/g,'')}')"></label><button class="chip" onclick="var w=this.closest('.hw').querySelector('.watch');w.style.display=(w.style.display==='block'?'none':'block')">👁 O que observar</button></div><div class="ai-note"></div><div class="watch">${r.watch}</div></div>`});}
-  else{h+=`<div class="hw"><div class="hw-q" style="margin-top:0">O que o vet já falou sobre a saúde do seu cão?</div><p style="font-size:13px;color:var(--brown-mid);margin:0 0 10px">Anexe laudos, carteira de vacinação ou receitas — a Nanny lê e organiza tudo num lugar só.</p><div class="hw-actions"><label class="chip up">📎 Anexar documento (Nanny lê)<input type="file" accept="image/*,.pdf" onchange="nannyReadDoc(this,'geral')"></label></div><div class="ai-note"></div></div>`;}
-  h+=`</div>`;document.getElementById('tab-plano').innerHTML=h;}
+  if(hw.length){h+=`<p style="margin:0 0 12px;font-size:13.5px;color:var(--brown-mid)">Pontos que essa raça costuma exigir atenção — vale conversar com o vet.</p>`;
+    hw.forEach(r=>{h+=`<div class="hw"><div class="hw-top"><div class="hw-ic">${r.ic}</div><div><div class="hw-t">${r.cond}</div><div class="hw-i">Comum em ${b._synthetic?'cães assim':b.name}.</div></div></div><div class="hw-q">${r.q}</div><div class="hw-actions"><button class="chip" onclick="var w=this.closest('.hw').querySelector('.watch');w.style.display=(w.style.display==='block'?'none':'block')">👁 O que observar</button></div><div class="watch">${r.watch}</div></div>`});}
+  else{h+=`<p style="font-size:13.5px;color:var(--brown-mid);margin:0">Sem pontos específicos mapeados pra essa raça. Mande os documentos do vet no card acima que a Nanny organiza o histórico.</p>`;}
+  h+=`</div>`;h+=weightCardHTML(dog);document.getElementById('tab-plano').innerHTML=h;}
 
 function renderReminders(dog){const up=upcomingReminders(dog);let h='';
   if(up.length){h+=`<div class="card"><div class="sec-label">Próximos e atrasados</div>`;up.forEach(r=>h+=`<div class="remind"><div class="r-date" style="${r.overdue?'background:#f7dcd6':''}"><div class="d"${r.overdue?' style="color:#b5483a"':''}>${r.when.getDate()}</div><div class="mo"${r.overdue?' style="color:#b5483a"':''}>${MES[r.when.getMonth()]}</div></div><div><div class="r-t">${r.t}${r.overdue?' ⚠️':''}</div><div class="r-sub">${r.overdue?'Atrasada · ':''}${r.tipo} · ${fmt(r.when)}</div></div></div>`);h+=`</div>`;}
@@ -450,6 +564,7 @@ function renderProfile(){const dog=dogObj();if(!dog)return goHome();const b=getB
   document.getElementById('p-name').textContent=dog.nome;
   const raca=b._synthetic?dog.customBreed:b.name;
   const rg=rangeOf(dog);document.getElementById('p-meta').textContent=`${raca} · ${ageLabel(ageInMonths(dog))}${rg?(' · '+rg.band):''}${dog.sexo?(' · '+(dog.sexo==='femea'?'fêmea':'macho')):''}`;
+  const pc=document.getElementById('p-chip');if(dog.microchip){pc.style.display='block';pc.textContent='🔖 Microchip: '+dog.microchip}else{pc.style.display='none'}
   setAvatar();renderGuide(dog);renderPlan(dog);renderReminders(dog);}
 function setTab(t){document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('on',x.dataset.tab===t));['guia','plano','lembretes'].forEach(x=>document.getElementById('tab-'+x).style.display=(x===t)?'block':'none')}
 
@@ -499,19 +614,26 @@ async function nannyReadNotes(){
   catch(e){n.className='ai-note warn';n.innerHTML='A leitura por IA roda no app publicado (precisa do backend com a chave). Suas anotações ficaram salvas. 📝';}
 }
 
+function downscaleImage(file,maxDim,q){return new Promise(res=>{
+  if(!file||!/^image\//.test(file.type))return res(null);
+  const r=new FileReader();r.onload=()=>{const img=new Image();img.onload=()=>{
+    let{width:w,height:h}=img;if(w>h){if(w>maxDim){h=h*maxDim/w;w=maxDim}}else{if(h>maxDim){w=w*maxDim/h;h=maxDim}}
+    const c=document.createElement('canvas');c.width=w;c.height=h;c.getContext('2d').drawImage(img,0,0,w,h);
+    try{res(c.toDataURL('image/jpeg',q))}catch(e){res(null)}
+  };img.onerror=()=>res(null);img.src=r.result;};r.onerror=()=>res(null);r.readAsDataURL(file);});}
 async function nannyReadDoc(input,cond){
   const f=input.files&&input.files[0];if(!f)return;
-  const note=input.closest('.hw').querySelector('.ai-note');note.className='ai-note busy';note.style.display='block';note.textContent='✨ Nanny está lendo o documento…';
+  const note=input.closest('.card').querySelector('.ai-note');note.className='ai-note busy';note.style.display='block';note.textContent='✨ Nanny está lendo o documento…';
   const dog=dogObj();dog.docs=dog.docs||[];dog.docs.push({cond,name:f.name,at:Date.now()});saveDogs();
   try{
     const b64=await new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result.split(',')[1]);r.onerror=rej;r.readAsDataURL(f);});
     const media_type=f.type||'image/jpeg';
+    const thumb=await downscaleImage(f,900,0.72);
     const resp=await fetch('/api/nanny-read-doc',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({data:b64,media_type})});
     const j=await resp.json();const ex=j&&j.extracted;
-    if(ex){const v=(ex.vacinas||[]).length,c=(ex.condicoes||[]).length;dog.health=Object.assign(dog.health||{},ex);saveDogs();
-      note.className='ai-note ok';note.innerHTML=`✓ Li o documento: <b>${v}</b> vacina(s)${c?`, ${c} condição(ões)`:''}${ex.vet?`, vet: ${ex.vet}`:''}.${ex.precisa_revisao?' Alguns itens valem confirmar.':''}`;}
-    else{note.className='ai-note warn';note.textContent='Recebi o documento, mas não consegui extrair os dados. Tente uma foto mais nítida.';}
-  }catch(e){note.className='ai-note warn';note.textContent='Não consegui ler agora. Documento guardado — tente de novo daqui a pouco.';}
+    if(ex){dog.health=mergeHealth(dog.health,ex);if(thumb){dog.health.docThumbs=(dog.health.docThumbs||[]);dog.health.docThumbs.push(thumb);if(dog.health.docThumbs.length>8)dog.health.docThumbs.shift();}if(dog.health.microchip&&!dog.microchip)dog.microchip=dog.health.microchip;applyHealthToPlan(dog,dog.health);saveDogs();renderProfile();window.scrollTo({top:0,behavior:'smooth'});return;}
+    note.className='ai-note warn';note.textContent='Recebi o documento, mas não consegui extrair os dados. Tente uma foto mais nítida e enquadrada.';
+  }catch(e){note.className='ai-note warn';note.textContent='Não consegui ler agora. Tente de novo daqui a pouco.';}
 }
 
 /* ---------- listas ---------- */
@@ -524,5 +646,7 @@ function renderAdmin(){const el=document.getElementById('adminList');const reqs=
 
 loadDogs();fillBreeds();renderList();document.getElementById('f-birth').max=new Date().toISOString().slice(0,10);
 </script>
+<div id="lightbox"></div>
+<div id="ficha"></div>
 </body>
 </html>
