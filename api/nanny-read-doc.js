@@ -20,24 +20,32 @@ module.exports = async function handler(req, res) {
       : { type: 'image', source: { type: 'base64', media_type, data } };
 
     const prompt =
-      'Você é a Nanny, da PetNanny. Leia este documento veterinário (caderneta, ' +
-      'carteira de vacinação, prontuário ou receita — pode ser foto torta, com ' +
-      'carimbo ou manuscrita). Capture TUDO que for de saúde: vacinas; antipulga/' +
-      'carrapato (ex.: Bravecto, NexGard, Simparic, Frontline); vermífugo (ex.: ' +
-      'Drontal, Vermivet, Endal); condições/diagnósticos; o vet/clínica; e próximas ' +
-      'datas marcadas. Capture também o número do MICROCHIP, se aparecer (15 dígitos). ' +
-      'Responda SOMENTE com o JSON, sem nenhum texto antes ou depois, ' +
-      'neste formato exato:\n' +
-      '{"vacinas":[{"nome":"","data":"AAAA-MM-DD"}],' +
+      'Você é a Nanny, da PetNanny, especialista em ler carteiras de vacinação e ' +
+      'documentos veterinários brasileiros (inclusive foto torta, com carimbo ou ' +
+      'manuscrita).\n\n' +
+      'TRABALHE EM 2 ETAPAS:\n' +
+      'ETAPA 1 — Leia com calma e transcreva, linha por linha, o que você vê: para ' +
+      'cada vacina/produto, diga o nome e QUAL data é a de APLICAÇÃO. Atenção, esta é ' +
+      'a parte que mais dá erro:\n' +
+      '- Datas no Brasil são DD/MM/AAAA (dia primeiro). Ex.: 03/05/2025 = 3 de maio de 2025.\n' +
+      '- Uma carteira costuma ter VÁRIAS colunas/datas por linha: data de aplicação, ' +
+      'validade da vacina, data da PRÓXIMA dose, e número do LOTE. Você quer SÓ a data ' +
+      'de aplicação — nunca a validade, nem a próxima dose, nem o lote (lote tem letras/números).\n' +
+      '- Se uma linha estiver ilegível ou você ficar em dúvida sobre a data, deixe a ' +
+      'data vazia ("") em vez de chutar.\n\n' +
+      'ETAPA 2 — Depois do raciocínio, escreva NO FINAL apenas o JSON, dentro das tags ' +
+      '<json> e </json>, neste formato exato:\n' +
+      '<json>{"vacinas":[{"nome":"","data":"AAAA-MM-DD"}],' +
       '"antiparasitario":[{"produto":"","data":"AAAA-MM-DD"}],' +
       '"vermifugo":[{"produto":"","data":"AAAA-MM-DD"}],' +
       '"condicoes":[],"vet":"","microchip":"",' +
       '"proximas_datas":[{"o_que":"","data":"AAAA-MM-DD"}],' +
-      '"confianca":"alta|media|baixa","precisa_revisao":true}\n' +
-      'Use datas no formato AAAA-MM-DD quando der pra identificar. Campos sem ' +
-      'informação ficam como lista vazia ou string vazia. Marque precisa_revisao=true ' +
-      'se algo estiver ilegível ou ambíguo. Não invente: se não tiver certeza, deixe ' +
-      'vazio e baixe a confianca.';
+      '"confianca":"alta|media|baixa","precisa_revisao":true}</json>\n\n' +
+      'Capture TUDO que for de saúde: vacinas; antipulga/carrapato (Bravecto, NexGard, ' +
+      'Simparic, Frontline); vermífugo (Drontal, Vermivet, Endal); condições/diagnósticos; ' +
+      'o vet/clínica; microchip (15 dígitos); e próximas datas marcadas pelo vet. ' +
+      'Converta todas as datas para AAAA-MM-DD. Campos sem informação ficam vazios. ' +
+      'precisa_revisao=true se qualquer item ficou ambíguo. NÃO invente nada.';
 
     const apiResp = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
@@ -48,7 +56,7 @@ module.exports = async function handler(req, res) {
       },
       body: JSON.stringify({
         model: 'claude-sonnet-4-6',
-        max_tokens: 1024,
+        max_tokens: 2048,
         messages: [{ role: 'user', content: [docBlock, { type: 'text', text: prompt }] }]
       })
     });
@@ -63,9 +71,20 @@ module.exports = async function handler(req, res) {
       .map((b) => (b.type === 'text' ? b.text : ''))
       .join('\n');
 
+    // pega o JSON da tag <json>...</json>; se não vier, tenta o último objeto {...}
+    let jsonStr = null;
+    const tag = text.match(/<json>([\s\S]*?)<\/json>/i);
+    if (tag) {
+      jsonStr = tag[1];
+    } else {
+      const a = text.indexOf('{');
+      const b = text.lastIndexOf('}');
+      if (a >= 0 && b > a) jsonStr = text.slice(a, b + 1);
+    }
+
     let extracted = null;
     try {
-      extracted = JSON.parse(text.replace(/```json|```/g, '').trim());
+      extracted = JSON.parse((jsonStr || '').replace(/```json|```/g, '').trim());
     } catch (e) {
       // a IA não devolveu JSON limpo
     }
