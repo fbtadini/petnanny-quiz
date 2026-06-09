@@ -22,16 +22,22 @@ module.exports = async function handler(req, res) {
     const prompt =
       'Você é a Nanny, da PetNanny. Leia este documento veterinário (caderneta, ' +
       'carteira de vacinação, prontuário ou receita — pode ser foto torta, com ' +
-      'carimbo ou manuscrita). Extraia as informações em JSON e responda SOMENTE com ' +
-      'o JSON, sem nenhum texto antes ou depois, neste formato exato:\n' +
+      'carimbo ou manuscrita). Capture TUDO que for de saúde: vacinas; antipulga/' +
+      'carrapato (ex.: Bravecto, NexGard, Simparic, Frontline); vermífugo (ex.: ' +
+      'Drontal, Vermivet, Endal); condições/diagnósticos; o vet/clínica; e próximas ' +
+      'datas marcadas. Capture também o número do MICROCHIP, se aparecer (15 dígitos). ' +
+      'Responda SOMENTE com o JSON, sem nenhum texto antes ou depois, ' +
+      'neste formato exato:\n' +
       '{"vacinas":[{"nome":"","data":"AAAA-MM-DD"}],' +
       '"antiparasitario":[{"produto":"","data":"AAAA-MM-DD"}],' +
-      '"condicoes":[],"vet":"",' +
+      '"vermifugo":[{"produto":"","data":"AAAA-MM-DD"}],' +
+      '"condicoes":[],"vet":"","microchip":"",' +
       '"proximas_datas":[{"o_que":"","data":"AAAA-MM-DD"}],' +
       '"confianca":"alta|media|baixa","precisa_revisao":true}\n' +
       'Use datas no formato AAAA-MM-DD quando der pra identificar. Campos sem ' +
-      'informação ficam vazios. Marque precisa_revisao=true se algo estiver ilegível ' +
-      'ou ambíguo. Não invente: se não tiver certeza, deixe vazio e baixe a confianca.';
+      'informação ficam como lista vazia ou string vazia. Marque precisa_revisao=true ' +
+      'se algo estiver ilegível ou ambíguo. Não invente: se não tiver certeza, deixe ' +
+      'vazio e baixe a confianca.';
 
     const apiResp = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
