@@ -77,6 +77,18 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent)}
 .chip.sm{padding:5px 12px;font-size:12.5px}
 .chip.up.big{padding:11px 18px;font-size:14.5px;font-weight:700}
 .cond-form{margin-top:10px}
+.status-sum{padding:10px 14px;border-radius:12px;font-size:13.5px;font-weight:600;margin-bottom:12px}
+.status-sum.ok{background:var(--green-light,#e7f0e9);color:#3a5e44}
+.status-sum.warn{background:#f7e6d8;color:#b5602a}
+.status-sum:not(.ok):not(.warn){background:var(--warm,#f3ece1);color:var(--brown-mid)}
+.doc-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:10px}
+.doc-tile{border:1px solid #eee2d4;border-radius:12px;overflow:hidden;background:#fff}
+.doc-tile>img{width:100%;height:90px;object-fit:cover;cursor:pointer;display:block}
+.dt-meta{display:flex;align-items:center;gap:6px;padding:7px 9px;font-size:12.5px}
+.dt-ic{font-size:15px}
+.dt-lbl{color:var(--brown);font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dt-rm{display:block;width:100%;border-top:1px solid #f0e6da!important;padding:6px;font-size:11px;border-radius:0}
+.empty-doc{text-align:center;padding:20px 12px;background:var(--warm,#f3ece1);border-radius:12px}
 .pi-when.warn{color:#c87f2a;font-weight:600}
 .plan-item.edit{align-items:flex-start}
 .doc-thumbs{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
@@ -168,6 +180,7 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent)}
     </div>
     <div class="repos-hint" id="reposHint">Arraste a foto pra ajustar · toque de novo pra salvar</div>
     <div style="display:flex;gap:8px;margin:2px 0 10px;flex-wrap:wrap"><button class="chip" onclick="editDog()">✎ Editar dados</button><button class="chip" onclick="printFicha()">🖨️ Ficha (PDF)</button></div>
+    <div id="p-status" class="status-sum" style="display:none"></div>
     <div class="tabs">
       <div class="tab on" data-tab="guia" onclick="setTab('guia')">Guia da raça</div>
       <div class="tab" data-tab="plano" onclick="setTab('plano')">Plano de cuidado</div>
@@ -399,12 +412,17 @@ function toggleMark(key,def){const w=document.getElementById('mk-'+key);if(!w)re
 function confirmMark(key){const dt=document.getElementById('dt-'+key);if(dt&&dt.value)markDone(key,dt.value)}
 function upcomingReminders(dog){const out=[],today=startOfToday();
   carePlan(dog).forEach(it=>{const s=itemStatus(dog,it);
-    if(it.recorrente){if(s.st==='rec-done'&&s.next>=today)out.push({when:s.next,t:it.nome,tipo:it.grupo==='Vacinas'?'Vacina':'Cuidado'});}
+    if(it.recorrente){if(s.st==='rec-done'){const tp=it.grupo==='Vacinas'?'Vacina':'Cuidado';if(s.next>=today)out.push({when:s.next,t:it.nome,tipo:tp});else out.push({when:s.next,t:it.nome,tipo:tp,overdue:true});}}
     else if(s.st==='upcoming'&&it.sugerido)out.push({when:it.sugerido,t:it.nome,tipo:'Vacina'});
     else if(s.st==='overdue')out.push({when:it.sugerido,t:it.nome,tipo:'Vacina',overdue:true});
   });
+  ((dog.health&&dog.health.proximas_datas)||[]).forEach(p=>{if(p&&p.data){const d=new Date(p.data+'T00:00:00');if(!isNaN(d))out.push({when:d,t:p.o_que||'Próxima dose (anotada pelo vet)',tipo:'Anotado pelo vet',overdue:d<today});}});
   out.sort((a,b)=>a.when-b.when);return out;
 }
+function statusSummary(dog){const ups=upcomingReminders(dog);const over=ups.filter(u=>u.overdue);const next=ups.filter(u=>!u.overdue)[0];
+  if(over.length)return {cls:'warn',txt:`⚠️ ${over.length} ${over.length>1?'itens atrasados':'item atrasado'}`+(next?` · próxima: ${next.t.toLowerCase()} em ${fmt(next.when)}`:'')};
+  if(next)return {cls:'ok',txt:`✓ Tudo em dia · próxima: ${next.t.toLowerCase()} em ${fmt(next.when)}`};
+  return {cls:'',txt:'Mande a carteira de vacinação no Plano pra ver o status de saúde aqui.'};}
 const HEALTH_RULES=[
   {m:t=>t.includes('patela')||t.includes('luxação'),ic:'🦴',cond:'Luxação de patela (joelho)',q:'Já avaliou os joelhos com o vet?',watch:'Sinais: ele "pula" uma passada, segura a patinha no ar ou evita saltar. Evite saltos do sofá e da cama — rampas ajudam.'},
   {m:t=>t.includes('hérnia de disco')||t.includes('ivdd')||t.includes('corpo comprido'),ic:'⚠️',cond:'Coluna / risco de hérnia (IVDD)',q:'Já conversou com o vet sobre proteger a coluna?',watch:'Sinais: relutância em pular, costas arqueadas, andar trêmulo. Sem escadas, use rampas e mantenha o peso sob controle.'},
@@ -418,6 +436,13 @@ function healthWatch(dog){const b=getBreed(dog),t=((b.aviso||'')+' '+(b.desc||''
 function meter(v){let h='<div class="meter">';for(let i=1;i<=5;i++)h+=`<div class="dot ${i<=v?'f':''}"></div>`;return h+'</div>'}
 function attrRow(n,v,labels){return `<div class="attr"><div class="n">${n}</div>${meter(v)}<div class="v">${labels[v-1]||''}</div></div>`}
 
+function notesTips(dog){const t=(dog.notes||'').toLowerCase(),out=[];
+  if(/fogo|trov|barulho|medo|ansios|assusta|panico|pânico/.test(t))out.push('🎆 Medo de barulho/fogos: em datas como Réveillon e festas juninas, deixe um cômodo abafado e seguro, e converse com o vet sobre manejo da ansiedade com antecedência.');
+  if(/gordinh|acima do peso|sobrepeso|obes|gord|cheinh/.test(t))out.push('⚖️ Você mencionou peso — acompanhe na aba <b>Plano → ⚖️ Peso</b>. Manter o peso ideal é a melhor proteção pras articulações.');
+  if(/patela|luxa|joelho|articula/.test(t))out.push('🦴 Citou joelho/patela — registre a avaliação no card <b>"Saúde a acompanhar"</b> (no Plano) pra deixar no histórico, e evite saltos do sofá/cama.');
+  if(/(n[ãa]o).{0,20}c[ãa]es|reativ|outros c[ãa]es|briga|n[ãa]o gosta de c/.test(t))out.push('🐕 Sobre conviver com outros cães: prefira passeios paralelos e apresentações graduais, sem forçar contato — respeite o ritmo dele.');
+  if(/idos|senior|sênior|velhinh|artros/.test(t))out.push('🧓 Cão mais velho: check-ups mais frequentes e atenção a articulações e dentes fazem diferença.');
+  return out;}
 function renderGuide(dog){const b=getBreed(dog);let h='';
   if(b._synthetic){h+=`<div class="card"><div class="sec-label">Sua raça</div><p style="margin:0 0 6px"><b>${dog.customBreed}</b></p><div class="note-soft">Ainda não temos a guia detalhada dessa raça/mistura — ela chega em breve. O <b>plano de cuidado</b> ao lado já funciona pro seu cão.</div></div>`;}
   else{const clima=b.htl<=2?'<span style="color:var(--accent-deep)">Sofre no calor</span>':(b.ctl<=2?'Sente o frio':'Boa adaptação');
@@ -427,11 +452,14 @@ function renderGuide(dog){const b=getBreed(dog);let h='';
     if(b.pelagem)h+=`<div class="card"><div class="sec-label">Pelagem</div><p style="margin:0;font-size:14px">${b.pelagem}</p></div>`;
     if(b.variantes)h+=`<div class="card"><div class="sec-label">Variações de tamanho</div>${Object.values(b.variantes).map(v=>`<div class="var">${v}</div>`).join('')}</div>`;
   }
-  // SOBRE O SEU CÃO (campo livre + Nanny lê)
-  h+=`<div class="card"><div class="sec-label">Sobre o seu cão</div><p style="font-size:13px;color:var(--brown-mid);margin:0 0 9px">Conte o que a gente não sabe — manias, problemas, qualidades, histórico. A Nanny lê e personaliza os cuidados.</p>
-  <textarea id="dogNotes" placeholder="Ex.: tem medo de fogos, já teve uma cirurgia no joelho, não gosta de outros cães machos, adora nadar…">${(dog.notes||'').replace(/</g,'&lt;')}</textarea>
+  // O QUE A NANNY SABE (campo livre + dicas)
+  const tips=notesTips(dog);
+  h+=`<div class="card"><div class="sec-label">O que a Nanny sabe sobre o ${dog.nome}</div><p style="font-size:13px;color:var(--brown-mid);margin:0 0 9px">Conte medos, manias, condições e gostos. A Nanny usa isso pra personalizar os cuidados — e vai lembrar disso quando você conversar com ela.</p>
+  <textarea id="dogNotes" placeholder="Ex.: tem medo de fogos, pequena luxação na patela, está um pouco acima do peso, adora gente mas não curte outros cães…">${(dog.notes||'').replace(/</g,'&lt;')}</textarea>
   <div style="display:flex;gap:8px;margin-top:10px"><button class="chip" onclick="saveNotes()">Salvar</button></div>
-  <div class="ai-note" id="notesAi"></div></div>`;
+  <div class="ai-note" id="notesAi"></div>`;
+  if(tips.length)h+=`<div style="margin-top:12px"><div class="sec-label" style="margin:0 0 6px">A partir do que você contou</div>`+tips.map(t=>`<div class="pi-d" style="padding:6px 0;line-height:1.5">${t}</div>`).join('')+`</div>`;
+  h+=`</div>`;
   h+=`<div class="card" style="background:var(--green-light);border-color:#cfe3d4"><p style="margin:0;font-size:13.5px;color:#3a5e44">Cada cão é único — temperamento e saúde variam com genética, socialização e educação. Esta guia é um ponto de partida confiável, não um veredito.</p></div>`;
   document.getElementById('tab-guia').innerHTML=h;}
 
@@ -543,10 +571,14 @@ function weightChartSVG(ws){if(ws.length<2)return '';
   const dots=ws.map((w,i)=>`<circle cx="${xs[i].toFixed(1)}" cy="${y(w.kg).toFixed(1)}" r="3" fill="var(--accent)"/>`).join('');
   return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;margin:8px 0 2px"><polyline points="${pts}" fill="none" stroke="var(--accent)" stroke-width="2"/>${dots}<text x="${xs[0]}" y="${H-4}" font-size="9" fill="#9a8b78">${fmtShort(ws[0].d)}</text><text x="${xs[xs.length-1]}" y="${H-4}" font-size="9" fill="#9a8b78" text-anchor="end">${fmtShort(ws[ws.length-1].d)}</text></svg>`;
 }
-function renderDocs(dog){const files=dog.files||[];
-  let h=`<div class="card"><div class="sec-label">📁 Documentos guardados</div><p style="font-size:13px;color:var(--brown-mid);margin:0 0 12px">Guarde os papéis do ${dog.nome} que você quer ter sempre à mão — <b>microchip, pedigree, atestado de saúde, exames, contrato</b>. Ficam no app (não viram lembrete), pra você parar de procurar em pasta.</p>`;
-  if(files.length){h+=`<div class="doc-thumbs">`+files.map(f=>`<div style="text-align:center;width:64px"><img class="doc-thumb" src="${f.thumb}" onclick="viewUserDoc('${f.id}')"><div style="font-size:10.5px;color:var(--brown-mid);margin:3px auto 0;line-height:1.2">${f.label}</div><button class="rm" style="padding:2px 4px;font-size:11px" onclick="removeUserDoc('${f.id}')">remover</button></div>`).join('')+`</div>`;}
-  h+=`<div style="margin-top:14px"><select id="udoc-label" class="he-in"><option>Microchip</option><option>Pedigree</option><option>Atestado de saúde</option><option>Exame</option><option>Contrato / adoção</option><option>Receita</option><option>Outro</option></select><label class="chip up big" style="margin-top:8px">📎 Guardar documento<input type="file" accept="image/*,.pdf" onchange="addUserDoc(this)"></label><p style="font-size:11.5px;color:var(--brown-mid);opacity:.85;margin:8px 0 0">Por enquanto guarda imagens (foto/scan). PDF e sincronização entre aparelhos chegam com a conta na nuvem.</p></div></div>`;
+function typeIcon(l){l=(''+(l||'')).toLowerCase();if(l.includes('microchip'))return '🔖';if(l.includes('pedigree'))return '📜';if(l.includes('atestado'))return '🩺';if(l.includes('exame'))return '🔬';if(l.includes('contrato')||l.includes('adoç')||l.includes('adoc'))return '📝';if(l.includes('receita'))return '💊';return '📄';}
+function renderDocs(dog){const files=dog.files||[];const hThumbs=(dog.health&&dog.health.docThumbs)||[];
+  let h='';
+  if(hThumbs.length){h+=`<div class="card"><div class="sec-label">📷 Fotos de saúde lidas</div><p style="font-size:12.5px;color:var(--brown-mid);margin:0 0 10px">As fotos que a Nanny leu no Plano (carteiras, laudos) ficam guardadas aqui também.</p><div class="doc-thumbs">`+hThumbs.map((src,i)=>`<img class="doc-thumb" src="${src}" onclick="showImg(${i})">`).join('')+`</div></div>`;}
+  h+=`<div class="card"><div class="sec-label">📁 Documentos guardados</div>`;
+  if(files.length){h+=`<div class="doc-grid">`+files.map(f=>`<div class="doc-tile"><img src="${f.thumb}" onclick="viewUserDoc('${f.id}')"><div class="dt-meta"><span class="dt-ic">${typeIcon(f.label)}</span><span class="dt-lbl">${f.label}</span></div><button class="rm dt-rm" onclick="removeUserDoc('${f.id}')">remover</button></div>`).join('')+`</div>`;}
+  else{h+=`<div class="empty-doc"><div style="font-size:30px">📁</div><p style="margin:8px 0 0;font-size:13px;color:var(--brown-mid)">Nada guardado ainda. Junte aqui o microchip, pedigree, atestado e exames — tudo num lugar só, sem caçar em pasta.</p></div>`;}
+  h+=`<div style="margin-top:14px"><div style="font-size:12px;color:var(--brown-mid);margin-bottom:5px">Tipo do documento</div><select id="udoc-label" class="he-in"><option>Microchip</option><option>Pedigree</option><option>Atestado de saúde</option><option>Exame</option><option>Contrato / adoção</option><option>Receita</option><option>Outro</option></select><label class="chip up big" style="margin-top:8px">📎 Guardar documento<input type="file" accept="image/*,.pdf" onchange="addUserDoc(this)"></label><p style="font-size:11.5px;color:var(--brown-mid);opacity:.85;margin:8px 0 0">Por enquanto guarda imagens (foto/scan). PDF e sincronização entre aparelhos chegam com a conta na nuvem.</p></div></div>`;
   document.getElementById('tab-docs').innerHTML=h;}
 function addUserDoc(input){const f=input.files&&input.files[0];if(!f)return;const dog=dogObj();if(!dog)return;const label=(document.getElementById('udoc-label')||{}).value||'Documento';
   downscaleImage(f,1100,0.75).then(thumb=>{if(!thumb){alert('Por enquanto dá pra guardar imagens (foto ou scan). PDF chega com a conta na nuvem.');return;}dog.files=dog.files||[];dog.files.push({id:uid(),label,thumb,name:f.name,at:Date.now()});saveDogs();renderDocs(dog);});}
@@ -602,6 +634,7 @@ function renderProfile(){const dog=dogObj();if(!dog)return goHome();const b=getB
   const raca=b._synthetic?dog.customBreed:b.name;
   const rg=rangeOf(dog);document.getElementById('p-meta').textContent=`${raca} · ${ageLabel(ageInMonths(dog))}${rg?(' · '+rg.band):''}${dog.sexo?(' · '+(dog.sexo==='femea'?'fêmea':'macho')):''}`;
   const pc=document.getElementById('p-chip');if(dog.microchip){pc.style.display='block';pc.textContent='🔖 Microchip: '+dog.microchip}else{pc.style.display='none'}
+  const ss=statusSummary(dog),ps=document.getElementById('p-status');if(ps){ps.style.display='block';ps.className='status-sum '+ss.cls;ps.textContent=ss.txt;}
   setAvatar();renderGuide(dog);renderPlan(dog);renderReminders(dog);renderDocs(dog);}
 function setTab(t){document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('on',x.dataset.tab===t));['guia','plano','lembretes','docs'].forEach(x=>document.getElementById('tab-'+x).style.display=(x===t)?'block':'none')}
 
@@ -626,7 +659,7 @@ function onPhoto(input){const f=input.files&&input.files[0];if(!f)return;const r
 })();
 
 /* ---------- notas ---------- */
-function saveNotes(){const dog=dogObj();dog.notes=document.getElementById('dogNotes').value;saveDogs();const n=document.getElementById('notesAi');n.className='ai-note ok';n.style.display='block';n.textContent='✓ Salvo.';setTimeout(()=>{n.style.display='none'},1500);}
+function saveNotes(){const dog=dogObj();dog.notes=document.getElementById('dogNotes').value;saveDogs();renderGuide(dog);const n=document.getElementById('notesAi');if(n){n.className='ai-note ok';n.style.display='block';n.textContent='✓ Salvo — a Nanny vai lembrar disso.';}}
 
 /* ---------- IA: Nanny lê ---------- */
 async function callClaude(content){
