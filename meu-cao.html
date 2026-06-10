@@ -570,11 +570,11 @@ function saveCond(k){const dog=dogObj();if(!dog)return;const st=(document.getEle
 function docCardHTML(dog){const he=dog.health;
   const temDados=he&&((he.vacinas||[]).length||(he.antiparasitario||[]).length||(he.vermifugo||[]).length||(he.condicoes||[]).length||he.vet||he.microchip);
   const tip=`<details style="margin-top:8px"><summary style="font-size:12px;color:var(--brown-mid);cursor:pointer">📸 Como tirar a foto certa</summary><div style="font-size:12px;color:var(--brown-mid);margin-top:6px;line-height:1.55">• Boa luz, sem flash e sem reflexo<br>• Câmera reta por cima, bem perto<br>• <b>Uma página/seção por foto</b> — pode mandar várias de uma vez<br>• Letra pequena? Aproxima e foca antes</div></details>`;
-  const sub=`<p style="font-size:12px;color:var(--brown-mid);margin:6px 0 0">Serve pra qualquer documento: vacina, antipulga, vermífugo, exame, receita — a Nanny identifica.</p>`;
+  const sub=`<p style="font-size:12px;color:var(--brown-mid);margin:6px 0 0">A Nanny extrai <b>vacina, antipulga, vermífugo e microchip</b>. Pedigree, exame e atestado: guarde na aba <b>Documentos</b> (ela não lê esses, só guarda).</p>`;
   let inner;
   if(temDados){inner=`<div class="nanny-msg"><div class="nanny-av">${WESTIE}</div><div class="nanny-bubble">${nannySummary(dog,he)}</div></div>${insightsHTML(dog,he)}<p style="font-size:12px;color:var(--brown-mid);margin:10px 0 0">📁 O histórico completo (vacinas, antipulga, vermífugo lidos) e as fotos ficam na aba <b>Documentos</b>.</p><label class="chip up big" style="margin-top:12px">📷 Ler outro documento<input type="file" accept="image/*,.pdf" multiple onchange="nannyReadDoc(this,'doc')"></label>${sub}${tip}<div class="ai-note"></div>`;}
-  else{inner=`<p style="font-size:13.5px;color:var(--brown-mid);margin:0 0 10px">Manda uma foto de <b>qualquer documento do vet</b> — carteira de vacinação, receita, laudo ou nota de antipulga/vermífugo. A Nanny identifica sozinha o que é e organiza no lugar certo.</p><label class="chip up big">📷 Mandar documento (Nanny lê)<input type="file" accept="image/*,.pdf" multiple onchange="nannyReadDoc(this,'doc')"></label>${tip}<div class="ai-note"></div>`;}
-  return `<div class="card" style="border-color:#f0d8c4"><div class="sec-label">📋 Documentos do seu cão · uma foto, a Nanny organiza tudo</div>${inner}<div class="ai-disc">⚠️ A Nanny é uma IA e pode errar na leitura — sempre confira (✎ corrige, ✕ remove). Ela organiza informações e <b>não substitui seu veterinário</b>.</div></div>`;}
+  else{inner=`<p style="font-size:13.5px;color:var(--brown-mid);margin:0 0 10px">Manda a <b>carteira de vacinação</b> ou a nota de <b>antipulga/vermífugo</b> — a Nanny lê as datas e monta o plano sozinha.</p><label class="chip up big">📷 Ler carteira / nota de saúde<input type="file" accept="image/*,.pdf" multiple onchange="nannyReadDoc(this,'doc')"></label>${sub}${tip}<div class="ai-note"></div>`;}
+  return `<div class="card" style="border-color:#f0d8c4"><div class="sec-label">💉 Carteira & saúde · a Nanny lê e monta o plano</div>${inner}<div class="ai-disc">⚠️ A Nanny é uma IA e pode errar na leitura — sempre confira (✎ corrige, ✕ remove). Ela organiza informações e <b>não substitui seu veterinário</b>.</div></div>`;}
 function fmtShort(iso){const p=(''+iso).split('-');if(p.length<3)return iso;return p[2]+'/'+p[1];}
 function weightChartSVG(ws){if(ws.length<2)return '';
   const W=300,H=110,pl=10,pr=10,pt=10,pb=18;
@@ -732,7 +732,7 @@ async function nannyReadDoc(input,cond){
     dog.docs.push({cond,name:f.name,at:Date.now()});
     try{
       let apiData,apiType;
-      const big=await downscaleImage(f,1568,0.82);
+      const big=await downscaleImage(f,1568,0.92);
       if(big){apiData=big.split(',')[1];apiType='image/jpeg';}
       else{apiData=await new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result.split(',')[1]);r.onerror=rej;r.readAsDataURL(f);});apiType=f.type||'image/jpeg';}
       const thumb=await downscaleImage(f,900,0.72);
