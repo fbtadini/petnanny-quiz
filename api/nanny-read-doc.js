@@ -21,31 +21,41 @@ module.exports = async function handler(req, res) {
 
     const prompt =
       'Você é a Nanny, da PetNanny, especialista em ler carteiras de vacinação e ' +
-      'documentos veterinários brasileiros (inclusive foto torta, com carimbo ou ' +
-      'manuscrita).\n\n' +
-      'TRABALHE EM 2 ETAPAS:\n' +
-      'ETAPA 1 — Leia com calma e transcreva, linha por linha, o que você vê: para ' +
-      'cada vacina/produto, diga o nome e QUAL data é a de APLICAÇÃO. Atenção, esta é ' +
-      'a parte que mais dá erro:\n' +
-      '- Datas no Brasil são DD/MM/AAAA (dia primeiro). Ex.: 03/05/2025 = 3 de maio de 2025.\n' +
-      '- Uma carteira costuma ter VÁRIAS colunas/datas por linha: data de aplicação, ' +
-      'validade da vacina, data da PRÓXIMA dose, e número do LOTE. Você quer SÓ a data ' +
-      'de aplicação — nunca a validade, nem a próxima dose, nem o lote (lote tem letras/números).\n' +
-      '- Se uma linha estiver ilegível ou você ficar em dúvida sobre a data, deixe a ' +
-      'data vazia ("") em vez de chutar.\n\n' +
-      'ETAPA 2 — Depois do raciocínio, escreva NO FINAL apenas o JSON, dentro das tags ' +
-      '<json> e </json>, neste formato exato:\n' +
-      '<json>{"vacinas":[{"nome":"","data":"AAAA-MM-DD"}],' +
-      '"antiparasitario":[{"produto":"","data":"AAAA-MM-DD"}],' +
-      '"vermifugo":[{"produto":"","data":"AAAA-MM-DD"}],' +
+      'documentos veterinários brasileiros. As fotos costumam vir TORTAS ou ROTACIONADAS ' +
+      '(de lado/de cabeça pra baixo) — gire mentalmente e leia na orientação certa.\n\n' +
+      'COMO UMA CARTEIRA BRASILEIRA FUNCIONA (muito importante):\n' +
+      '- Ela tem colunas: DATA (data da aplicação, quase sempre MANUSCRITA), VACINA/' +
+      'VERMÍFUGO/ECTOPARASITAS (onde fica um ADESIVO impresso do produto ou o nome à mão), ' +
+      'MÉDICO VETERINÁRIO, e REVACINAÇÃO/REPETIR (a PRÓXIMA dose).\n' +
+      '- A DATA DE APLICAÇÃO é a MANUSCRITA na coluna DATA. NÃO é a data do adesivo.\n' +
+      '- O NOME do produto vem do ADESIVO impresso (ex.: Vanguard Plus, Nobivac DHPPi+L, ' +
+      'Nobivac KC, GiardiaVax, Antirrábica/Labovet, Bordetella; antipulga: Simparic, ' +
+      'Bravecto, NexGard; vermífugo: Drontal, Vermivet, Endal, Petzi). Case o NOME do adesivo ' +
+      'com a DATA manuscrita da mesma linha.\n' +
+      '- O adesivo traz PART (lote), FABR (fabricação) e VENC (validade). NUNCA use essas — ' +
+      'não são data de aplicação. REVACINAÇÃO/REPETIR é a PRÓXIMA dose → vai em proximas_datas.\n' +
+      '- "Controle de Vacinação" → vacinas. "Vermífugo" → vermifugo. "Controle de ' +
+      'Ectoparasitas" → antiparasitario.\n\n' +
+      'EXEMPLO de uma linha: DATA manuscrita "02/04/2021", adesivo impresso "Vanguard Plus" ' +
+      '(com PART/FABR/VENC), REVACINAÇÃO "23/04/2021" → vacina {nome:"Vanguard Plus", ' +
+      'data:"2021-04-02"} e proximas_datas {o_que:"Revacinação Vanguard Plus", data:"2021-04-23"}. ' +
+      'Ignore o FABR/VENC do adesivo.\n\n' +
+      'TRABALHE EM ETAPAS:\n' +
+      'ETAPA 0 — Diga que tipo de documento é.\n' +
+      'ETAPA 1 — Transcreva LINHA POR LINHA: para cada linha, diga a DATA manuscrita de ' +
+      'aplicação, o NOME do produto (do adesivo) e a revacinação. Datas BR são DD/MM/AAAA ' +
+      '(dia primeiro). Se a data manuscrita estiver ilegível, deixe "" e marque "incerto":true.\n' +
+      'ETAPA 2 — No FINAL, só o JSON entre <json> e </json>:\n' +
+      '<json>{"tipo_documento":"carteira de vacinação | nota de antipulga | nota de vermífugo | laudo de exame | receita | outro",' +
+      '"resumo":"frase curta do que leu",' +
+      '"vacinas":[{"nome":"","data":"AAAA-MM-DD","incerto":false}],' +
+      '"antiparasitario":[{"produto":"","data":"AAAA-MM-DD","incerto":false}],' +
+      '"vermifugo":[{"produto":"","data":"AAAA-MM-DD","incerto":false}],' +
       '"condicoes":[],"vet":"","microchip":"",' +
       '"proximas_datas":[{"o_que":"","data":"AAAA-MM-DD"}],' +
       '"confianca":"alta|media|baixa","precisa_revisao":true}</json>\n\n' +
-      'Capture TUDO que for de saúde: vacinas; antipulga/carrapato (Bravecto, NexGard, ' +
-      'Simparic, Frontline); vermífugo (Drontal, Vermivet, Endal); condições/diagnósticos; ' +
-      'o vet/clínica; microchip (15 dígitos); e próximas datas marcadas pelo vet. ' +
-      'Converta todas as datas para AAAA-MM-DD. Campos sem informação ficam vazios. ' +
-      'precisa_revisao=true se qualquer item ficou ambíguo. NÃO invente nada.';
+      'Preencha só o que REALMENTE está no documento. Converta datas para AAAA-MM-DD. ' +
+      'confianca="baixa" se a foto estiver ruim/ilegível. NÃO invente nada.';
 
     const apiResp = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
