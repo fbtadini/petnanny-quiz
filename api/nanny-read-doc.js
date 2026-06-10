@@ -42,9 +42,13 @@ module.exports = async function handler(req, res) {
       'Ignore o FABR/VENC do adesivo.\n\n' +
       'TRABALHE EM ETAPAS:\n' +
       'ETAPA 0 — Diga que tipo de documento é.\n' +
-      'ETAPA 1 — Transcreva LINHA POR LINHA: para cada linha, diga a DATA manuscrita de ' +
-      'aplicação, o NOME do produto (do adesivo) e a revacinação. Datas BR são DD/MM/AAAA ' +
-      '(dia primeiro). Se a data manuscrita estiver ilegível, deixe "" e marque "incerto":true.\n' +
+      'ETAPA 1 — Transcreva LINHA POR LINHA, da PRIMEIRA até a ÚLTIMA, SEM PULAR NENHUMA. ' +
+      'Uma carteira pode ter 5, 10, 15+ aplicações ao longo de vários anos — liste TODAS. ' +
+      'Cada reforço anual é uma linha separada (a mesma vacina pode aparecer em 2022, 2023, 2024, 2025, 2026 — registre cada uma). ' +
+      'Para cada linha, diga a DATA manuscrita de aplicação, o NOME do produto (do adesivo) e a revacinação. ' +
+      'Datas BR são DD/MM/AAAA (dia primeiro). LEIA O ANO DÍGITO A DÍGITO com atenção — não confunda 2021/2024/2026, nem 3 com 8. ' +
+      'Prefira sempre a data MAIS RECENTE legível; na dúvida entre dois anos, escreva o que está escrito, não o mais antigo. ' +
+      'Se a data manuscrita estiver ilegível, deixe "" e marque "incerto":true.\n' +
       'ETAPA 2 — No FINAL, só o JSON entre <json> e </json>:\n' +
       '<json>{"tipo_documento":"carteira de vacinação | nota de antipulga | nota de vermífugo | laudo de exame | receita | outro",' +
       '"resumo":"frase curta do que leu",' +
@@ -65,8 +69,8 @@ module.exports = async function handler(req, res) {
         'anthropic-version': '2023-06-01'
       },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-6',
-        max_tokens: 2048,
+        model: 'claude-opus-4-8',
+        max_tokens: 4096,
         messages: [{ role: 'user', content: [docBlock, { type: 'text', text: prompt }] }]
       })
     });
