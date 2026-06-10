@@ -89,6 +89,16 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent)}
 .dt-lbl{color:var(--brown);font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .dt-rm{display:block;width:100%;border-top:1px solid #f0e6da!important;padding:6px;font-size:11px;border-radius:0}
 .empty-doc{text-align:center;padding:20px 12px;background:var(--warm,#f3ece1);border-radius:12px}
+.hist-sec{border:1px solid var(--line);border-radius:12px;margin-bottom:8px;overflow:hidden;background:#fff}
+.hist-sec>summary{list-style:none;cursor:pointer;padding:11px 14px;display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:13.5px;font-weight:600;color:var(--brown)}
+.hist-sec>summary::-webkit-details-marker{display:none}
+.hist-sec>summary::after{content:'›';color:var(--brown-light);font-size:18px;transition:transform .2s;line-height:1}
+.hist-sec[open]>summary::after{transform:rotate(90deg)}
+.hist-count{font-weight:500;color:var(--brown-mid);font-size:12px;text-align:right}
+.hist-body{padding:2px 14px 8px}
+.hist-body .plan-item:first-child{padding-top:4px}
+.doc-group{font-size:11.5px;font-weight:700;letter-spacing:.04em;color:var(--brown-mid);margin:14px 0 8px;display:flex;align-items:center;gap:6px;text-transform:uppercase}
+.doc-group:first-of-type{margin-top:4px}
 .pi-when.warn{color:#c87f2a;font-weight:600}
 .plan-item.edit{align-items:flex-start}
 .doc-thumbs{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
@@ -497,7 +507,6 @@ function gDe(d){return d&&d.sexo==='femea'?'da':'do';}
 function gPoss(d){return d&&d.sexo==='femea'?'dela':'dele';}
 function nannySummary(dog,he){let s='';
   s+= he.tipo_documento ? `Li ${he.tipo_documento} ${gDe(dog)} ${dog.nome} 🐾 ` : `Fiz o check-up ${gDe(dog)} ${dog.nome} 🐾 `;
-  if(he.resumo)s+=he.resumo+' ';
   const parts=[];const v=(he.vacinas||[]).length,a=(he.antiparasitario||[]).length,w=(he.vermifugo||[]).length;
   if(v)parts.push(`${v} vacina${v>1?'s':''}`);if(a)parts.push('antipulga');if(w)parts.push('vermífugo');if(he.microchip)parts.push('microchip');
   if(parts.length)s+=`Organizei no plano: ${parts.join(', ')} — as próximas datas se ajustaram. `;
@@ -518,16 +527,17 @@ function applyHealthToPlan(dog,he){
   const verm=mostRecent(he.vermifugo);if(verm)dog.done.verm=verm;
 }
 function healthInsights(dog,he){const out=[],today=startOfToday();
-  (he.proximas_datas||[]).forEach(p=>{if(p&&p.o_que)out.push(`📅 O vet anotou: ${p.o_que}${p.data?(' em '+fmtISO(p.data)):''}.`)});
   carePlan(dog).forEach(it=>{const s=itemStatus(dog,it);
     if(it.recorrente&&s.st==='rec-done'){
-      if(s.next<today)out.push(`⚠️ ${it.nome} está atrasado — última em ${fmt(new Date(s.doneDate+'T00:00:00'))}, já passou do intervalo.`);
-      else{const dias=Math.round((s.next-today)/864e5);if(dias<=45)out.push(`📅 Próxima dose de ${it.nome.toLowerCase()} em ${fmt(s.next)} (~${dias} dias).`);}
+      if(s.next<today){const stale=(today-s.next)/864e5>it.intervalo;out.push(stale?`⚠️ ${it.nome}: última faz tempo (${fmt(new Date(s.doneDate+'T00:00:00'))}) — confirme/registre a atual.`:`⚠️ ${it.nome} atrasado — venceu em ${fmt(s.next)}.`);}
+      else{const dias=Math.round((s.next-today)/864e5);if(dias<=45)out.push(`📅 ${it.nome} em ${fmt(s.next)} (~${dias} dias).`);}
     } else if(!it.recorrente&&s.st==='overdue')out.push(`⚠️ ${it.nome} consta como atrasada.`);
   });
-  if(!(he.antiparasitario||[]).length)out.push('❓ Não vi registro de antipulga/carrapato — quando foi a última vez? Marca no plano.');
+  const futuras=(he.proximas_datas||[]).filter(p=>p&&p.data&&new Date(p.data+'T00:00:00')>=today);
+  if(futuras.length)out.push(`📅 O vet marcou ${futuras.length} próxima${futuras.length>1?'s':''} revacinaç${futuras.length>1?'ões':'ão'} — veja na aba Lembretes.`);
+  if(!(he.antiparasitario||[]).length)out.push('❓ Não vi antipulga/carrapato — quando foi a última vez? Marca no plano.');
   if(!(he.vermifugo||[]).length)out.push('❓ Não vi vermífugo no documento — quando foi a última dose?');
-  if(!dog.microchip)out.push('🔖 Esse cão tem microchip? É o que garante reencontrar ele se sumir — dá pra registrar o número em "Editar".');
+  if(!dog.microchip)out.push('🔖 Tem microchip? Registre o número em "Editar" — é o que garante reencontrar ele se sumir.');
   const hw=healthWatch(dog);if(hw.length)out.push(`🩺 Por ser ${getBreed(dog).name}, vale ficar de olho em: ${hw.map(r=>r.cond.toLowerCase()).join(', ')}.`);
   return out;}
 function insightsHTML(dog,he){const ins=healthInsights(dog,he);if(!ins.length)return '';
@@ -540,10 +550,15 @@ function healthRow(ic,name,dateISO,cat,i,withDate,incerto){
   if(withDate){if(!dateISO)sub=`<div class="pi-when warn">⚠ sem data — confira</div>`;else if(incerto)sub=`<div class="pi-when warn">⚠ ${fmtISO(dateISO)} — confira</div>`;else sub=`<div class="pi-when">${fmtISO(dateISO)}</div>`;}
   return `<div class="plan-item"><div class="pi-ic">${ic}</div><div style="flex:1"><div class="pi-t">${name}</div>${sub}</div><button class="rm" title="corrigir" onclick="editHealthItem('${cat}',${i})">✎</button><button class="rm" title="remover (leu errado)" onclick="removeHealthItem('${cat}',${i})">✕</button></div>`;
 }
+function latestDate(arr){const d=(arr||[]).filter(x=>x&&x.data).map(x=>x.data).sort();return d.length?d[d.length-1]:null;}
+function histSection(ic,label,arr,cat){if(!(arr||[]).length)return '';
+  const ld=latestDate(arr),open=healthEdit&&healthEdit.cat===cat;
+  const rows=arr.map((v,i)=>healthRow(ic,(cat==='vacinas'?v.nome:v.produto)||label,v.data,cat,i,true,v.incerto)).join('');
+  return `<details class="hist-sec"${open?' open':''}><summary><span>${ic} ${label}</span><span class="hist-count">${arr.length}${ld?(' · última '+fmtISO(ld)):''}</span></summary><div class="hist-body">${rows}</div></details>`;}
 function healthHistoryHTML(he){let h='<div style="margin-top:12px">';
-  if((he.vacinas||[]).length){h+=`<div class="sec-label" style="margin:6px 0">Vacinas lidas</div>`+he.vacinas.map((v,i)=>healthRow('💉',v.nome||'Vacina',v.data,'vacinas',i,true,v.incerto)).join('');}
-  if((he.antiparasitario||[]).length){h+=`<div class="sec-label" style="margin:10px 0 6px">Antipulga / carrapato</div>`+he.antiparasitario.map((a,i)=>healthRow('🛡️',a.produto||'Antiparasitário',a.data,'antiparasitario',i,true,a.incerto)).join('');}
-  if((he.vermifugo||[]).length){h+=`<div class="sec-label" style="margin:10px 0 6px">Vermífugo</div>`+he.vermifugo.map((a,i)=>healthRow('💊',a.produto||'Vermífugo',a.data,'vermifugo',i,true,a.incerto)).join('');}
+  h+=histSection('💉','Vacinas',he.vacinas,'vacinas');
+  h+=histSection('🛡️','Antipulga / carrapato',he.antiparasitario,'antiparasitario');
+  h+=histSection('💊','Vermífugo',he.vermifugo,'vermifugo');
   if((he.condicoes||[]).length){h+=`<div class="sec-label" style="margin:10px 0 6px">Observações de saúde</div>`+he.condicoes.map((c,i)=>healthRow('📝',typeof c==='string'?c:(c.nome||JSON.stringify(c)),null,'condicoes',i,false)).join('');}
   if(he.vet)h+=`<div class="pi-d" style="margin-top:8px">🩺 Vet: ${he.vet}</div>`;
   if(he.microchip)h+=`<div class="pi-d" style="margin-top:4px">🔖 Microchip lido: ${he.microchip}</div>`;
@@ -591,10 +606,15 @@ function renderDocs(dog){const files=dog.files||[];const he=dog.health||{};
   let h='';
   if(temHist){h+=`<div class="card"><div class="sec-label">🩺 Histórico de saúde</div><p style="font-size:12.5px;color:var(--brown-mid);margin:0 0 2px">O que a Nanny leu dos documentos. Use ✎ pra corrigir ou ✕ pra remover.</p>${healthHistoryHTML(he)}</div>`;}
   h+=`<div class="card"><div class="sec-label">📁 Documentos & fotos</div>`;
-  if(files.length){h+=`<div class="doc-grid">`+files.map(f=>{
-    if(fileEdit===f.id){return `<div class="doc-tile" style="padding:8px"><input id="fe-name" class="he-in" value="${(f.name||f.type||'').replace(/"/g,'&quot;')}" placeholder="nome (ex.: Hemograma mar/2026)"><select id="fe-type" class="he-in">${['Carteira de vacinação','Exame','Atestado de saúde','Microchip','Pedigree','Contrato / adoção','Receita','Outro'].map(o=>`<option${(f.type||'').toLowerCase()===o.toLowerCase()?' selected':''}>${o}</option>`).join('')}</select><div style="display:flex;gap:6px"><button class="chip sm" onclick="saveFile('${f.id}')">Salvar</button><button class="chip sm" onclick="fileEdit=null;renderDocs(dogObj())">Cancelar</button></div></div>`;}
-    return `<div class="doc-tile"><img src="${f.thumb}" onclick="viewUserDoc('${f.id}')"><div class="dt-meta"><span class="dt-ic">${typeIcon(f.type||f.label)}</span><span class="dt-lbl">${f.name||f.label||f.type}</span></div><div style="display:flex"><button class="rm dt-rm" style="flex:1" onclick="editFile('${f.id}')">✎ renomear</button><button class="rm dt-rm" style="flex:1;border-left:1px solid #f0e6da" onclick="removeUserDoc('${f.id}')">✕</button></div></div>`;
-  }).join('')+`</div>`;}
+  if(files.length){
+    const tile=f=>{
+      if(fileEdit===f.id)return `<div class="doc-tile" style="padding:8px"><input id="fe-name" class="he-in" value="${(f.name||f.type||'').replace(/"/g,'&quot;')}" placeholder="nome (ex.: Hemograma mar/2026)"><select id="fe-type" class="he-in">${['Carteira de vacinação','Exame','Atestado de saúde','Microchip','Pedigree','Contrato / adoção','Receita','Outro'].map(o=>`<option${(f.type||'').toLowerCase()===o.toLowerCase()?' selected':''}>${o}</option>`).join('')}</select><div style="display:flex;gap:6px"><button class="chip sm" onclick="saveFile('${f.id}')">Salvar</button><button class="chip sm" onclick="fileEdit=null;renderDocs(dogObj())">Cancelar</button></div></div>`;
+      const cap=f.name&&f.type&&f.name.indexOf(f.type)===0?(f.name.split('·')[1]||'').trim()||f.name:(f.name||f.type||'');
+      return `<div class="doc-tile"><img src="${f.thumb}" onclick="viewUserDoc('${f.id}')"><div class="dt-meta"><span class="dt-lbl">${cap}</span></div><div style="display:flex"><button class="rm dt-rm" style="flex:1" onclick="editFile('${f.id}')">✎ renomear</button><button class="rm dt-rm" style="flex:1;border-left:1px solid #f0e6da" onclick="removeUserDoc('${f.id}')">✕</button></div></div>`;
+    };
+    const groups={};files.forEach(f=>{const t=f.type||'Outro';(groups[t]=groups[t]||[]).push(f);});
+    Object.keys(groups).forEach(t=>{h+=`<div class="doc-group">${typeIcon(t)} ${t} <span class="hist-count">(${groups[t].length})</span></div><div class="doc-grid">`+groups[t].map(tile).join('')+`</div>`;});
+  }
   else{h+=`<div class="empty-doc"><div style="font-size:30px">📁</div><p style="margin:8px 0 0;font-size:13px;color:var(--brown-mid)">Nada guardado ainda. As fotos que você manda no Plano caem aqui, e você pode adicionar microchip, pedigree, atestado e exames — tudo num lugar só.</p></div>`;}
   h+=`<div style="margin-top:14px"><div style="font-size:12px;color:var(--brown-mid);margin-bottom:5px">Guardar um documento novo</div><select id="udoc-label" class="he-in"><option>Exame</option><option>Atestado de saúde</option><option>Microchip</option><option>Pedigree</option><option>Contrato / adoção</option><option>Receita</option><option>Carteira de vacinação</option><option>Outro</option></select><label class="chip up big" style="margin-top:8px">📎 Guardar documento<input type="file" accept="image/*,.pdf" onchange="addUserDoc(this)"></label><p style="font-size:11.5px;color:var(--brown-mid);opacity:.85;margin:8px 0 0">Por enquanto guarda imagens (foto/scan). PDF e sincronização entre aparelhos chegam com a conta na nuvem.</p></div></div>`;
   document.getElementById('tab-docs').innerHTML=h;}
@@ -628,7 +648,7 @@ function printFicha(){const dog=dogObj();if(!dog)return;document.getElementById(
 function renderPlan(dog){const items=carePlan(dog),hw=healthWatch(dog),b=getBreed(dog);
   let h=`<div class="disc">🩺 <div>Marque o que já foi feito — o plano recalcula sozinho (o que passou e não foi marcado fica como <b>atrasado</b>). As datas são guias; <b>confirme com seu veterinário</b>.</div></div>`;
   h+=docCardHTML(dog);
-  ['Vacinas','Antiparasitário e vermífugo'].forEach(g=>{h+=`<div class="card"><div class="sec-label">${g}</div>`+items.filter(i=>i.grupo===g).map(i=>planItemHTML(dog,i)).join('')+(g==='Vacinas'?`<div class="ai-disc" style="border-top:1px solid #f0e6da">📚 Calendário baseado nas diretrizes WSAVA/AAHA. No Brasil reforça-se todo ano por causa da <b>leptospirose</b> e da <b>antirrábica</b> (imunidade curta); o componente de cinomose/parvovirose costuma durar mais. <b>Confirme o protocolo com seu veterinário.</b></div>`:'')+`</div>`;});
+  ['Vacinas','Antiparasitário e vermífugo'].forEach(g=>{h+=`<div class="card"><div class="sec-label">${g}</div>`+items.filter(i=>i.grupo===g).map(i=>planItemHTML(dog,i)).join('')+(g==='Vacinas'?`<details class="hist-sec" style="margin-top:10px"><summary><span>📚 Por que reforço todo ano?</span><span class="hist-count"> </span></summary><div class="hist-body" style="padding-top:8px;font-size:12.5px;color:var(--brown-mid);line-height:1.5">Baseado nas diretrizes WSAVA/AAHA. No Brasil reforça-se todo ano por causa da <b>leptospirose</b> e da <b>antirrábica</b> (imunidade curta); o componente de cinomose/parvovirose costuma durar mais. <b>Confirme o protocolo com seu veterinário.</b></div></details>`:'')+`</div>`;});
   h+=`<div class="card"><div class="sec-label">Saúde a acompanhar${b._synthetic?'':' — '+b.name}</div>`;
   if(hw.length){h+=`<p style="margin:0 0 12px;font-size:13.5px;color:var(--brown-mid)">Pontos que essa raça costuma exigir atenção — vale conversar com o vet.</p>`;
     hw.forEach(r=>{const ck=condKey(r.cond),cs=(dog.conditions||{})[ck];
