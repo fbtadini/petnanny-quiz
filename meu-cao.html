@@ -105,6 +105,11 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent)}
 .watch{display:none;background:var(--warm);border-radius:10px;padding:10px 12px;margin-top:10px;font-size:13px;color:#5a4632}
 .ai-note{display:none;margin-top:9px;font-size:13px;border-radius:10px;padding:10px 12px}
 .ai-note.ok{background:var(--green-light);color:#2f5238}.ai-note.busy{background:var(--accent-light);color:var(--accent-deep)}.ai-note.warn{background:#fff6ef;color:#8a5a2a}
+.nanny-msg{display:flex;gap:10px;align-items:flex-start;margin-bottom:4px}
+.nanny-av{flex:0 0 36px;width:36px;height:36px;border-radius:50%;background:var(--accent-light);display:flex;align-items:center;justify-content:center;overflow:hidden;border:1.5px solid #f3d9c2}
+.nanny-av svg{width:27px;height:27px}
+.nanny-bubble{background:var(--green-light);color:#2f5238;border-radius:3px 14px 14px 14px;padding:11px 14px;font-size:13.5px;line-height:1.55;flex:1}
+.nanny-bubble b{color:var(--green)}
 .dog-list-item{display:flex;align-items:center;gap:13px;background:#fff;border:1px solid var(--line);border-radius:15px;padding:14px;margin-bottom:10px;cursor:pointer;box-shadow:var(--shadow)}
 .dll-em{width:46px;height:46px;flex:0 0 46px;border-radius:50%;background:var(--accent-light);display:flex;align-items:center;justify-content:center;font-size:24px;overflow:hidden}.dll-em svg{width:34px;height:34px}.dll-em img{width:100%;height:100%;object-fit:cover}
 .empty{text-align:center;color:var(--brown-light);padding:24px 0}
@@ -182,8 +187,8 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent)}
     <div style="display:flex;gap:8px;margin:2px 0 10px;flex-wrap:wrap"><button class="chip" onclick="editDog()">✎ Editar dados</button><button class="chip" onclick="printFicha()">🖨️ Ficha (PDF)</button></div>
     <div id="p-status" class="status-sum" style="display:none"></div>
     <div class="tabs">
-      <div class="tab on" data-tab="guia" onclick="setTab('guia')">Guia da raça</div>
-      <div class="tab" data-tab="plano" onclick="setTab('plano')">Plano de cuidado</div>
+      <div class="tab on" data-tab="guia" onclick="setTab('guia')">Raça</div>
+      <div class="tab" data-tab="plano" onclick="setTab('plano')">Plano</div>
       <div class="tab" data-tab="lembretes" onclick="setTab('lembretes')">Lembretes</div>
       <div class="tab" data-tab="docs" onclick="setTab('docs')">Documentos</div>
     </div>
@@ -293,7 +298,7 @@ const AI_DIRECT=false; // produção: a IA roda nas Vercel Functions, nunca no n
 const AI_ENDPOINT=''; // /api/nanny-chat (quando existir). A leitura de documento usa /api/nanny-read-doc
 const WRANGES={'0':{band:'< 2 kg',dose:null,porte:1},'1':{band:'2–4,5 kg',dose:'112,5 mg',porte:1},'2':{band:'4,5–10 kg',dose:'250 mg',porte:2},'3':{band:'10–20 kg',dose:'500 mg',porte:3},'4':{band:'20–40 kg',dose:'1000 mg',porte:4},'5':{band:'40–56 kg',dose:'1400 mg',porte:5}};
 function rangeOf(dog){if(dog.pesoFaixa!=null&&dog.pesoFaixa!==''&&WRANGES[dog.pesoFaixa])return WRANGES[dog.pesoFaixa];if(dog.pesoKg){const kg=dog.pesoKg,v=kg<2?'0':kg<=4.5?'1':kg<=10?'2':kg<=20?'3':kg<=40?'4':'5';return WRANGES[v]}return null}
-let dogs=[],currentId=null,sex='',neut='',porte=3,reposMode=false,editingId=null,dragged=false,healthEdit=null;
+let dogs=[],currentId=null,sex='',neut='',porte=3,reposMode=false,editingId=null,dragged=false,healthEdit=null,fileEdit=null;
 
 function loadDogs(){try{dogs=JSON.parse(localStorage.getItem(LS_KEY))||[]}catch(e){dogs=[]}}
 function saveDogs(){try{localStorage.setItem(LS_KEY,JSON.stringify(dogs))}catch(e){}}
@@ -411,16 +416,20 @@ function undoDone(key){const dog=dogObj();if(dog.done)delete dog.done[key];saveD
 function toggleMark(key,def){const w=document.getElementById('mk-'+key);if(!w)return;const open=w.style.display==='flex';w.style.display=open?'none':'flex';const dt=document.getElementById('dt-'+key);if(!open&&dt&&!dt.value)dt.value=def||new Date().toISOString().slice(0,10)}
 function confirmMark(key){const dt=document.getElementById('dt-'+key);if(dt&&dt.value)markDone(key,dt.value)}
 function upcomingReminders(dog){const out=[],today=startOfToday();
-  carePlan(dog).forEach(it=>{const s=itemStatus(dog,it);
-    if(it.recorrente){if(s.st==='rec-done'){const tp=it.grupo==='Vacinas'?'Vacina':'Cuidado';if(s.next>=today)out.push({when:s.next,t:it.nome,tipo:tp});else out.push({when:s.next,t:it.nome,tipo:tp,overdue:true});}}
-    else if(s.st==='upcoming'&&it.sugerido)out.push({when:it.sugerido,t:it.nome,tipo:'Vacina'});
-    else if(s.st==='overdue')out.push({when:it.sugerido,t:it.nome,tipo:'Vacina',overdue:true});
+  carePlan(dog).forEach(it=>{const s=itemStatus(dog,it);const tp=it.grupo==='Vacinas'?'Vacina':'Cuidado';
+    if(it.recorrente&&s.st==='rec-done'){
+      if(s.next>=today)out.push({when:s.next,t:it.nome,tipo:tp,status:'upcoming'});
+      else{const atraso=(today-s.next)/864e5;out.push({when:s.next,t:it.nome,tipo:tp,status:atraso>it.intervalo?'stale':'overdue'});}
+    } else if(!it.recorrente){
+      if(s.st==='upcoming'&&it.sugerido)out.push({when:it.sugerido,t:it.nome,tipo:tp,status:'upcoming'});
+      else if(s.st==='overdue'&&it.sugerido){const atraso=(today-it.sugerido)/864e5;out.push({when:it.sugerido,t:it.nome,tipo:tp,status:atraso>180?'stale':'overdue'});}
+    }
   });
-  ((dog.health&&dog.health.proximas_datas)||[]).forEach(p=>{if(p&&p.data){const d=new Date(p.data+'T00:00:00');if(!isNaN(d))out.push({when:d,t:p.o_que||'Próxima dose (anotada pelo vet)',tipo:'Anotado pelo vet',overdue:d<today});}});
+  ((dog.health&&dog.health.proximas_datas)||[]).forEach(p=>{if(p&&p.data){const d=new Date(p.data+'T00:00:00');if(!isNaN(d)&&d>=today)out.push({when:d,t:p.o_que||'Próxima dose',tipo:'Anotado pelo vet',status:'upcoming'});}});
   out.sort((a,b)=>a.when-b.when);return out;
 }
-function statusSummary(dog){const ups=upcomingReminders(dog);const over=ups.filter(u=>u.overdue);const next=ups.filter(u=>!u.overdue)[0];
-  if(over.length)return {cls:'warn',txt:`⚠️ ${over.length} ${over.length>1?'itens atrasados':'item atrasado'}`+(next?` · próxima: ${next.t.toLowerCase()} em ${fmt(next.when)}`:'')};
+function statusSummary(dog){const ups=upcomingReminders(dog);const att=ups.filter(u=>u.status!=='upcoming');const next=ups.filter(u=>u.status==='upcoming')[0];
+  if(att.length)return {cls:'warn',txt:`⚠️ ${att.length} ${att.length>1?'itens precisam de atenção':'item precisa de atenção'}`+(next?` · próxima: ${next.t.toLowerCase()} em ${fmt(next.when)}`:'')};
   if(next)return {cls:'ok',txt:`✓ Tudo em dia · próxima: ${next.t.toLowerCase()} em ${fmt(next.when)}`};
   return {cls:'',txt:'Mande a carteira de vacinação no Plano pra ver o status de saúde aqui.'};}
 const HEALTH_RULES=[
@@ -440,7 +449,7 @@ function notesTips(dog){const t=(dog.notes||'').toLowerCase(),out=[];
   if(/fogo|trov|barulho|medo|ansios|assusta|panico|pânico/.test(t))out.push('🎆 Medo de barulho/fogos: em datas como Réveillon e festas juninas, deixe um cômodo abafado e seguro, e converse com o vet sobre manejo da ansiedade com antecedência.');
   if(/gordinh|acima do peso|sobrepeso|obes|gord|cheinh/.test(t))out.push('⚖️ Você mencionou peso — acompanhe na aba <b>Plano → ⚖️ Peso</b>. Manter o peso ideal é a melhor proteção pras articulações.');
   if(/patela|luxa|joelho|articula/.test(t))out.push('🦴 Citou joelho/patela — registre a avaliação no card <b>"Saúde a acompanhar"</b> (no Plano) pra deixar no histórico, e evite saltos do sofá/cama.');
-  if(/(n[ãa]o).{0,20}c[ãa]es|reativ|outros c[ãa]es|briga|n[ãa]o gosta de c/.test(t))out.push('🐕 Sobre conviver com outros cães: prefira passeios paralelos e apresentações graduais, sem forçar contato — respeite o ritmo dele.');
+  if(/(n[ãa]o).{0,20}c[ãa]es|reativ|outros c[ãa]es|briga|n[ãa]o gosta de c/.test(t))out.push('🐕 Sobre conviver com outros cães: prefira passeios paralelos e apresentações graduais, sem forçar contato — respeite o ritmo '+gPoss(dog)+'.');
   if(/idos|senior|sênior|velhinh|artros/.test(t))out.push('🧓 Cão mais velho: check-ups mais frequentes e atenção a articulações e dentes fazem diferença.');
   return out;}
 function renderGuide(dog){const b=getBreed(dog);let h='';
@@ -454,7 +463,7 @@ function renderGuide(dog){const b=getBreed(dog);let h='';
   }
   // O QUE A NANNY SABE (campo livre + dicas)
   const tips=notesTips(dog);
-  h+=`<div class="card"><div class="sec-label">O que a Nanny sabe sobre o ${dog.nome}</div><p style="font-size:13px;color:var(--brown-mid);margin:0 0 9px">Conte medos, manias, condições e gostos. A Nanny usa isso pra personalizar os cuidados — e vai lembrar disso quando você conversar com ela.</p>
+  h+=`<div class="card"><div class="sec-label">O que a Nanny sabe sobre ${gArt(dog)} ${dog.nome}</div><p style="font-size:13px;color:var(--brown-mid);margin:0 0 9px">Conte medos, manias, condições e gostos. A Nanny usa isso pra personalizar os cuidados — e vai lembrar disso quando você conversar com ela.</p>
   <textarea id="dogNotes" placeholder="Ex.: tem medo de fogos, pequena luxação na patela, está um pouco acima do peso, adora gente mas não curte outros cães…">${(dog.notes||'').replace(/</g,'&lt;')}</textarea>
   <div style="display:flex;gap:8px;margin-top:10px"><button class="chip" onclick="saveNotes()">Salvar</button></div>
   <div class="ai-note" id="notesAi"></div>`;
@@ -467,7 +476,10 @@ function planItemHTML(dog,it){const s=itemStatus(dog,it),today=new Date().toISOS
   const markBtn=(label,def)=>`<button class="chip sm2" onclick="toggleMark('${it.key}','${def||today}')">${label}</button><span class="markrow" id="mk-${it.key}"><input type="date" id="dt-${it.key}" max="${today}"><button class="chip up sm2" onclick="confirmMark('${it.key}')">Salvar</button></span>`;
   let status='',actions='';
   if(it.recorrente){
-    if(s.st==='rec-done'){status=`<div class="pi-when ok">✓ Última: ${fmt(new Date(s.doneDate+'T00:00:00'))} · Próxima: ${fmt(s.next)}</div>`;actions=markBtn('Registrar nova')+`<button class="mini" onclick="undoDone('${it.key}')">desfazer</button>`;}
+    if(s.st==='rec-done'){const t0=startOfToday();
+      if(s.next>=t0){status=`<div class="pi-when ok">✓ Última: ${fmt(new Date(s.doneDate+'T00:00:00'))} · Próxima: ${fmt(s.next)}</div>`;}
+      else{const stale=(t0-s.next)/864e5>it.intervalo;status=`<div class="pi-when warn">⚠️ ${stale?`Última faz tempo (${fmt(new Date(s.doneDate+'T00:00:00'))}) — confirme/registre a atual`:`Atrasada — venceu em ${fmt(s.next)}`}</div>`;}
+      actions=markBtn('Registrar nova')+`<button class="mini" onclick="undoDone('${it.key}')">desfazer</button>`;}
     else{status=`<div class="pi-when muted">${it.nota} · ainda não registrado</div>`;actions=markBtn('✓ Registrar aplicação');}
   }else{
     if(s.st==='done'){status=`<div class="pi-when ok">✓ Feita em ${fmt(new Date(s.doneDate+'T00:00:00'))}</div>`;actions=`<button class="mini" onclick="undoDone('${it.key}')">desfazer</button>`;}
@@ -480,8 +492,11 @@ function fmtISO(iso){if(!iso)return '';const p=(''+iso).split('-');if(p.length<3
 function mergeHealth(prev,ex){prev=prev||{};const out=Object.assign({},prev,ex);
   ['vacinas','antiparasitario','condicoes','proximas_datas'].forEach(k=>{const seen=new Set(),m=[];[...(prev[k]||[]),...(ex[k]||[])].forEach(it=>{const key=JSON.stringify(it);if(!seen.has(key)){seen.add(key);m.push(it)}});out[k]=m;});
   return out;}
-function nannySummary(dog,he){let s=`<b>Nanny:</b> `;
-  s+= he.tipo_documento ? `Li ${he.tipo_documento} do ${dog.nome} 🐾 ` : `Fiz o check-up do ${dog.nome} 🐾 `;
+function gArt(d){return d&&d.sexo==='femea'?'a':'o';}
+function gDe(d){return d&&d.sexo==='femea'?'da':'do';}
+function gPoss(d){return d&&d.sexo==='femea'?'dela':'dele';}
+function nannySummary(dog,he){let s='';
+  s+= he.tipo_documento ? `Li ${he.tipo_documento} ${gDe(dog)} ${dog.nome} 🐾 ` : `Fiz o check-up ${gDe(dog)} ${dog.nome} 🐾 `;
   if(he.resumo)s+=he.resumo+' ';
   const parts=[];const v=(he.vacinas||[]).length,a=(he.antiparasitario||[]).length,w=(he.vermifugo||[]).length;
   if(v)parts.push(`${v} vacina${v>1?'s':''}`);if(a)parts.push('antipulga');if(w)parts.push('vermífugo');if(he.microchip)parts.push('microchip');
@@ -532,7 +547,6 @@ function healthHistoryHTML(he){let h='<div style="margin-top:12px">';
   if((he.condicoes||[]).length){h+=`<div class="sec-label" style="margin:10px 0 6px">Observações de saúde</div>`+he.condicoes.map((c,i)=>healthRow('📝',typeof c==='string'?c:(c.nome||JSON.stringify(c)),null,'condicoes',i,false)).join('');}
   if(he.vet)h+=`<div class="pi-d" style="margin-top:8px">🩺 Vet: ${he.vet}</div>`;
   if(he.microchip)h+=`<div class="pi-d" style="margin-top:4px">🔖 Microchip lido: ${he.microchip}</div>`;
-  if((he.docThumbs||[]).length){h+=`<div class="sec-label" style="margin:12px 0 4px">Documento(s) enviado(s) · toque pra conferir</div><div class="doc-thumbs">`+he.docThumbs.map((src,i)=>`<img class="doc-thumb" src="${src}" onclick="showImg(${i})">`).join('')+`</div>`;}
   return h+'</div>';}
 function editHealthItem(cat,idx){healthEdit={cat,idx};renderProfile();}
 function cancelHealthEdit(){healthEdit=null;renderProfile();}
@@ -558,7 +572,7 @@ function docCardHTML(dog){const he=dog.health;
   const tip=`<details style="margin-top:8px"><summary style="font-size:12px;color:var(--brown-mid);cursor:pointer">📸 Como tirar a foto certa</summary><div style="font-size:12px;color:var(--brown-mid);margin-top:6px;line-height:1.55">• Boa luz, sem flash e sem reflexo<br>• Câmera reta por cima, bem perto<br>• <b>Uma página/seção por foto</b> — pode mandar várias de uma vez<br>• Letra pequena? Aproxima e foca antes</div></details>`;
   const sub=`<p style="font-size:12px;color:var(--brown-mid);margin:6px 0 0">Serve pra qualquer documento: vacina, antipulga, vermífugo, exame, receita — a Nanny identifica.</p>`;
   let inner;
-  if(temDados){inner=`<div class="ai-note ok" style="display:block">${nannySummary(dog,he)}</div>${insightsHTML(dog,he)}${healthHistoryHTML(he)}<label class="chip up big" style="margin-top:14px">📷 Ler outro documento<input type="file" accept="image/*,.pdf" multiple onchange="nannyReadDoc(this,'doc')"></label>${sub}${tip}<div class="ai-note"></div>`;}
+  if(temDados){inner=`<div class="nanny-msg"><div class="nanny-av">${WESTIE}</div><div class="nanny-bubble">${nannySummary(dog,he)}</div></div>${insightsHTML(dog,he)}<p style="font-size:12px;color:var(--brown-mid);margin:10px 0 0">📁 O histórico completo (vacinas, antipulga, vermífugo lidos) e as fotos ficam na aba <b>Documentos</b>.</p><label class="chip up big" style="margin-top:12px">📷 Ler outro documento<input type="file" accept="image/*,.pdf" multiple onchange="nannyReadDoc(this,'doc')"></label>${sub}${tip}<div class="ai-note"></div>`;}
   else{inner=`<p style="font-size:13.5px;color:var(--brown-mid);margin:0 0 10px">Manda uma foto de <b>qualquer documento do vet</b> — carteira de vacinação, receita, laudo ou nota de antipulga/vermífugo. A Nanny identifica sozinha o que é e organiza no lugar certo.</p><label class="chip up big">📷 Mandar documento (Nanny lê)<input type="file" accept="image/*,.pdf" multiple onchange="nannyReadDoc(this,'doc')"></label>${tip}<div class="ai-note"></div>`;}
   return `<div class="card" style="border-color:#f0d8c4"><div class="sec-label">📋 Documentos do seu cão · uma foto, a Nanny organiza tudo</div>${inner}<div class="ai-disc">⚠️ A Nanny é uma IA e pode errar na leitura — sempre confira (✎ corrige, ✕ remove). Ela organiza informações e <b>não substitui seu veterinário</b>.</div></div>`;}
 function fmtShort(iso){const p=(''+iso).split('-');if(p.length<3)return iso;return p[2]+'/'+p[1];}
@@ -572,16 +586,22 @@ function weightChartSVG(ws){if(ws.length<2)return '';
   return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;margin:8px 0 2px"><polyline points="${pts}" fill="none" stroke="var(--accent)" stroke-width="2"/>${dots}<text x="${xs[0]}" y="${H-4}" font-size="9" fill="#9a8b78">${fmtShort(ws[0].d)}</text><text x="${xs[xs.length-1]}" y="${H-4}" font-size="9" fill="#9a8b78" text-anchor="end">${fmtShort(ws[ws.length-1].d)}</text></svg>`;
 }
 function typeIcon(l){l=(''+(l||'')).toLowerCase();if(l.includes('microchip'))return '🔖';if(l.includes('pedigree'))return '📜';if(l.includes('atestado'))return '🩺';if(l.includes('exame'))return '🔬';if(l.includes('contrato')||l.includes('adoç')||l.includes('adoc'))return '📝';if(l.includes('receita'))return '💊';return '📄';}
-function renderDocs(dog){const files=dog.files||[];const hThumbs=(dog.health&&dog.health.docThumbs)||[];
+function renderDocs(dog){const files=dog.files||[];const he=dog.health||{};
+  const temHist=(he.vacinas||[]).length||(he.antiparasitario||[]).length||(he.vermifugo||[]).length||(he.condicoes||[]).length||he.vet||he.microchip;
   let h='';
-  if(hThumbs.length){h+=`<div class="card"><div class="sec-label">📷 Fotos de saúde lidas</div><p style="font-size:12.5px;color:var(--brown-mid);margin:0 0 10px">As fotos que a Nanny leu no Plano (carteiras, laudos) ficam guardadas aqui também.</p><div class="doc-thumbs">`+hThumbs.map((src,i)=>`<img class="doc-thumb" src="${src}" onclick="showImg(${i})">`).join('')+`</div></div>`;}
-  h+=`<div class="card"><div class="sec-label">📁 Documentos guardados</div>`;
-  if(files.length){h+=`<div class="doc-grid">`+files.map(f=>`<div class="doc-tile"><img src="${f.thumb}" onclick="viewUserDoc('${f.id}')"><div class="dt-meta"><span class="dt-ic">${typeIcon(f.label)}</span><span class="dt-lbl">${f.label}</span></div><button class="rm dt-rm" onclick="removeUserDoc('${f.id}')">remover</button></div>`).join('')+`</div>`;}
-  else{h+=`<div class="empty-doc"><div style="font-size:30px">📁</div><p style="margin:8px 0 0;font-size:13px;color:var(--brown-mid)">Nada guardado ainda. Junte aqui o microchip, pedigree, atestado e exames — tudo num lugar só, sem caçar em pasta.</p></div>`;}
-  h+=`<div style="margin-top:14px"><div style="font-size:12px;color:var(--brown-mid);margin-bottom:5px">Tipo do documento</div><select id="udoc-label" class="he-in"><option>Microchip</option><option>Pedigree</option><option>Atestado de saúde</option><option>Exame</option><option>Contrato / adoção</option><option>Receita</option><option>Outro</option></select><label class="chip up big" style="margin-top:8px">📎 Guardar documento<input type="file" accept="image/*,.pdf" onchange="addUserDoc(this)"></label><p style="font-size:11.5px;color:var(--brown-mid);opacity:.85;margin:8px 0 0">Por enquanto guarda imagens (foto/scan). PDF e sincronização entre aparelhos chegam com a conta na nuvem.</p></div></div>`;
+  if(temHist){h+=`<div class="card"><div class="sec-label">🩺 Histórico de saúde</div><p style="font-size:12.5px;color:var(--brown-mid);margin:0 0 2px">O que a Nanny leu dos documentos. Use ✎ pra corrigir ou ✕ pra remover.</p>${healthHistoryHTML(he)}</div>`;}
+  h+=`<div class="card"><div class="sec-label">📁 Documentos & fotos</div>`;
+  if(files.length){h+=`<div class="doc-grid">`+files.map(f=>{
+    if(fileEdit===f.id){return `<div class="doc-tile" style="padding:8px"><input id="fe-name" class="he-in" value="${(f.name||f.type||'').replace(/"/g,'&quot;')}" placeholder="nome (ex.: Hemograma mar/2026)"><select id="fe-type" class="he-in">${['Carteira de vacinação','Exame','Atestado de saúde','Microchip','Pedigree','Contrato / adoção','Receita','Outro'].map(o=>`<option${(f.type||'').toLowerCase()===o.toLowerCase()?' selected':''}>${o}</option>`).join('')}</select><div style="display:flex;gap:6px"><button class="chip sm" onclick="saveFile('${f.id}')">Salvar</button><button class="chip sm" onclick="fileEdit=null;renderDocs(dogObj())">Cancelar</button></div></div>`;}
+    return `<div class="doc-tile"><img src="${f.thumb}" onclick="viewUserDoc('${f.id}')"><div class="dt-meta"><span class="dt-ic">${typeIcon(f.type||f.label)}</span><span class="dt-lbl">${f.name||f.label||f.type}</span></div><div style="display:flex"><button class="rm dt-rm" style="flex:1" onclick="editFile('${f.id}')">✎ renomear</button><button class="rm dt-rm" style="flex:1;border-left:1px solid #f0e6da" onclick="removeUserDoc('${f.id}')">✕</button></div></div>`;
+  }).join('')+`</div>`;}
+  else{h+=`<div class="empty-doc"><div style="font-size:30px">📁</div><p style="margin:8px 0 0;font-size:13px;color:var(--brown-mid)">Nada guardado ainda. As fotos que você manda no Plano caem aqui, e você pode adicionar microchip, pedigree, atestado e exames — tudo num lugar só.</p></div>`;}
+  h+=`<div style="margin-top:14px"><div style="font-size:12px;color:var(--brown-mid);margin-bottom:5px">Guardar um documento novo</div><select id="udoc-label" class="he-in"><option>Exame</option><option>Atestado de saúde</option><option>Microchip</option><option>Pedigree</option><option>Contrato / adoção</option><option>Receita</option><option>Carteira de vacinação</option><option>Outro</option></select><label class="chip up big" style="margin-top:8px">📎 Guardar documento<input type="file" accept="image/*,.pdf" onchange="addUserDoc(this)"></label><p style="font-size:11.5px;color:var(--brown-mid);opacity:.85;margin:8px 0 0">Por enquanto guarda imagens (foto/scan). PDF e sincronização entre aparelhos chegam com a conta na nuvem.</p></div></div>`;
   document.getElementById('tab-docs').innerHTML=h;}
-function addUserDoc(input){const f=input.files&&input.files[0];if(!f)return;const dog=dogObj();if(!dog)return;const label=(document.getElementById('udoc-label')||{}).value||'Documento';
-  downscaleImage(f,1100,0.75).then(thumb=>{if(!thumb){alert('Por enquanto dá pra guardar imagens (foto ou scan). PDF chega com a conta na nuvem.');return;}dog.files=dog.files||[];dog.files.push({id:uid(),label,thumb,name:f.name,at:Date.now()});saveDogs();renderDocs(dog);});}
+function addUserDoc(input){const f=input.files&&input.files[0];if(!f)return;const dog=dogObj();if(!dog)return;const type=(document.getElementById('udoc-label')||{}).value||'Documento';
+  downscaleImage(f,1100,0.75).then(thumb=>{if(!thumb){alert('Por enquanto dá pra guardar imagens (foto ou scan). PDF chega com a conta na nuvem.');return;}dog.files=dog.files||[];dog.files.push({id:uid(),type,name:type,thumb,at:Date.now()});saveDogs();renderDocs(dog);});}
+function editFile(id){fileEdit=id;renderDocs(dogObj());}
+function saveFile(id){const dog=dogObj();if(!dog||!dog.files)return;const f=dog.files.find(x=>x.id===id);if(f){f.name=((document.getElementById('fe-name')||{}).value||'').trim()||f.type;f.type=(document.getElementById('fe-type')||{}).value||f.type;}fileEdit=null;saveDogs();renderDocs(dog);}
 function removeUserDoc(id){const dog=dogObj();if(!dog||!dog.files)return;dog.files=dog.files.filter(f=>f.id!==id);saveDogs();renderDocs(dog);}
 function viewUserDoc(id){const dog=dogObj();const f=(dog.files||[]).find(x=>x.id===id);if(!f)return;const lb=document.getElementById('lightbox');lb.innerHTML='<img src="'+f.thumb+'">';lb.style.display='flex';lb.onclick=()=>{lb.style.display='none'};}
 function weightCardHTML(dog){const ws=(dog.weights||[]);let rows='';
@@ -618,9 +638,10 @@ function renderPlan(dog){const items=carePlan(dog),hw=healthWatch(dog),b=getBree
   else{h+=`<p style="font-size:13.5px;color:var(--brown-mid);margin:0">Sem pontos específicos mapeados pra essa raça. Mande os documentos do vet no card acima que a Nanny organiza o histórico.</p>`;}
   h+=`</div>`;h+=weightCardHTML(dog);document.getElementById('tab-plano').innerHTML=h;}
 
-function renderReminders(dog){const up=upcomingReminders(dog);let h='';
-  if(up.length){h+=`<div class="card"><div class="sec-label">Próximos e atrasados</div>`;up.forEach(r=>h+=`<div class="remind"><div class="r-date" style="${r.overdue?'background:#f7dcd6':''}"><div class="d"${r.overdue?' style="color:#b5483a"':''}>${r.when.getDate()}</div><div class="mo"${r.overdue?' style="color:#b5483a"':''}>${MES[r.when.getMonth()]}</div></div><div><div class="r-t">${r.t}${r.overdue?' ⚠️':''}</div><div class="r-sub">${r.overdue?'Atrasada · ':''}${r.tipo} · ${fmt(r.when)}</div></div></div>`);h+=`</div>`;}
-  else{h+=`<div class="card empty"><div style="font-size:34px">🔔</div><p style="margin:10px 0 0">Marque no plano o que já foi feito (ou cadastre a data de nascimento) pra ver os próximos lembretes aqui.</p></div>`;}
+function renderReminders(dog){const up=upcomingReminders(dog);const att=up.filter(r=>r.status!=='upcoming'),fut=up.filter(r=>r.status==='upcoming');let h='';
+  if(att.length){h+=`<div class="card"><div class="sec-label" style="color:#b5602a">Precisa de atenção</div>`;att.forEach(r=>{const stale=r.status==='stale';h+=`<div class="remind"><div class="r-date" style="background:#f7dcd6"><div class="d" style="color:#b5483a">${r.when.getDate()}</div><div class="mo" style="color:#b5483a">${MES[r.when.getMonth()]}</div></div><div><div class="r-t">${r.t} ⚠️</div><div class="r-sub">${stale?`Última registrada faz tempo (${fmt(r.when)}) — confirme/registre a atual`:`Atrasada desde ${fmt(r.when)}`} · ${r.tipo}</div></div></div>`;});h+=`</div>`;}
+  if(fut.length){h+=`<div class="card"><div class="sec-label">Próximos</div>`;fut.forEach(r=>h+=`<div class="remind"><div class="r-date"><div class="d">${r.when.getDate()}</div><div class="mo">${MES[r.when.getMonth()]}</div></div><div><div class="r-t">${r.t}</div><div class="r-sub">${r.tipo} · ${fmt(r.when)}</div></div></div>`);h+=`</div>`;}
+  if(!att.length&&!fut.length){h+=`<div class="card empty"><div style="font-size:34px">🔔</div><p style="margin:10px 0 0">Mande a carteira de vacinação no Plano (ou marque o que já foi feito) pra ver os lembretes aqui.</p></div>`;}
   h+=`<div class="card" style="background:var(--warm)"><p style="margin:0;font-size:13px;color:var(--brown-mid)">🚧 <b>Em breve:</b> lembrete por e-mail/WhatsApp quando a data chegar.</p></div>`;
   document.getElementById('tab-lembretes').innerHTML=h;}
 
@@ -691,26 +712,45 @@ function downscaleImage(file,maxDim,q){return new Promise(res=>{
     const c=document.createElement('canvas');c.width=w;c.height=h;c.getContext('2d').drawImage(img,0,0,w,h);
     try{res(c.toDataURL('image/jpeg',q))}catch(e){res(null)}
   };img.onerror=()=>res(null);img.src=r.result;};r.onerror=()=>res(null);r.readAsDataURL(file);});}
+function hasUsefulData(ex){if(!ex)return false;return (ex.vacinas||[]).length||(ex.antiparasitario||[]).length||(ex.vermifugo||[]).length||(ex.condicoes||[]).length||(ex.proximas_datas||[]).length||ex.microchip||ex.vet;}
+function sanitizeExtraction(ex){if(!ex)return ex;const today=new Date();today.setHours(23,59,59,999);let flagged=false;
+  ['vacinas','antiparasitario','vermifugo'].forEach(cat=>{if(Array.isArray(ex[cat]))ex[cat].forEach(it=>{if(it&&it.data){const d=new Date(it.data+'T00:00:00');
+    if(isNaN(d)){it.data='';it.incerto=true;flagged=true;}
+    else if(d>today){it.data='';it.incerto=true;flagged=true;}
+    else if(d.getFullYear()<2005){it.incerto=true;flagged=true;}
+  }});});
+  if(Array.isArray(ex.proximas_datas))ex.proximas_datas=ex.proximas_datas.filter(p=>p&&p.data&&!isNaN(new Date(p.data+'T00:00:00')));
+  if(flagged)ex.precisa_revisao=true;
+  return ex;}
 async function nannyReadDoc(input,cond){
   const files=input.files?Array.prototype.slice.call(input.files):[];if(!files.length)return;
   const note=document.querySelector('#tab-plano .ai-note');
-  const setNote=(cls,txt)=>{if(note){note.className='ai-note '+cls;note.style.display='block';note.textContent=txt;}};
-  const dog=dogObj();dog.docs=dog.docs||[];let anyOk=false;
+  const setNote=(cls,txt)=>{if(note){note.className='ai-note '+cls;note.style.display='block';note.innerHTML=txt;}};
+  const dog=dogObj();dog.docs=dog.docs||[];let ok=0,empty=0,err=0;
   for(let i=0;i<files.length;i++){const f=files[i];
-    setNote('busy',`✨ Nanny está lendo ${files.length>1?`(${i+1} de ${files.length}) `:''}o documento…`);
+    setNote('busy',`✨ A Nanny está lendo ${files.length>1?`(${i+1} de ${files.length}) `:''}o documento…`);
     dog.docs.push({cond,name:f.name,at:Date.now()});
     try{
-      const b64=await new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result.split(',')[1]);r.onerror=rej;r.readAsDataURL(f);});
-      const media_type=f.type||'image/jpeg';
+      let apiData,apiType;
+      const big=await downscaleImage(f,1568,0.82);
+      if(big){apiData=big.split(',')[1];apiType='image/jpeg';}
+      else{apiData=await new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result.split(',')[1]);r.onerror=rej;r.readAsDataURL(f);});apiType=f.type||'image/jpeg';}
       const thumb=await downscaleImage(f,900,0.72);
-      const resp=await fetch('/api/nanny-read-doc',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({data:b64,media_type})});
-      const j=await resp.json();const ex=j&&j.extracted;
-      if(ex){dog.health=mergeHealth(dog.health,ex);if(thumb){dog.health.docThumbs=(dog.health.docThumbs||[]);dog.health.docThumbs.push(thumb);if(dog.health.docThumbs.length>8)dog.health.docThumbs.shift();}if(dog.health.microchip&&!dog.microchip)dog.microchip=dog.health.microchip;anyOk=true;}
-    }catch(e){}
+      const resp=await fetch('/api/nanny-read-doc',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({data:apiData,media_type:apiType})});
+      if(!resp.ok){err++;continue;}
+      const j=await resp.json();let ex=j&&j.extracted;
+      if(ex&&hasUsefulData(ex)){ex=sanitizeExtraction(ex);dog.health=mergeHealth(dog.health,ex);
+        if(thumb){dog.files=dog.files||[];const tp=ex.tipo_documento||'Documento de saúde';dog.files.push({id:uid(),type:tp,name:tp.charAt(0).toUpperCase()+tp.slice(1)+' · '+new Date().toLocaleDateString('pt-BR'),thumb,at:Date.now()});}
+        if(dog.health.microchip&&!dog.microchip)dog.microchip=dog.health.microchip;ok++;}
+      else{empty++;}
+    }catch(e){err++;}
   }
-  saveDogs();
-  if(anyOk){applyHealthToPlan(dog,dog.health);saveDogs();setTab('plano');renderProfile();window.scrollTo({top:0,behavior:'smooth'});return;}
-  setNote('warn','Não consegui ler. Tenta mais perto, com boa luz e uma página por vez.');
+  saveDogs();input.value='';
+  if(ok){applyHealthToPlan(dog,dog.health);saveDogs();setTab('plano');renderProfile();window.scrollTo({top:0,behavior:'smooth'});
+    if(err||empty){const n2=document.querySelector('#tab-plano .ai-note');if(n2){n2.className='ai-note warn';n2.style.display='block';n2.innerHTML=`Li ${ok} de ${files.length}. ${empty?'Algumas não tinham dados que eu reconheça. ':''}${err?'Outra(s) falharam — toca de novo pra tentar.':''}`;}}
+    return;}
+  if(err){setNote('warn','⚠️ Tive um problema na leitura (conexão ou servidor). Toca de novo no botão — costuma resolver na segunda.');return;}
+  setNote('warn','Li a foto, mas não encontrei vacinas nem datas. Confere se está nítida, reta e mostrando as datas — e manda <b>uma página por vez</b>.');
 }
 
 /* ---------- listas ---------- */
