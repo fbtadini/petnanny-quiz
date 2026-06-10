@@ -40,6 +40,18 @@ module.exports = async function handler(req, res) {
       '(com PART/FABR/VENC), REVACINAÇÃO "23/04/2021" → vacina {nome:"Vanguard Plus", ' +
       'data:"2021-04-02"} e proximas_datas {o_que:"Revacinação Vanguard Plus", data:"2021-04-23"}. ' +
       'Ignore o FABR/VENC do adesivo.\n\n' +
+      'CLASSIFIQUE cada vacina pela FUNÇÃO, no campo "classe":\n' +
+      '- "polivalente" = a múltipla (cinomose/parvovirose/hepatite/parainfluenza ± leptospirose): V6/V8/V10, Vanguard, Vanguard Plus, Nobivac DHPPi, Nobivac DHPPi+L, Nobivac Canine/Canino (1-Dp, 1-DAPPv), óctupla, déctupla.\n' +
+      '- "antirrabica" = antirrábica/raiva.\n' +
+      '- "tosse_canis" = tosse dos canis/Bordetella: Nobivac KC, Vanguard B Oral, Bronchi-Shield. ATENÇÃO: NÃO é polivalente.\n' +
+      '- "giardia" = GiardiaVax. "leishmaniose" = Leish-Tec/Leishmune. "outra" = o resto.\n' +
+      'Cuidado: nem todo "Nobivac"/"Vanguard" é polivalente — Nobivac KC e Vanguard B Oral são tosse_canis.\n\n' +
+      'SE o documento for PEDIGREE / CERTIFICADO / REGISTRO (CBKC, kennel club, certificado de raça/genealogia): ' +
+      'preencha o objeto "pedigree" (nome de registro, nº de registro, raça, cor, nascimento, canil/criador, pai, mãe, microchip se houver) e deixe as listas de saúde vazias.\n\n' +
+      'SE for LAUDO / EXAME (sangue/hemograma, bioquímico, urina, imagem, raio-X, ultrassom, avaliação ortopédica como patela/displasia, ecocardiograma): ' +
+      'preencha "exames" com {tipo, data, achado}. O "achado" é um RESUMO CURTO do que o laudo CONCLUI, nas palavras do próprio documento ' +
+      '(ex.: "luxação de patela grau 2 no joelho esquerdo", "hemograma dentro da normalidade", "sopro cardíaco grau II"). ' +
+      'NÃO interprete nem dê diagnóstico seu — apenas transcreva/resuma o que o laudo afirma. Se não houver conclusão clara, deixe achado "".\n\n' +
       'TRABALHE EM ETAPAS:\n' +
       'ETAPA 0 — Diga que tipo de documento é.\n' +
       'ETAPA 1 — Transcreva LINHA POR LINHA, da PRIMEIRA até a ÚLTIMA, SEM PULAR NENHUMA. ' +
@@ -50,15 +62,17 @@ module.exports = async function handler(req, res) {
       'Prefira sempre a data MAIS RECENTE legível; na dúvida entre dois anos, escreva o que está escrito, não o mais antigo. ' +
       'Se a data manuscrita estiver ilegível, deixe "" e marque "incerto":true.\n' +
       'ETAPA 2 — No FINAL, só o JSON entre <json> e </json>:\n' +
-      '<json>{"tipo_documento":"carteira de vacinação | nota de antipulga | nota de vermífugo | laudo de exame | receita | outro",' +
+      '<json>{"tipo_documento":"carteira de vacinação | nota de antipulga | nota de vermífugo | laudo de exame | receita | pedigree/certificado | outro",' +
       '"resumo":"frase curta do que leu",' +
-      '"vacinas":[{"nome":"","data":"AAAA-MM-DD","incerto":false}],' +
+      '"vacinas":[{"nome":"","classe":"polivalente|antirrabica|tosse_canis|giardia|leishmaniose|outra","data":"AAAA-MM-DD","incerto":false}],' +
       '"antiparasitario":[{"produto":"","data":"AAAA-MM-DD","incerto":false}],' +
       '"vermifugo":[{"produto":"","data":"AAAA-MM-DD","incerto":false}],' +
       '"condicoes":[],"vet":"","microchip":"",' +
+      '"exames":[{"tipo":"","data":"AAAA-MM-DD","achado":"","incerto":false}],' +
+      '"pedigree":{"nome_registro":"","registro":"","raca":"","cor":"","nascimento":"AAAA-MM-DD","canil":"","pai":"","mae":"","microchip":""},' +
       '"proximas_datas":[{"o_que":"","data":"AAAA-MM-DD"}],' +
       '"confianca":"alta|media|baixa","precisa_revisao":true}</json>\n\n' +
-      'Preencha só o que REALMENTE está no documento. Converta datas para AAAA-MM-DD. ' +
+      'Preencha só o que REALMENTE está no documento (deixe vazio o que não houver). Converta datas para AAAA-MM-DD. ' +
       'confianca="baixa" se a foto estiver ruim/ilegível. NÃO invente nada.';
 
     const apiResp = await fetch('https://api.anthropic.com/v1/messages', {
