@@ -194,6 +194,25 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent)}
     <div style="margin-top:22px"><button class="btn" id="reg-submit" onclick="submitDog()">Gerar guia e plano de cuidado →</button></div>
   </section>
 
+  <section id="s-prechegada" class="screen">
+    <h1 style="font-size:26px">Plano de chegada</h1>
+    <p class="sub">Pra você se preparar pra chegada do seu cão — só o que importa agora. Peso, vacinas e o resto entram quando ele chegar.</p>
+    <label>Raça (ou o que você está pensando)</label>
+    <select id="pc-breed" onchange="togglePcOutra()"></select>
+    <div id="pc-outra-wrap" style="display:none">
+      <label>Qual raça ou mistura?</label>
+      <input id="pc-outra" placeholder="Ex.: Labradoodle, vira-lata caramelo…">
+    </div>
+    <label>De onde ele vem? <span class="opt">(opcional)</span></label>
+    <select id="pc-origem"><option value="">Selecione…</option><option value="adotado">Adoção — ONG / abrigo / resgate</option><option value="filhote_criador">Criador / loja</option><option value="indeciso">Ainda decidindo de onde</option></select>
+    <label>Previsão de chegada <span class="opt">(se já tiver ideia)</span></label>
+    <input id="pc-prev" type="date">
+    <label>Nome <span class="opt">(se já escolheu)</span></label>
+    <input id="pc-name" placeholder="Pode deixar em branco por enquanto" autocomplete="off">
+    <div class="err" id="pc-error" style="display:none"></div>
+    <div style="margin-top:22px"><button class="btn" onclick="submitPreChegada()">Criar plano de chegada →</button></div>
+  </section>
+
   <section id="s-profile" class="screen">
     <div class="dog-head">
       <div class="avatar-wrap" id="p-avatar-wrap"><div class="avatar" id="p-avatar" onclick="avatarTap()"><span id="p-emoji">🐶</span></div><span class="cam" onclick="event.stopPropagation();pickPhoto()"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="3.5"/></svg></span><input id="p-photo" type="file" accept="image/*" style="display:none" onchange="onPhoto(this)"></div>
@@ -253,22 +272,49 @@ function quizCtx(){const q=readQuiz();if(!q)return null;const a=q.quizAnswers||{
   return {matchedKey:top.key||'',matchedName:top.name||'',top3:(q.results||[]).slice(0,3).map(r=>r.name),arquetipo:pt.arquetipo_id||(q.conjoint&&q.conjoint.archetype)||'',resumoVoce:pt.voce||'',atividade:a.atividade||'',experiencia:a.experiencia||'',criancas:a.criancas||'',origem:a.origem||'',grooming:a.grooming||'',email:q.email||'',at:q.timestamp||''};}
 function startRegisterFromQuiz(){const qc=quizCtx();startRegister();if(qc){pendingQuizCtx=true;const sel=document.getElementById('f-breed');if(sel&&qc.matchedKey){sel.value=qc.matchedKey;onBreedChange();}if(qc.origem==='adotar'){const o=document.getElementById('f-origem');if(o)o.value='adotado';}}}
 function startPreChegada(){
-  const qc=quizCtx();
-  startRegister();
-  regAguardando=true;
-  document.getElementById('reg-title').textContent='Plano de chegada';
-  document.getElementById('reg-submit').textContent='Criar plano de chegada →';
-  if(qc){pendingQuizCtx=true;const sel=document.getElementById('f-breed');if(sel&&qc.matchedKey){sel.value=qc.matchedKey;onBreedChange();}if(qc.origem==='adotar'){const o=document.getElementById('f-origem');if(o)o.value='adotado';}}
+  const qc=(typeof quizCtx==='function')?quizCtx():null;
+  ['pc-name','pc-prev','pc-outra'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
+  const og=document.getElementById('pc-origem'); if(og)og.value=(qc&&qc.origem==='adotar')?'adotado':'';
+  const pc=document.getElementById('pc-breed'); if(pc)pc.value=(qc&&qc.matchedKey)?qc.matchedKey:'';
+  togglePcOutra();
+  const er=document.getElementById('pc-error'); if(er)er.style.display='none';
+  show('s-prechegada');
+}
+function togglePcOutra(){const w=document.getElementById('pc-outra-wrap');if(w)w.style.display=(document.getElementById('pc-breed').value==='__outra')?'block':'none';}
+function showErrPC(msg){const e=document.getElementById('pc-error');e.textContent=msg;e.style.display='block';}
+function submitPreChegada(){
+  const breedKey=document.getElementById('pc-breed').value;
+  const custom=document.getElementById('pc-outra').value.trim();
+  const prev=document.getElementById('pc-prev').value;
+  const origem=document.getElementById('pc-origem').value;
+  const nome=document.getElementById('pc-name').value.trim();
+  if(!breedKey)return showErrPC('Escolha a raça (ou "ainda estou decidindo").');
+  if(breedKey==='__outra'&&!custom)return showErrPC('Escreve a raça ou mistura que você está pensando.');
+  const indeciso=breedKey==='__indeciso';
+  const dog={id:uid(),aguardando:true,indeciso,
+    nome:nome||'Meu futuro cão',
+    breedKey:indeciso?'':breedKey, customBreed:breedKey==='__outra'?custom:null,
+    previsao:prev||null, origem:origem||'',
+    pesoFaixa:'',sexo:'',nascimento:null,idadeMeses:null,castrado:'',microchip:'',chegada:null,
+    notes:'',photo:null,photoPos:{x:50,y:50},docs:[],done:{},
+    quiz:(typeof quizCtx==='function')?quizCtx():null, criadoEm:new Date().toISOString()};
+  dogs.push(dog);saveDogs();currentId=dog.id;renderProfile();show('s-profile');setTab('guia');window.scrollTo(0,0);
 }
 function openAdmin(){renderAdmin();show('s-admin')}
 
 document.querySelectorAll('#f-sex button').forEach(b=>b.onclick=()=>{document.querySelectorAll('#f-sex button').forEach(x=>x.classList.remove('on'));b.classList.add('on');sex=b.dataset.v});
 document.querySelectorAll('#f-neut button').forEach(b=>b.onclick=()=>{document.querySelectorAll('#f-neut button').forEach(x=>x.classList.remove('on'));b.classList.add('on');neut=b.dataset.v});
 
-function fillBreeds(){
-  const sel=document.getElementById('f-breed');
+function breedOptionsHTML(undecided){
   const arr=Object.keys(BREEDS).filter(k=>k!=='srd').map(k=>({k,name:BREEDS[k].name})).sort((a,b)=>a.name.localeCompare(b.name,'pt'));
-  sel.innerHTML='<option value="">Selecione a raça…</option><option value="srd">🐾  SRD — vira-lata / sem raça definida</option><option value="__outra">➕  Outra raça ou mistura (não listada)</option><option value="" disabled>──────────────</option>'+arr.map(b=>`<option value="${b.k}">${BREEDS[b.k].emoji}  ${b.name}</option>`).join('');
+  let h='<option value="">Selecione a raça…</option>';
+  if(undecided) h+='<option value="__indeciso">🤔  Ainda estou decidindo a raça</option>';
+  h+='<option value="srd">🐾  SRD — vira-lata / sem raça definida</option><option value="__outra">➕  Outra raça ou mistura (não listada)</option><option value="" disabled>──────────────</option>'+arr.map(b=>`<option value="${b.k}">${BREEDS[b.k].emoji}  ${b.name}</option>`).join('');
+  return h;
+}
+function fillBreeds(){
+  const f=document.getElementById('f-breed'); if(f)f.innerHTML=breedOptionsHTML(false);
+  const pc=document.getElementById('pc-breed'); if(pc)pc.innerHTML=breedOptionsHTML(true);
 }
 function onBreedChange(){document.getElementById('outra-name').style.display=(document.getElementById('f-breed').value==='__outra')?'block':'none';}
 function onBirthChange(){
@@ -725,8 +771,10 @@ function setAvatar(){const dog=dogObj(),b=getBreed(dog),av=document.getElementBy
 }
 function renderProfile(){const dog=dogObj();if(!dog)return goHome();migrateDog(dog);const b=getBreed(dog);
   document.getElementById('p-name').textContent=dog.nome;
-  const raca=b._synthetic?dog.customBreed:b.name;
-  const rg=rangeOf(dog);document.getElementById('p-meta').textContent=`${raca} · ${ageLabel(ageInMonths(dog))}${rg?(' · '+rg.band):''}${dog.sexo?(' · '+(dog.sexo==='femea'?'fêmea':'macho')):''}`;
+  let raca=b._synthetic?(dog.customBreed||'Raça a definir'):b.name;
+  if(dog.indeciso) raca='Ainda decidindo a raça';
+  if(dog.aguardando){document.getElementById('p-meta').textContent=raca+' · plano de chegada'+(dog.previsao?(' · previsão '+fmtISO(dog.previsao)):'');}
+  else{const rg=rangeOf(dog);document.getElementById('p-meta').textContent=`${raca} · ${ageLabel(ageInMonths(dog))}${rg?(' · '+rg.band):''}${dog.sexo?(' · '+(dog.sexo==='femea'?'fêmea':'macho')):''}`;}
   const pc=document.getElementById('p-chip');if(dog.microchip){pc.style.display='block';pc.textContent='🔖 Microchip: '+dog.microchip}else{pc.style.display='none'}
   const ss=statusSummary(dog),ps=document.getElementById('p-status');if(ps){if(dog.aguardando){ps.style.display='none';}else{ps.style.display='block';ps.className='status-sum '+ss.cls;ps.textContent=ss.txt;}}
   setAvatar();renderAcolher(dog);renderGuide(dog);renderPlan(dog);renderReminders(dog);renderDocs(dog);}
@@ -756,23 +804,94 @@ function renderAcolher(dog){
   box.innerHTML=h;
 }
 
+function isDoubleCoat(b){
+  if(!b||b._synthetic||b.hypo) return false;   // hipoalergênico = pelo tipo cabelo, sem subpelo
+  const t=((b.name||'')+' '+(b.desc||'')+' '+(b.aviso||'')+' '+(b.pelagem||'')+' '+((b.tags||[]).join(' '))).toLowerCase();
+  if(/spitz|pomer|lulu|husky|samoieda|akita|chow|corgi|pastor|malamute|subpelo|pelo duplo|pelo dobro|dupla camada|dupla pelagem/.test(t)) return true;
+  return (b.grm>=4 && b.ctl>=4);   // muita pelagem + tolera frio = forte indício de subpelo
+}
+function chegadaGearHTML(dog){
+  const b=getBreed(dog);
+  if(dog.indeciso||b._synthetic||dog.breedKey==='srd'){
+    return '<div class="note-soft" style="font-size:13px;margin-top:8px">Quando você definir a raça (e, pra SRD, o porte e o tipo de pelo dele), a Nanny personaliza esta lista — escova certa, porte da ração, riscos de saúde da raça e mais. Por ora, o básico acima já cobre o essencial.</div>';
+  }
+  const ele=gArt(dog)+' '+dog.nome;
+  // Fonte de verdade: flags estruturadas por raça. Fallback heurístico só se a raça não estiver no mapa.
+  const c=(typeof BREED_CARE!=='undefined' && BREED_CARE[dog.breedKey])||{};
+  const coat=c.coat||(b.hypo?'hair':(isDoubleCoat(b)?'double':(b.grm>=4?'wire':'short')));
+  const crit=[], care=[];
+
+  // ===== SEGURANÇA CRÍTICA DA RAÇA (errar aqui machuca) =====
+  if(c.brachy) crit.push(['😤','Respiração — focinho achatado',`${b.name} é braquicefálica: respira com menos folga. Use <b>peitoral, nunca coleira</b> (a coleira aperta as vias aéreas), <b>evite calor e esforço intenso</b> e mantenha no peso. <b>Emergência:</b> ofegância intensa que não passa, língua/gengiva arroxeada ou muito esforço pra respirar — vet na hora.`]);
+  if(c.bloat) crit.push(['🚨','Torção gástrica (bloat)',`Peito fundo tem risco de <b>torção do estômago</b> — emergência que mata em horas. Reduza o risco: <b>não exercite logo após comer</b>, fracione em 2 refeições e desacelere quem come rápido (comedouro lento). <b>Emergência:</b> barriga estufada e dura + tentar vomitar sem nada sair — vet imediatamente.`]);
+  if(c.longBack) crit.push(['🦴','Coluna — corpo alongado',`O corpo comprido sobrecarrega a coluna (risco de hérnia de disco). <b>Evite saltos e escadas</b> (use rampas/degraus), não deixe ${ele} ficar muito tempo “de pezinho” e mantenha no peso. <b>Emergência:</b> dor nas costas, recusa de andar ou arrastar as patas — vet urgente.`]);
+
+  // ===== CUIDADOS SOB MEDIDA =====
+  // Ração (porte + fase de vida) — base Merck/VCA/Tufts
+  let racao;
+  if(b.siz<=2) racao=`Ração de <b>porte pequeno</b> (grão miúdo). Filhote: ração de filhote em <b>refeições mais frequentes</b> — cães miúdos podem ter queda de açúcar (hipoglicemia) se passam muito tempo sem comer — até ~12 meses; depois, adulta da mesma linha.`;
+  else if(b.siz>=4) racao=`Ração de <b>porte grande</b>. Filhote: <b>ração de filhote de raça grande</b>, que controla o ritmo de crescimento e protege as articulações (crescer rápido demais sobrecarrega ossos em formação). Não suplemente cálcio por conta própria.`;
+  else racao=`Ração de <b>porte médio</b> — de filhote enquanto for filhote (até a maturidade) e depois adulta.`;
+  racao+=` Descubra o que ${ele} já vem comendo e <b>troque qualquer ração aos poucos (~1 semana)</b>, pra não dar problema de intestino.`;
+  care.push(['🍖','Ração',racao]);
+  // Pelagem (por tipo de coat) — base groomers de referência
+  if(coat==='double') care.push(['🪮','Pelagem dupla (com subpelo)',`<b>Escova de pinos + rasqueadeira</b> com regularidade e <b>rastelo de subpelo</b> nas trocas de pelo — evita nós, deixa a pele respirar e ajuda a regular a temperatura. <b>Evite furminator/lâmina</b> (cortam o pelo) e <b>nunca raspe</b>: destrói a pelagem e a proteção contra calor e frio. Banho só quando precisar, com secagem boa.`]);
+  else if(coat==='hair') care.push(['🪮','Pelagem que cresce sempre',`O pelo cresce contínuo e <b>embola</b> (cai pouco): <b>escova de pinos + pente</b> com frequência e <b>tosa/aparar</b> regular com profissional pra não criar nós. Dispensa furminator/rastelo de subpelo.`]);
+  else if(coat==='wire') care.push(['🪮','Pelagem dura (wire)',`Pelo áspero: <b>escovação regular</b> e <b>tosa profissional</b> (idealmente stripping) a cada 1–2 meses pra manter a textura e evitar nós. Não use furminator.`]);
+  else care.push(['🪮','Pelagem curta',`Baixa manutenção — uma escova de cerdas macias 1x/semana tira pelo morto e ativa a pele. Banho só quando necessário.`]);
+  // Joelhos (patela) — via flag
+  if(c.patella) care.push(['🦵','Joelhos (patela)',`Raça propensa a <b>luxação de patela</b> — mantenha ${ele} no peso ideal, evite saltos do sofá/cama (uma rampinha ajuda) e peça ao vet pra checar os joelhos nas consultas.`]);
+  // Dentes (cães pequenos)
+  if(b.siz<=2) care.push(['🦷','Dentes',`Cães pequenos acumulam mais tártaro — comece cedo a <b>escovar os dentes</b> (pasta <b>de cão</b>, nunca a humana) e ofereça petiscos dentais.`]);
+  // Articulações de porte grande (quando não há flag de bloat já cobrindo)
+  if(b.siz>=4 && !c.bloat) care.push(['🦴','Articulações',`Porte grande: enquanto filhote, segure saltos e escadas em excesso e não force exercício — protege as articulações em formação.`]);
+  // Clima
+  if(b.ctl!=null&&b.ctl<=2) care.push(['🧥','Frio',`Sente o frio — casaquinho nos dias frios e cama longe de corrente de ar.`]);
+  if(!c.brachy && b.htl!=null && b.htl<=2) care.push(['☀️','Calor',`Sofre no calor — passeio em horário fresco, água sempre à mão e nunca no sol ou dentro do carro.`]);
+  // Energia
+  if(b.nrg>=4) care.push(['🎾','Gasto de energia',`Energia alta: além de passeio, brinquedos de cabeça (recheável, tapete de farejar) ajudam a gastar e evitam bagunça por tédio.`]);
+  // Iniciante
+  if(b.beg<=2||b.dificuldade==='avancado') care.push(['🎓','Treino',`Não é a raça mais fácil pra começar — vale um adestrador com <b>reforço positivo</b> desde cedo.`]);
+
+  const item=i=>`<div class="hw"><div class="hw-top"><div class="hw-ic">${i[0]}</div><div><div class="hw-t">${i[1]}</div><div class="hw-i" style="line-height:1.5">${i[2]}</div></div></div></div>`;
+  let h='';
+  if(crit.length) h+='<div class="sec-label" style="margin:15px 0 4px;color:#b5602a">⚠️ Atenção especial pra '+b.name+'</div>'+crit.map(item).join('');
+  h+='<div class="sec-label" style="margin:15px 0 4px">Cuidados sob medida pra '+b.name+'</div>'+care.map(item).join('');
+  h+='<p style="font-size:12px;color:var(--brown-mid);margin:8px 0 0">São orientações por <b>categoria</b> — o que procurar e por quê — pra você decidir com seu vet. Em breve a Nanny vai sugerir exemplos e facilitar a compra.</p>';
+  return h;
+}
 function preChegadaHTML(dog){
   const temNome=dog.nome&&dog.nome!=='Meu futuro cão';
-  const itens=[
-    'Escolher um veterinário perto e já deixar o primeiro check-up agendado pra logo após a chegada',
-    'O cantinho dele: cama/caminha, comedouro e bebedouro, num lugar calmo da casa',
-    'Comida adequada à idade e porte — pergunte ao criador/ONG o que ele já come, pra não trocar tudo de uma vez',
-    'Itens básicos: guia, coleira com plaquinha de identificação, tapete higiênico e alguns brinquedos',
+  const quem=temNome?('d'+gArt(dog)+' '+dog.nome):'dele';
+  const provavelFilhote=dog.origem==='filhote_criador';
+  const comuns=[
+    'Cantinho num lugar calmo: cama/caminha + um cercadinho ou caixa (crate) pra confinamento seguro quando você não puder vigiar — ajuda também no xixi no lugar certo',
+    'Comedouro e bebedouro',
+    'Guia + <b>peitoral</b> (melhor que coleira pra maioria) e uma <b>plaquinha de identificação com seu telefone</b>',
+    'Brinquedos de morder (fase de dentição) e de cabeça (recheável, tapete de farejar)',
+    'Tapete higiênico e o local do xixi já definido',
     'Transporte seguro pra trazer ele (caixa de transporte ou cinto)',
-    'Combinar as regras da casa com todo mundo antes — consistência desde o dia 1 facilita tudo'
+    'Combinar as regras da casa com todo mundo antes — consistência desde o dia 1'
+  ];
+  const seguranca='<b>Deixe a casa à prova de cão:</b> guarde produtos de limpeza, remédios e fios elétricos, e mantenha fora do alcance os <b>alimentos e plantas tóxicos</b> — chocolate, uva e passas, cebola e alho, xilitol (adoçante de alguns produtos), macadâmia; plantas como comigo-ninguém-pode e lírio.';
+  const vet=[
+    'Agende a <b>primeira consulta</b> pros primeiros dias após a chegada. Leve os <b>papéis</b> (vacinas, vermífugo, contrato de adoção/compra) e, se der, uma <b>amostra de fezes fresca</b> — verme é comum em cão novo e nem sempre dá sinal.',
+    'Alinhe o <b>plano de prevenção</b>: vacinas, <b>vermífugo</b>, <b>antipulga/carrapato</b> e <b>verme do coração (dirofilariose)</b>.',
+    'Converse sobre <b>castração</b> e o momento certo (em cães grandes, costuma ser depois de terminar de crescer).'
   ];
   const prev=ADAPT_PHASES[0];
   let h='<div class="card" style="border-color:#cfe3d4;background:var(--green-light)">'
     +'<div class="sec-label">🗓️ Plano de chegada</div>'
-    +`<p style="margin:0 0 8px;font-size:13.5px">Antes ${temNome?('d'+gArt(dog)+' '+dog.nome):'dele'} chegar, dá pra deixar tudo pronto. Quando chegar, é só avisar aqui que a Nanny ativa o acompanhamento dos primeiros 90 dias.</p>`
-    +'<div class="sec-label" style="margin:10px 0 4px">Checklist pra preparar</div>'
-    +`<ul style="margin:0;padding-left:18px;font-size:13px;color:var(--brown)">${itens.map(i=>`<li style="margin:4px 0">${i}</li>`).join('')}</ul>`
-    +`<div class="sec-label" style="margin:12px 0 4px">O que esperar nos primeiros dias</div><p style="margin:0;font-size:13px;color:var(--brown-mid)"><b>${prev.t}:</b> ${prev.normal} ${prev.faca}</p>`
+    +`<p style="margin:0 0 8px;font-size:13.5px">Antes ${quem} chegar, dá pra deixar tudo pronto. Quando chegar, é só avisar aqui que a Nanny ativa o acompanhamento dos primeiros 90 dias.</p>`
+    +(dog.previsao?`<p style="margin:0 0 8px;font-size:12.5px;color:var(--brown-mid)">Previsão de chegada: ${fmtISO(dog.previsao)}</p>`:'')
+    +'<div class="sec-label" style="margin:10px 0 4px">O que ter em casa (vale pra todo cão)</div>'
+    +`<ul style="margin:0;padding-left:18px;font-size:13px;color:var(--brown)">${comuns.map(i=>`<li style="margin:4px 0">${i}</li>`).join('')}</ul>`
+    +`<div class="note-soft" style="font-size:12.5px;margin-top:8px">${seguranca}</div>`
+    +'<div class="sec-label" style="margin:13px 0 4px">No primeiro veterinário</div>'
+    +`<ul style="margin:0;padding-left:18px;font-size:13px;color:var(--brown)">${vet.map(i=>`<li style="margin:4px 0">${i}</li>`).join('')}</ul>`
+    +chegadaGearHTML(dog)
+    +`<div class="sec-label" style="margin:14px 0 4px">O que esperar nos primeiros dias</div><p style="margin:0;font-size:13px;color:var(--brown-mid)"><b>${prev.t}:</b> ${prev.normal} ${prev.faca}</p>`
+    +(provavelFilhote?`<p style="margin:8px 0 0;font-size:12.5px;color:var(--brown-mid)"><b>Se for filhote:</b> a janela de socialização (≈3 a 16 semanas) é ouro — apresente sons, pessoas e ambientes novos com calma e reforço positivo. Mas, antes de completar as vacinas, evite parques e o chão do pet shop (risco de doença); socialize com cães vacinados que você confia.</p>`:'')
     +'<div style="margin-top:14px"><button class="btn" onclick="marcouChegada()">🎉 Ele chegou!</button></div>'
     +`<div class="nanny-msg" style="margin-top:11px"><div class="nanny-av">${WESTIE}</div><div class="nanny-bubble">Sem pressa pra decidir tudo — o importante é o básico pronto e um ambiente calmo. O resto a gente ajusta quando ele chegar.</div></div>`
     +'</div>';
@@ -780,7 +899,7 @@ function preChegadaHTML(dog){
 }
 function marcouChegada(){
   const dog=dogObj(); if(!dog)return;
-  dog.aguardando=false;
+  dog.aguardando=false; dog.indeciso=false;
   dog.chegada=new Date().toISOString().slice(0,10);
   saveDogs(); renderProfile(); setTab('guia'); window.scrollTo({top:0,behavior:'smooth'});
 }
