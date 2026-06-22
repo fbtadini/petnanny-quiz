@@ -246,6 +246,7 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent)}
 </div>
 
 <script src="breeds.js"></script>
+<script src="gear.js"></script>
   <script>
 const WESTIE='<svg viewBox="0 0 100 100"><path d="M24 42 L20 10 L42 24 Z" fill="#fff" stroke="#c9b798" stroke-width="3" stroke-linejoin="round"/><path d="M76 42 L80 10 L58 24 Z" fill="#fff" stroke="#c9b798" stroke-width="3" stroke-linejoin="round"/><path d="M20 55 Q20 28 50 28 Q80 28 80 55 Q80 78 72 83 Q64 89 54 88 Q50 92 46 88 Q36 89 28 83 Q20 78 20 55 Z" fill="#fff" stroke="#c9b798" stroke-width="3" stroke-linejoin="round"/><ellipse cx="38" cy="53" rx="4" ry="5" fill="#3d2c1e"/><ellipse cx="62" cy="53" rx="4" ry="5" fill="#3d2c1e"/><ellipse cx="50" cy="67" rx="6" ry="5" fill="#3d2c1e"/></svg>';
 
@@ -860,19 +861,26 @@ function chegadaGearHTML(dog){
   h+='<p style="font-size:12px;color:var(--brown-mid);margin:8px 0 0">São orientações por <b>categoria</b> — o que procurar e por quê — pra você decidir com seu vet. Em breve a Nanny vai sugerir exemplos e facilitar a compra.</p>';
   return h;
 }
+function shoppingHTML(dog){
+  const b=getBreed(dog);
+  const indef = dog.indeciso || b._synthetic || dog.breedKey==='srd';
+  const c = indef ? {} : ((typeof BREED_CARE!=='undefined' && BREED_CARE[dog.breedKey])||{});
+  let list=[];
+  try { if(typeof gearListFor==='function') list=gearListFor(dog,b,c)||[]; } catch(e){}
+  if(indef){ const uni=['comedouro','cama','guia_peitoral','plaquinha','transporte','tapete','confinamento']; list=list.filter(i=>uni.indexOf(i.id)>=0); }
+  if(!list.length) return '';
+  const temLink=list.some(i=>i.link);
+  const rows=list.map(i=>{
+    const btn=i.link?`<a href="${i.link}" target="_blank" rel="noopener nofollow sponsored" style="display:inline-block;margin-top:6px;background:#7a9970;color:#fff;text-decoration:none;border-radius:8px;padding:5px 12px;font-size:12px;font-weight:600">Ver na loja →</a>`:'';
+    return `<div class="hw"><div class="hw-top"><div class="hw-ic">${i.ic}</div><div><div class="hw-t">${i.nome}</div><div class="hw-i" style="line-height:1.5">${i.oque}</div>${btn}</div></div></div>`;
+  }).join('');
+  const discl=temLink?'<p style="font-size:12px;color:var(--brown-mid);margin:8px 0 0">Links de compra podem gerar comissão pra PetNanny, sem custo a mais pra você. Sugerimos por categoria, não por marca — você decide com seu vet.</p>':'';
+  return rows+discl;
+}
 function preChegadaHTML(dog){
   const temNome=dog.nome&&dog.nome!=='Meu futuro cão';
   const quem=temNome?('d'+gArt(dog)+' '+dog.nome):'dele';
   const provavelFilhote=dog.origem==='filhote_criador';
-  const comuns=[
-    'Cantinho num lugar calmo: cama/caminha + um cercadinho ou caixa (crate) pra confinamento seguro quando você não puder vigiar — ajuda também no xixi no lugar certo',
-    'Comedouro e bebedouro',
-    'Guia + <b>peitoral</b> (melhor que coleira pra maioria) e uma <b>plaquinha de identificação com seu telefone</b>',
-    'Brinquedos de morder (fase de dentição) e de cabeça (recheável, tapete de farejar)',
-    'Tapete higiênico e o local do xixi já definido',
-    'Transporte seguro pra trazer ele (caixa de transporte ou cinto)',
-    'Combinar as regras da casa com todo mundo antes — consistência desde o dia 1'
-  ];
   const seguranca='<b>Deixe a casa à prova de cão:</b> guarde produtos de limpeza, remédios e fios elétricos, e mantenha fora do alcance os <b>alimentos e plantas tóxicos</b> — chocolate, uva e passas, cebola e alho, xilitol (adoçante de alguns produtos), macadâmia; plantas como comigo-ninguém-pode e lírio.';
   const vet=[
     'Agende a <b>primeira consulta</b> pros primeiros dias após a chegada. Leve os <b>papéis</b> (vacinas, vermífugo, contrato de adoção/compra) e, se der, uma <b>amostra de fezes fresca</b> — verme é comum em cão novo e nem sempre dá sinal.',
@@ -884,8 +892,9 @@ function preChegadaHTML(dog){
     +'<div class="sec-label">🗓️ Plano de chegada</div>'
     +`<p style="margin:0 0 8px;font-size:13.5px">Antes ${quem} chegar, dá pra deixar tudo pronto. Quando chegar, é só avisar aqui que a Nanny ativa o acompanhamento dos primeiros 90 dias.</p>`
     +(dog.previsao?`<p style="margin:0 0 8px;font-size:12.5px;color:var(--brown-mid)">Previsão de chegada: ${fmtISO(dog.previsao)}</p>`:'')
-    +'<div class="sec-label" style="margin:10px 0 4px">O que ter em casa (vale pra todo cão)</div>'
-    +`<ul style="margin:0;padding-left:18px;font-size:13px;color:var(--brown)">${comuns.map(i=>`<li style="margin:4px 0">${i}</li>`).join('')}</ul>`
+    +'<div class="sec-label" style="margin:10px 0 4px">🛒 Lista de chegada'+(temNome?(' pr'+gArt(dog)+' '+dog.nome):'')+'</div>'
+    +shoppingHTML(dog)
+    +'<p style="font-size:12px;color:var(--brown-mid);margin:6px 0 0">E o que não se compra: combine as regras da casa com todo mundo antes — consistência desde o dia 1.</p>'
     +`<div class="note-soft" style="font-size:12.5px;margin-top:8px">${seguranca}</div>`
     +'<div class="sec-label" style="margin:13px 0 4px">No primeiro veterinário</div>'
     +`<ul style="margin:0;padding-left:18px;font-size:13px;color:var(--brown)">${vet.map(i=>`<li style="margin:4px 0">${i}</li>`).join('')}</ul>`

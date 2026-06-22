@@ -73,13 +73,13 @@
       box.innerHTML = '<div style="background:#f7f2ea;border:1px solid #e8ddd2;border-radius:14px;padding:14px;margin:12px 0">'
         + '<div style="font-size:13px;color:#7a6a58;margin-bottom:8px">🔕 Lembretes pausados para <strong>' + t.email + '</strong>.</div>'
         + '<button id="nanny-react" style="background:#7a9970;color:#fff;border:0;border-radius:10px;padding:9px 16px;font-weight:600;cursor:pointer">Voltar a receber lembretes</button></div>';
-      document.getElementById('nanny-react').onclick = function () { nannySync(true, 'sim'); };
+      document.getElementById('nanny-react').onclick = function () { var tt = getTutor(); if (tt) { tt.optin = 'sim'; setTutor(tt); } renderOptIn(); nannySync(true, 'sim'); };
       return;
     }
     if (t && t.email) {   // ativo
       box.innerHTML = '<div style="font-size:13px;color:#7a9970">🔔 Lembretes ativos em <strong>' + t.email + '</strong> · '
         + '<a href="#" id="nanny-pause" style="color:#9a8b78">pausar</a></div>';
-      document.getElementById('nanny-pause').onclick = function (ev) { ev.preventDefault(); nannySync(true, 'nao'); };
+      document.getElementById('nanny-pause').onclick = function (ev) { ev.preventDefault(); var tt = getTutor(); if (tt) { tt.optin = 'nao'; setTutor(tt); } renderOptIn(); nannySync(true, 'nao'); };
       return;
     }
     // sem tutor: formulário
