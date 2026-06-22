@@ -861,21 +861,41 @@ function chegadaGearHTML(dog){
   h+='<p style="font-size:12px;color:var(--brown-mid);margin:8px 0 0">São orientações por <b>categoria</b> — o que procurar e por quê — pra você decidir com seu vet. Em breve a Nanny vai sugerir exemplos e facilitar a compra.</p>';
   return h;
 }
+function toggleGear(id, cb){
+  const dog=dogObj(); if(!dog) return;
+  dog.gearDone=dog.gearDone||{};
+  if(cb.checked) dog.gearDone[id]=1; else delete dog.gearDone[id];
+  if(typeof saveDogs==='function') saveDogs();
+  const lab=cb.closest('.gear-item');
+  if(lab){ lab.style.opacity=cb.checked?'0.55':'1'; const t=lab.querySelector('.hw-t'); if(t)t.style.textDecoration=cb.checked?'line-through':'none'; }
+  const box=cb.closest('.gear-list');
+  if(box){ const n=box.querySelectorAll('input[type=checkbox]:checked').length; const c=box.querySelector('.gear-count'); if(c)c.textContent=n; }
+}
+window.toggleGear=toggleGear;
 function shoppingHTML(dog){
   const b=getBreed(dog);
   const indef = dog.indeciso || b._synthetic || dog.breedKey==='srd';
   const c = indef ? {} : ((typeof BREED_CARE!=='undefined' && BREED_CARE[dog.breedKey])||{});
   let list=[];
   try { if(typeof gearListFor==='function') list=gearListFor(dog,b,c)||[]; } catch(e){}
-  if(indef){ const uni=['comedouro','cama','guia_peitoral','plaquinha','transporte','tapete','confinamento']; list=list.filter(i=>uni.indexOf(i.id)>=0); }
+  if(indef){ const uni=['comedouro','cama','peitoral','plaquinha','transporte','tapete','confinamento']; list=list.filter(i=>uni.indexOf(i.id)>=0); }
   if(!list.length) return '';
-  const temLink=list.some(i=>i.link);
-  const rows=list.map(i=>{
-    const btn=i.link?`<a href="${i.link}" target="_blank" rel="noopener nofollow sponsored" style="display:inline-block;margin-top:6px;background:#7a9970;color:#fff;text-decoration:none;border-radius:8px;padding:5px 12px;font-size:12px;font-weight:600">Ver na loja →</a>`:'';
-    return `<div class="hw"><div class="hw-top"><div class="hw-ic">${i.ic}</div><div><div class="hw-t">${i.nome}</div><div class="hw-i" style="line-height:1.5">${i.oque}</div>${btn}</div></div></div>`;
+  const loja=(typeof GEAR_LOJA!=='undefined'&&GEAR_LOJA)||{nome:'loja',base:'',cupom:''};
+  const done=dog.gearDone||{};
+  let nDone=0;
+  const rows=list.map((i,idx)=>{
+    const iid=i.id||('it'+idx);
+    const ck=!!done[iid]; if(ck)nDone++;
+    const btn=i.url?`<a href="${i.url}" target="_blank" rel="noopener nofollow sponsored" onclick="event.stopPropagation()" style="display:inline-block;margin-top:7px;background:#7a9970;color:#fff;text-decoration:none;border-radius:8px;padding:5px 12px;font-size:12px;font-weight:600">Ver opções na ${loja.nome} →</a>`:'';
+    return `<label class="gear-item" style="display:flex;gap:11px;align-items:flex-start;background:#fff;border:1px solid var(--line);border-radius:12px;padding:11px 13px;margin:7px 0;cursor:pointer;${ck?'opacity:.55':''}">`
+      +`<input type="checkbox" ${ck?'checked':''} onchange="toggleGear('${iid}',this)" style="margin-top:2px;width:18px;height:18px;flex:none;accent-color:#7a9970;cursor:pointer">`
+      +`<div style="flex:1"><div class="hw-t" style="${ck?'text-decoration:line-through':''}">${i.ic} ${i.nome}</div><div class="hw-i" style="line-height:1.5">${i.oque}</div>${btn}</div>`
+      +`</label>`;
   }).join('');
-  const discl=temLink?'<p style="font-size:12px;color:var(--brown-mid);margin:8px 0 0">Links de compra podem gerar comissão pra PetNanny, sem custo a mais pra você. Sugerimos por categoria, não por marca — você decide com seu vet.</p>':'';
-  return rows+discl;
+  const header=`<div style="display:flex;align-items:center;gap:7px;margin:2px 0 8px;font-size:12.5px;color:#4f6347;font-weight:600">✓ <span class="gear-count">${nDone}</span> de ${list.length} prontos · marque o que já tem</div>`;
+  const cupomBanner=loja.cupom?`<div style="background:#eef5ea;border:1px dashed #b6cdb0;border-radius:10px;padding:10px 12px;margin:8px 0;font-size:12.5px;color:#4f6347"><b>Cupom da Nanny: ${loja.cupom}</b> — 10% de desconto pra você na ${loja.nome}, em qualquer item. <span style="color:var(--brown-mid)">Ajuda a manter a Nanny no ar (ganhamos uma pequena comissão, sem custo a mais).</span></div>`:'';
+  const discl=`<p style="font-size:12px;color:var(--brown-mid);margin:8px 0 0">Cada botão leva à busca da categoria na ${loja.nome} — você compara e escolhe. Podemos ganhar uma comissão, sem custo a mais pra você. Por <b>categoria</b>, nunca por marca.</p>`;
+  return cupomBanner+'<div class="gear-list">'+header+rows+'</div>'+discl;
 }
 function preChegadaHTML(dog){
   const temNome=dog.nome&&dog.nome!=='Meu futuro cão';
