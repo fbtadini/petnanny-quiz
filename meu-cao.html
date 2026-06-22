@@ -154,6 +154,7 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent)}
     <p class="sub">Cadastre seu cão e receba na hora a guia da raça e um plano de cuidado feito pra ele. Funciona pra qualquer cão — raça definida ou não.</p>
     <div id="dogList"></div>
     <button class="btn" onclick="startRegister()">+ Cadastrar meu cão</button>
+    <button class="btn" onclick="startPreChegada()" style="background:transparent;color:var(--brown);border:1.5px solid #e8ddd2;box-shadow:none;margin-top:8px">🗓️ Vou pegar um cão — plano de chegada</button>
     <div id="nanny-optin"></div>
     <p class="foot" onclick="openAdmin()" style="cursor:pointer">babá digital · PetNanny</p>
   </section>
@@ -246,10 +247,19 @@ function uid(){return 'd'+Date.now().toString(36)+Math.random().toString(36).sli
 function show(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));document.getElementById(id).classList.add('active');window.scrollTo(0,0);document.getElementById('backBtn').style.visibility=(id==='s-welcome')?'hidden':'visible'}
 function goHome(){renderList();show('s-welcome')}
 let pendingQuizCtx=false;
+let regAguardando=false;
 function readQuiz(){try{const q=JSON.parse(localStorage.getItem('petnanny_quiz_result')||'null');if(q&&q.results&&q.results.length)return q;}catch(e){}return null;}
 function quizCtx(){const q=readQuiz();if(!q)return null;const a=q.quizAnswers||{},top=q.results[0]||{},pt=q.perfilTutor||{};
   return {matchedKey:top.key||'',matchedName:top.name||'',top3:(q.results||[]).slice(0,3).map(r=>r.name),arquetipo:pt.arquetipo_id||(q.conjoint&&q.conjoint.archetype)||'',resumoVoce:pt.voce||'',atividade:a.atividade||'',experiencia:a.experiencia||'',criancas:a.criancas||'',origem:a.origem||'',grooming:a.grooming||'',email:q.email||'',at:q.timestamp||''};}
 function startRegisterFromQuiz(){const qc=quizCtx();startRegister();if(qc){pendingQuizCtx=true;const sel=document.getElementById('f-breed');if(sel&&qc.matchedKey){sel.value=qc.matchedKey;onBreedChange();}if(qc.origem==='adotar'){const o=document.getElementById('f-origem');if(o)o.value='adotado';}}}
+function startPreChegada(){
+  const qc=quizCtx();
+  startRegister();
+  regAguardando=true;
+  document.getElementById('reg-title').textContent='Plano de chegada';
+  document.getElementById('reg-submit').textContent='Criar plano de chegada →';
+  if(qc){pendingQuizCtx=true;const sel=document.getElementById('f-breed');if(sel&&qc.matchedKey){sel.value=qc.matchedKey;onBreedChange();}if(qc.origem==='adotar'){const o=document.getElementById('f-origem');if(o)o.value='adotado';}}
+}
 function openAdmin(){renderAdmin();show('s-admin')}
 
 document.querySelectorAll('#f-sex button').forEach(b=>b.onclick=()=>{document.querySelectorAll('#f-sex button').forEach(x=>x.classList.remove('on'));b.classList.add('on');sex=b.dataset.v});
@@ -276,7 +286,7 @@ function getBreed(dog){
 }
 
 function startRegister(){
-  editingId=null;pendingQuizCtx=false;
+  editingId=null;pendingQuizCtx=false;regAguardando=false;
   document.getElementById('reg-title').textContent='Vamos conhecer seu cão';
   document.getElementById('reg-submit').textContent='Gerar guia e plano de cuidado →';
   ['f-name','f-breed','f-birth','f-age-y','f-age-m','f-weight','f-outra','f-chip','f-chegada','f-origem'].forEach(id=>{const e=document.getElementById(id);if(e)e.value=''});
@@ -296,16 +306,18 @@ function submitDog(){
   const chip=document.getElementById('f-chip').value.trim();
   const chegada=document.getElementById('f-chegada').value;
   const origem=document.getElementById('f-origem').value;
-  if(!nome)return showErr('Como seu cão se chama?');
+  if(!nome&&!regAguardando)return showErr('Como seu cão se chama?');
   if(!breedKey)return showErr('Escolha a raça (ou "Outra raça/mistura").');
   if(breedKey==='__outra'&&!custom)return showErr('Escreve a raça ou mistura do seu cão.');
   if(birth&&new Date(birth+'T00:00:00')>new Date())return showErr('A data de nascimento não pode ser no futuro.');
-  if(pesoFaixa==='')return showErr('Escolha a faixa de peso do seu cão.');
-  const base={nome,breedKey,customBreed:breedKey==='__outra'?custom:null,pesoFaixa,sexo:sex,nascimento:birth||null,idadeMeses:birth?null:(ay*12+am),castrado:neut,microchip:chip,chegada:chegada||null,origem:origem||''};
+  if(pesoFaixa===''&&!regAguardando)return showErr('Escolha a faixa de peso do seu cão.');
+  const nomeFinal=nome||(regAguardando?'Meu futuro cão':nome);
+  const base={nome:nomeFinal,breedKey,customBreed:breedKey==='__outra'?custom:null,pesoFaixa,sexo:sex,nascimento:birth||null,idadeMeses:birth?null:(ay*12+am),castrado:neut,microchip:chip,chegada:chegada||null,origem:origem||''};
   if(editingId){const d=dogs.find(x=>x.id===editingId);if(d){Object.assign(d,base);saveDogs();currentId=editingId}editingId=null;renderProfile();show('s-profile');setTab('guia');return;}
-  const dog=Object.assign({id:uid(),notes:'',photo:null,photoPos:{x:50,y:50},docs:[],done:{},quiz:pendingQuizCtx?quizCtx():null,criadoEm:new Date().toISOString()},base);
+  const wasAguard=regAguardando;regAguardando=false;
+  const dog=Object.assign({id:uid(),notes:'',photo:null,photoPos:{x:50,y:50},docs:[],done:{},aguardando:wasAguard,quiz:pendingQuizCtx?quizCtx():null,criadoEm:new Date().toISOString()},base);
   pendingQuizCtx=false;
-  dogs.push(dog);saveDogs();currentId=dog.id;renderProfile();show('s-profile');setTab('plano');
+  dogs.push(dog);saveDogs();currentId=dog.id;renderProfile();show('s-profile');setTab(wasAguard?'guia':'plano');
 }
 function editDog(){
   const dog=dogObj();if(!dog)return;editingId=dog.id;
@@ -716,12 +728,13 @@ function renderProfile(){const dog=dogObj();if(!dog)return goHome();migrateDog(d
   const raca=b._synthetic?dog.customBreed:b.name;
   const rg=rangeOf(dog);document.getElementById('p-meta').textContent=`${raca} · ${ageLabel(ageInMonths(dog))}${rg?(' · '+rg.band):''}${dog.sexo?(' · '+(dog.sexo==='femea'?'fêmea':'macho')):''}`;
   const pc=document.getElementById('p-chip');if(dog.microchip){pc.style.display='block';pc.textContent='🔖 Microchip: '+dog.microchip}else{pc.style.display='none'}
-  const ss=statusSummary(dog),ps=document.getElementById('p-status');if(ps){ps.style.display='block';ps.className='status-sum '+ss.cls;ps.textContent=ss.txt;}
+  const ss=statusSummary(dog),ps=document.getElementById('p-status');if(ps){if(dog.aguardando){ps.style.display='none';}else{ps.style.display='block';ps.className='status-sum '+ss.cls;ps.textContent=ss.txt;}}
   setAvatar();renderAcolher(dog);renderGuide(dog);renderPlan(dog);renderReminders(dog);renderDocs(dog);}
 function setTab(t){document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('on',x.dataset.tab===t));['guia','plano','lembretes','docs'].forEach(x=>document.getElementById('tab-'+x).style.display=(x===t)?'block':'none')}
 
 function renderAcolher(dog){
   const box=document.getElementById('p-acolher'); if(!box) return;
+  if(dog.aguardando){box.style.display='block';box.innerHTML=preChegadaHTML(dog);return;}
   const ph=adaptPhase(dog);
   if(!ph){box.style.display='none';box.innerHTML='';return;}   // só nos primeiros ~120 dias com data de chegada
   box.style.display='block';
@@ -741,6 +754,35 @@ function renderAcolher(dog){
     +`<div class="nanny-msg" style="margin-top:11px"><div class="nanny-av">${WESTIE}</div><div class="nanny-bubble">${ph.msg}</div></div>`
     +`</div>`;
   box.innerHTML=h;
+}
+
+function preChegadaHTML(dog){
+  const temNome=dog.nome&&dog.nome!=='Meu futuro cão';
+  const itens=[
+    'Escolher um veterinário perto e já deixar o primeiro check-up agendado pra logo após a chegada',
+    'O cantinho dele: cama/caminha, comedouro e bebedouro, num lugar calmo da casa',
+    'Comida adequada à idade e porte — pergunte ao criador/ONG o que ele já come, pra não trocar tudo de uma vez',
+    'Itens básicos: guia, coleira com plaquinha de identificação, tapete higiênico e alguns brinquedos',
+    'Transporte seguro pra trazer ele (caixa de transporte ou cinto)',
+    'Combinar as regras da casa com todo mundo antes — consistência desde o dia 1 facilita tudo'
+  ];
+  const prev=ADAPT_PHASES[0];
+  let h='<div class="card" style="border-color:#cfe3d4;background:var(--green-light)">'
+    +'<div class="sec-label">🗓️ Plano de chegada</div>'
+    +`<p style="margin:0 0 8px;font-size:13.5px">Antes ${temNome?('d'+gArt(dog)+' '+dog.nome):'dele'} chegar, dá pra deixar tudo pronto. Quando chegar, é só avisar aqui que a Nanny ativa o acompanhamento dos primeiros 90 dias.</p>`
+    +'<div class="sec-label" style="margin:10px 0 4px">Checklist pra preparar</div>'
+    +`<ul style="margin:0;padding-left:18px;font-size:13px;color:var(--brown)">${itens.map(i=>`<li style="margin:4px 0">${i}</li>`).join('')}</ul>`
+    +`<div class="sec-label" style="margin:12px 0 4px">O que esperar nos primeiros dias</div><p style="margin:0;font-size:13px;color:var(--brown-mid)"><b>${prev.t}:</b> ${prev.normal} ${prev.faca}</p>`
+    +'<div style="margin-top:14px"><button class="btn" onclick="marcouChegada()">🎉 Ele chegou!</button></div>'
+    +`<div class="nanny-msg" style="margin-top:11px"><div class="nanny-av">${WESTIE}</div><div class="nanny-bubble">Sem pressa pra decidir tudo — o importante é o básico pronto e um ambiente calmo. O resto a gente ajusta quando ele chegar.</div></div>`
+    +'</div>';
+  return h;
+}
+function marcouChegada(){
+  const dog=dogObj(); if(!dog)return;
+  dog.aguardando=false;
+  dog.chegada=new Date().toISOString().slice(0,10);
+  saveDogs(); renderProfile(); setTab('guia'); window.scrollTo({top:0,behavior:'smooth'});
 }
 
 /* ---------- foto: upload + reposicionar ---------- */
