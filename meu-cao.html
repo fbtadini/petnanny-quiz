@@ -705,7 +705,6 @@ function renderReminders(dog){const up=upcomingReminders(dog);const att=up.filte
   if(att.length){h+=`<div class="card"><div class="sec-label" style="color:#b5602a">Precisa de atenção</div>`;att.forEach(r=>{const stale=r.status==='stale';h+=`<div class="remind"><div class="r-date" style="background:#f7dcd6"><div class="d" style="color:#b5483a">${r.when.getDate()}</div><div class="mo" style="color:#b5483a">${MES[r.when.getMonth()]}</div></div><div><div class="r-t">${r.t} ⚠️</div><div class="r-sub">${stale?`Última registrada faz tempo (${fmt(r.when)}) — confirme/registre a atual`:`Atrasada desde ${fmt(r.when)}`} · ${r.tipo}</div></div></div>`;});h+=`</div>`;}
   if(fut.length){h+=`<div class="card"><div class="sec-label">Próximos</div>`;fut.forEach(r=>h+=`<div class="remind"><div class="r-date"><div class="d">${r.when.getDate()}</div><div class="mo">${MES[r.when.getMonth()]}</div></div><div><div class="r-t">${r.t}</div><div class="r-sub">${r.tipo} · ${fmt(r.when)}</div></div></div>`);h+=`</div>`;}
   if(!att.length&&!fut.length){h+=`<div class="card empty"><div style="font-size:34px">🔔</div><p style="margin:10px 0 0">Mande a carteira de vacinação no Plano (ou marque o que já foi feito) pra ver os lembretes aqui.</p></div>`;}
-  h+=`<div class="card" style="background:var(--warm)"><p style="margin:0;font-size:13px;color:var(--brown-mid)">🚧 <b>Em breve:</b> lembrete por e-mail/WhatsApp quando a data chegar.</p></div>`;
   document.getElementById('tab-lembretes').innerHTML=h;}
 
 function dogObj(){return dogs.find(d=>d.id===currentId)}
