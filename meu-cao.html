@@ -154,6 +154,7 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent)}
     <p class="sub">Cadastre seu cão e receba na hora a guia da raça e um plano de cuidado feito pra ele. Funciona pra qualquer cão — raça definida ou não.</p>
     <div id="dogList"></div>
     <button class="btn" onclick="startRegister()">+ Cadastrar meu cão</button>
+    <div id="nanny-optin"></div>
     <p class="foot" onclick="openAdmin()" style="cursor:pointer">babá digital · PetNanny</p>
   </section>
 
@@ -239,7 +240,7 @@ function rangeOf(dog){if(dog.pesoFaixa!=null&&dog.pesoFaixa!==''&&WRANGES[dog.pe
 let dogs=[],currentId=null,sex='',neut='',porte=3,reposMode=false,editingId=null,dragged=false,healthEdit=null,fileEdit=null;
 
 function loadDogs(){try{dogs=JSON.parse(localStorage.getItem(LS_KEY))||[]}catch(e){dogs=[]}}
-function saveDogs(){try{localStorage.setItem(LS_KEY,JSON.stringify(dogs))}catch(e){}}
+function saveDogs(){try{localStorage.setItem(LS_KEY,JSON.stringify(dogs))}catch(e){}; if(window.nannySync)window.nannySync();}
 function uid(){return 'd'+Date.now().toString(36)+Math.random().toString(36).slice(2,5)}
 function show(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));document.getElementById(id).classList.add('active');window.scrollTo(0,0);document.getElementById('backBtn').style.visibility=(id==='s-welcome')?'hidden':'visible'}
 function goHome(){renderList();show('s-welcome')}
@@ -833,5 +834,7 @@ loadDogs();fillBreeds();renderList();document.getElementById('f-birth').max=new 
 </script>
 <div id="lightbox"></div>
 <div id="ficha"></div>
+<script src="nanny-identity.js"></script>
+<script>document.addEventListener('DOMContentLoaded',function(){window.nannyBoot&&window.nannyBoot();});</script>
 </body>
 </html>
