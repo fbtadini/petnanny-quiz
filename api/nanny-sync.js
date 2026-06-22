@@ -13,14 +13,14 @@ module.exports = async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ ok: false, error: 'Use POST' });
 
   try {
-    const { action, email, dogs, proximas, token, send_welcome } = req.body || {};
+    const { action, email, dogs, proximas, token, send_welcome, set_optin } = req.body || {};
     const GS = process.env.NANNY_GS_URL;
     const SHARED = process.env.NANNY_SHARED;
     if (!GS || !SHARED) return res.status(500).json({ ok: false, error: 'env faltando' });
 
     let payload;
     if (action === 'save') {
-      payload = { event: 'nanny_save', shared: SHARED, email, dogs, proximas, send_welcome: !!send_welcome };
+      payload = { event: 'nanny_save', shared: SHARED, email, dogs, proximas, send_welcome: !!send_welcome, set_optin };
     } else if (action === 'load') {
       payload = { event: 'nanny_load', shared: SHARED, token };
     } else {
