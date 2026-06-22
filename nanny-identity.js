@@ -20,6 +20,13 @@
   function buildProximas() {
     var out = [];
     currentDogs().forEach(function (d) {
+      if (d.aguardando) {
+        // cão ainda não chegou: 1 nudge de volta (~10 dias), sem datas de vacina
+        var base = d.criadoEm ? new Date(d.criadoEm) : new Date();
+        var when = new Date(base.getTime() + 10 * 864e5);
+        out.push({ o_que: 'Já pegou seu cão? Atualize o plano de chegada com a Nanny', nome: (d.nome && d.nome !== 'Meu futuro cão') ? d.nome : '', data: when.toISOString().slice(0, 10) });
+        return;
+      }
       var ups = [];
       try { ups = (window.upcomingReminders ? window.upcomingReminders(d) : []) || []; } catch (e) {}
       ups.forEach(function (u) { if (u && u.when) out.push({ o_que: u.t || 'um cuidado', nome: d.nome || '', data: new Date(u.when).toISOString().slice(0, 10) }); });
