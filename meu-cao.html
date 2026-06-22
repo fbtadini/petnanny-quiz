@@ -788,6 +788,42 @@ function renderProfile(){const dog=dogObj();if(!dog)return goHome();migrateDog(d
   setAvatar();renderAcolher(dog);renderGuide(dog);renderPlan(dog);renderReminders(dog);renderDocs(dog);}
 function setTab(t){document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('on',x.dataset.tab===t));['guia','plano','lembretes','docs'].forEach(x=>document.getElementById('tab-'+x).style.display=(x===t)?'block':'none')}
 
+const MARCOS=[
+  {id:'casa',t:'🏡 Chegou em casa'},
+  {id:'noite',t:'🌙 Primeira noite dormida'},
+  {id:'comeu',t:'🍽️ Primeira refeição completa'},
+  {id:'xixi',t:'✅ Primeiro xixi no lugar certo'},
+  {id:'passeio',t:'🦮 Primeiro passeio na rua'},
+  {id:'nome',t:'🐶 Atendeu pelo nome'},
+  {id:'vet',t:'🩺 Primeira ida ao vet'},
+  {id:'comando',t:'🎓 Primeiro comando (senta!)'},
+  {id:'amigo',t:'🐾 Brincou com outro cão ou pessoa'}
+];
+function marcosHTML(dog){
+  const done=dog.marcos||{}; let n=0;
+  const rows=MARCOS.map(m=>{
+    const dt=done[m.id], ck=!!dt; if(ck)n++;
+    const when=ck?(' · '+fmtISO(dt)):'';
+    return `<label style="display:flex;gap:9px;align-items:center;padding:6px 2px;cursor:pointer">`
+      +`<input type="checkbox" ${ck?'checked':''} onchange="toggleMarco('${m.id}',this)" style="width:17px;height:17px;flex:none;accent-color:#4a7c59;cursor:pointer">`
+      +`<span style="font-size:13px;color:${ck?'var(--brown)':'var(--brown-mid)'}">${m.t}<span class="marco-when" style="color:#4a7c59;font-weight:600">${when}</span></span>`
+      +`</label>`;
+  }).join('');
+  return `<div class="sec-label" style="margin:13px 0 2px">🎉 Diário de marcos <span style="font-weight:500;color:var(--brown-mid)">· <span class="marco-count">${n}</span>/${MARCOS.length}</span></div>`
+    +`<p style="margin:0 0 4px;font-size:12px;color:var(--brown-mid)">Marque as primeiras conquistas — a data fica guardada e vira a história de vocês.</p>`
+    +rows;
+}
+function toggleMarco(id,cb){
+  const dog=dogObj(); if(!dog) return;
+  dog.marcos=dog.marcos||{};
+  if(cb.checked) dog.marcos[id]=new Date().toISOString().slice(0,10); else delete dog.marcos[id];
+  if(typeof saveDogs==='function') saveDogs();
+  const span=cb.parentElement.querySelector('.marco-when');
+  if(span) span.textContent=cb.checked?(' · '+fmtISO(dog.marcos[id])):'';
+  const card=cb.closest('.card'), c=card&&card.querySelector('.marco-count');
+  if(c) c.textContent=Object.keys(dog.marcos).length;
+}
+window.toggleMarco=toggleMarco;
 function renderAcolher(dog){
   const box=document.getElementById('p-acolher'); if(!box) return;
   if(dog.aguardando){box.style.display='block';box.innerHTML=preChegadaHTML(dog);return;}
@@ -807,6 +843,7 @@ function renderAcolher(dog){
     +`<p style="margin:0 0 10px;font-size:13.5px"><b>O que ajuda:</b> ${ph.faca}</p>`
     +`<div class="sec-label" style="margin:10px 0 4px">Primeiros passos</div>`
     +`<ul style="margin:0;padding-left:18px;font-size:13px;color:var(--brown)">${itens.map(i=>`<li style="margin:3px 0">${i}</li>`).join('')}</ul>`
+    +marcosHTML(dog)
     +`<div class="nanny-msg" style="margin-top:11px"><div class="nanny-av">${WESTIE}</div><div class="nanny-bubble">${ph.msg}</div></div>`
     +`</div>`;
   box.innerHTML=h;
