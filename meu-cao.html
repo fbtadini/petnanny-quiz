@@ -201,6 +201,7 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent)}
     <div class="repos-hint" id="reposHint">Arraste a foto pra ajustar · toque de novo pra salvar</div>
     <div style="display:flex;gap:8px;margin:2px 0 10px;flex-wrap:wrap"><button class="chip" onclick="editDog()">✎ Editar dados</button><button class="chip" onclick="printFicha()">🖨️ Ficha (PDF)</button></div>
     <div id="p-status" class="status-sum" style="display:none"></div>
+    <div id="p-acolher" style="display:none"></div>
     <div class="tabs">
       <div class="tab on" data-tab="guia" onclick="setTab('guia')">Raça</div>
       <div class="tab" data-tab="plano" onclick="setTab('plano')">Plano</div>
@@ -456,8 +457,6 @@ function behaviorHTML(dog,b){let h='';
     if(b.kid<=2&&q.criancas==='criancas_pequenas')notes.push(`Com criança pequena em casa, supervisione as interações e ensine a criança a respeitar o espaço do cão.`);
     if(b.grm>=4&&q.grooming==='grooming_minimo')notes.push(`${b.name} dá trabalho de pelo, e no quiz você preferia manutenção mínima — programe escovação/tosa pra não acumular.`);
     if(notes.length)h+=`<div class="card"><div class="sec-label">📋 Do seu quiz — alinhando expectativa</div><p style="font-size:12.5px;color:var(--brown-mid);margin:0 0 6px">Cruzando o que você contou no quiz com a realidade ${gDe(dog)} ${dog.nome}:</p>${notes.map(n=>`<div class="pi-d" style="padding:6px 0;line-height:1.5">• ${n}</div>`).join('')}</div>`;}
-  const ph=adaptPhase(dog);
-  if(ph){h+=`<div class="card" style="border-color:#cfe3d4;background:var(--green-light)"><div class="sec-label">🌱 Fase de adaptação · ${ph.t}</div><p style="margin:0 0 6px;font-size:13.5px"><b>O que é normal agora:</b> ${ph.normal}</p><p style="margin:0 0 8px;font-size:13.5px"><b>O que ajuda:</b> ${ph.faca}</p><div class="nanny-msg"><div class="nanny-av">${WESTIE}</div><div class="nanny-bubble">${ph.msg}</div></div></div>`;}
   const sel=dog.temperamento||[];
   h+=`<div class="card"><div class="sec-label">Como ${gArt(dog)} ${dog.nome} é</div><p style="font-size:13px;color:var(--brown-mid);margin:0 0 9px">Marque o que combina — a Nanny usa pra personalizar as dicas de convívio.</p><div class="tags">${TEMPERAMENTOS.map(t=>`<span class="tag" style="cursor:pointer;${sel.indexOf(t.key)>=0?'background:var(--accent);color:#fff':''}" onclick="toggleTemperamento('${t.key}')">${sel.indexOf(t.key)>=0?'✓ ':''}${t.label}</span>`).join('')}</div></div>`;
   const cs=behaviorConcerns(dog,b);
@@ -718,8 +717,31 @@ function renderProfile(){const dog=dogObj();if(!dog)return goHome();migrateDog(d
   const rg=rangeOf(dog);document.getElementById('p-meta').textContent=`${raca} · ${ageLabel(ageInMonths(dog))}${rg?(' · '+rg.band):''}${dog.sexo?(' · '+(dog.sexo==='femea'?'fêmea':'macho')):''}`;
   const pc=document.getElementById('p-chip');if(dog.microchip){pc.style.display='block';pc.textContent='🔖 Microchip: '+dog.microchip}else{pc.style.display='none'}
   const ss=statusSummary(dog),ps=document.getElementById('p-status');if(ps){ps.style.display='block';ps.className='status-sum '+ss.cls;ps.textContent=ss.txt;}
-  setAvatar();renderGuide(dog);renderPlan(dog);renderReminders(dog);renderDocs(dog);}
+  setAvatar();renderAcolher(dog);renderGuide(dog);renderPlan(dog);renderReminders(dog);renderDocs(dog);}
 function setTab(t){document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('on',x.dataset.tab===t));['guia','plano','lembretes','docs'].forEach(x=>document.getElementById('tab-'+x).style.display=(x===t)?'block':'none')}
+
+function renderAcolher(dog){
+  const box=document.getElementById('p-acolher'); if(!box) return;
+  const ph=adaptPhase(dog);
+  if(!ph){box.style.display='none';box.innerHTML='';return;}   // só nos primeiros ~120 dias com data de chegada
+  box.style.display='block';
+  const d=Math.floor((startOfToday()-new Date(dog.chegada+'T00:00:00'))/86400000);
+  const itens=[];
+  itens.push('Primeira ida ao vet pra um check-up e confirmar o protocolo de vacina');
+  if(!dog.microchip) itens.push('Microchip — se ainda não tiver, vale registrar (proteção se ele se perder)');
+  itens.push('Conferir vacinas e antiparasitário na aba <b>Plano</b> <button class="chip sm" style="margin-left:4px" onclick="setTab(\'plano\')">Ir →</button>');
+  itens.push('Rotina calma e consistente desde o dia 1 — comida, água e um cantinho só dele');
+  let h='<div class="card" style="border-color:#cfe3d4;background:var(--green-light)">'
+    +`<div class="sec-label">🌱 Acolhimento · dia ${d+1} de 90</div>`
+    +`<div style="font-weight:700;font-size:15px;margin:2px 0 7px">${ph.t}</div>`
+    +`<p style="margin:0 0 6px;font-size:13.5px"><b>O que é normal agora:</b> ${ph.normal}</p>`
+    +`<p style="margin:0 0 10px;font-size:13.5px"><b>O que ajuda:</b> ${ph.faca}</p>`
+    +`<div class="sec-label" style="margin:10px 0 4px">Primeiros passos</div>`
+    +`<ul style="margin:0;padding-left:18px;font-size:13px;color:var(--brown)">${itens.map(i=>`<li style="margin:3px 0">${i}</li>`).join('')}</ul>`
+    +`<div class="nanny-msg" style="margin-top:11px"><div class="nanny-av">${WESTIE}</div><div class="nanny-bubble">${ph.msg}</div></div>`
+    +`</div>`;
+  box.innerHTML=h;
+}
 
 /* ---------- foto: upload + reposicionar ---------- */
 function pickPhoto(){document.getElementById('p-photo').click()}
