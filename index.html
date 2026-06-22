@@ -4516,6 +4516,34 @@ function toggleBreedDetails(btn){
   }
 }
 
+// Calibração de expectativa — verdades ABSOLUTAS da raça (independem do perfil do
+// usuário; complementam o getTradeoffWarning, que é por mismatch). Base científica:
+// expectativa inadequada é fator forte de abandono. Honestidade > venda — a tese da casa.
+// Usa atributos do BREEDS + flags de saúde do BREED_CARE (quando presente). Máx 3 itens.
+function getRealTalk(key){
+  const b=BREEDS[key]; if(!b) return '';
+  const c=(typeof BREED_CARE!=='undefined' && BREED_CARE[key])||{};
+  const pts=[];
+  if(c.brachy) pts.push({p:9,t:'<b>Focinho achatado:</b> pode ter dificuldade real pra respirar, sofre no calor e tende a precisar de vet com mais frequência (às vezes cirurgia). Não é manha — é a anatomia.'});
+  if(b.nrg>=5) pts.push({p:8,t:'<b>Energia altíssima:</b> precisa de exercício e estímulo TODO dia, sem folga. Sem isso vira ansiedade e destruição — é dos motivos nº1 de devolução dessas raças.'});
+  else if(b.nrg>=4) pts.push({p:6,t:'<b>Bastante energia:</b> passeio rápido não basta — precisa gastar corpo e cabeça todo dia, mesmo nos dias corridos.'});
+  if(c.longBack) pts.push({p:8,t:'<b>Corpo alongado:</b> propenso a hérnia de disco — saltos e escadas são risco a vida toda, e o tratamento pode ser caro.'});
+  if(b.dificuldade==='avancado'||b.beg<=1) pts.push({p:7,t:'<b>Não é raça de primeira viagem:</b> exige liderança, treino consistente e tempo. Subestimar isso costuma terminar mal pros dois.'});
+  if(b.grm>=4) pts.push({p:6,t:b.hypo?'<b>Tosa profissional</b> a cada 1–2 meses + escovação frequente — custo e rotina fixos pra vida toda.':'<b>Solta muito pelo</b> e/ou exige escovação frequente — vai ter pelo pela casa o ano todo.'});
+  if(c.bloat) pts.push({p:6,t:'<b>Peito fundo:</b> risco de torção gástrica, emergência que mata em horas. Exige cuidado com a alimentação a vida toda.'});
+  if((b.cst||3)>=4 && !c.brachy && !c.longBack) pts.push({p:5,t:'<b>Manutenção cara:</b> ração, tosa e vet pesam todo mês — não é só o custo de adquirir.'});
+  if(b.siz>=5) pts.push({p:5,t:'<b>Porte gigante:</b> come muito, ocupa espaço e, sendo honesto, cães gigantes costumam viver menos (~7 a 10 anos). Muito amor por um tempo mais curto.'});
+  if(c.patella) pts.push({p:4,t:'<b>Joelho propenso a luxação de patela</b> — pode exigir acompanhamento e, em alguns casos, cirurgia.'});
+  if((b.htl||3)<=1) pts.push({p:4,t:'<b>Sofre no calor</b> — e o Brasil é quente boa parte do ano. Precisa de sombra, água e horários frescos; nada de esforço no sol.'});
+  if((b.drool||2)>=4) pts.push({p:3,t:'<b>Baba bastante</b> — pense nisso se você implica com baba em móveis e roupas.'});
+  if(!pts.length) return '';
+  pts.sort((x,y)=>y.p-x.p);
+  return '<div class="realtalk-box" style="background:#fbf6ee;border:1px solid #e7d8c0;border-radius:12px;padding:13px 15px;margin:13px 0">'
+    +'<div style="font-weight:700;font-size:13px;color:#8a5a2b;margin-bottom:7px">🐾 A real sobre o/a '+b.name+' — pra você decidir sem se arrepender</div>'
+    +'<ul style="margin:0;padding-left:18px;font-size:12.5px;color:var(--brown);line-height:1.55">'
+    +pts.slice(0,3).map(x=>'<li style="margin:5px 0">'+x.t+'</li>').join('')
+    +'</ul></div>';
+}
 function getTradeoffWarning(key) {
   const b = BREEDS[key];
   const warnings = [];
@@ -5356,6 +5384,7 @@ function showResults(){
       <p class="breed-tagline">${b.desc}</p>
       <span class="diff-badge" style="background:${diff.bg};color:${diff.color};display:inline-block;margin-bottom:13px">Dificuldade: ${diff.label}</span>
       <div class="breed-why"><strong>Por que combina com você:</strong> ${getWhyExplanation(item.key, i)}</div>
+      ${getRealTalk(item.key)}
       ${b.dificuldade==='avancado'?buildAvancadoAssumptionsBlock(item.key):''}
       ${b.aviso?`<div class="warn-box" style="background:#fff8f0;border:1px solid #f5c4b3;color:#712B13;margin:13px 0">${b.aviso}</div>`:'<div style="height:13px"></div>'}
       <button class="breed-expand-btn" onclick="toggleBreedDetails(this)">
