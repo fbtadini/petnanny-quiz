@@ -4,6 +4,13 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>PetNanny · Meu Cão</title>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-VHYR0X2K9F"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-VHYR0X2K9F');
+</script>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cpath d='M24 42 L20 10 L42 24 Z' fill='%23fff' stroke='%23c9b798' stroke-width='3'/%3E%3Cpath d='M76 42 L80 10 L58 24 Z' fill='%23fff' stroke='%23c9b798' stroke-width='3'/%3E%3Cpath d='M20 55 Q20 28 50 28 Q80 28 80 55 Q80 78 72 83 Q64 89 54 88 Q50 92 46 88 Q36 89 28 83 Q20 78 20 55 Z' fill='%23fff' stroke='%23c9b798' stroke-width='3'/%3E%3Cellipse cx='38' cy='53' rx='4' ry='5' fill='%233d2c1e'/%3E%3Cellipse cx='62' cy='53' rx='4' ry='5' fill='%233d2c1e'/%3E%3Cellipse cx='50' cy='67' rx='6' ry='5' fill='%233d2c1e'/%3E%3C/svg%3E">
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -861,6 +868,8 @@ function chegadaGearHTML(dog){
   h+='<p style="font-size:12px;color:var(--brown-mid);margin:8px 0 0">São orientações por <b>categoria</b> — o que procurar e por quê — pra você decidir com seu vet. Em breve a Nanny vai sugerir exemplos e facilitar a compra.</p>';
   return h;
 }
+function pnTrack(name, params){ try{ if(typeof gtag==='function') gtag('event', name, params||{}); }catch(e){} }
+window.pnTrack=pnTrack;
 function toggleGear(id, cb){
   const dog=dogObj(); if(!dog) return;
   dog.gearDone=dog.gearDone||{};
@@ -886,7 +895,7 @@ function shoppingHTML(dog){
   const rows=list.map((i,idx)=>{
     const iid=i.id||('it'+idx);
     const ck=!!done[iid]; if(ck)nDone++;
-    const btn=i.url?`<a href="${i.url}" target="_blank" rel="noopener nofollow sponsored" onclick="event.stopPropagation()" style="display:inline-block;margin-top:7px;background:#7a9970;color:#fff;text-decoration:none;border-radius:8px;padding:5px 12px;font-size:12px;font-weight:600">Ver opções na ${loja.nome} →</a>`:'';
+    const btn=i.url?`<a href="${i.url}" target="_blank" rel="noopener nofollow sponsored" onclick="event.stopPropagation();pnTrack('gear_click',{item:'${iid}',raca:'${dog.breedKey||''}',loja:'${loja.nome}'})" style="display:inline-block;margin-top:7px;background:#7a9970;color:#fff;text-decoration:none;border-radius:8px;padding:5px 12px;font-size:12px;font-weight:600">Ver opções na ${loja.nome} →</a>`:'';
     return `<label class="gear-item" style="display:flex;gap:11px;align-items:flex-start;background:#fff;border:1px solid var(--line);border-radius:12px;padding:11px 13px;margin:7px 0;cursor:pointer;${ck?'opacity:.55':''}">`
       +`<input type="checkbox" ${ck?'checked':''} onchange="toggleGear('${iid}',this)" style="margin-top:2px;width:18px;height:18px;flex:none;accent-color:#7a9970;cursor:pointer">`
       +`<div style="flex:1"><div class="hw-t" style="${ck?'text-decoration:line-through':''}">${i.ic} ${i.nome}</div><div class="hw-i" style="line-height:1.5">${i.oque}</div>${btn}</div>`
