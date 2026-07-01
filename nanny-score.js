@@ -57,6 +57,32 @@
     return 'low';
   }
 
+  // --- TEMA RECORRENTE: o insight que a contagem de "N vezes" queria ser ---
+  // Cruza os assuntos das conversas; se um SINAL DE SAÚDE voltou 2+ vezes, isso é sinal
+  // (não episódio isolado). Só considera temas clínicos — ração repetida não é insight.
+  function stripAcc(s){ return String(s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,''); }
+  var THEMES=[
+    {label:'coceira ou pele', rx:/coc(a|e)|coceira|prurido|\bpele\b|alerg|pulga|carrapat|caspa|descam|lamben/},
+    {label:'vômito',          rx:/vomit|enjoo|regurgit|golfa|ansia de vomit/},
+    {label:'fezes moles ou diarreia', rx:/diarr|fezes|\bcoco\b|amolec|intestin|prende o coco|constip/},
+    {label:'mancar ou dor na pata', rx:/manca|claudic|\bpata\b|joelho|patela|\bperna\b|dor(?!me)/},
+    {label:'tosse',           rx:/tosse|tossin|engasg|\bronco\b/},
+    {label:'apetite',         rx:/come(r|ndo)? menos|apetite|nao come|recus.*comida|sem fome|parou de comer/},
+    {label:'olhos',           rx:/\bolho\b|remela|lacrim|conjuntiv/},
+    {label:'ouvidos',         rx:/ouvido|orelha|otite/}
+  ];
+  window.nannyRecurring = function (dog) {
+    var pg=(dog&&dog.perguntas)||[]; if(pg.length<2) return null;
+    var recent=pg.slice(-10), counts={};
+    recent.forEach(function(p){ var txt=stripAcc((p.entendi||'')+' '+(p.texto||''));
+      THEMES.forEach(function(th,i){ if(th.rx.test(txt)) counts[i]=(counts[i]||0)+1; }); });
+    var best=null;
+    Object.keys(counts).forEach(function(i){ if(counts[i]>=2 && (!best||counts[i]>best.c)) best={label:THEMES[i].label,c:counts[i]}; });
+    if(!best) return null;
+    return { ic:'🔁', recurring:true,
+      t:'Você já me trouxe '+best.label+' '+best.c+' vezes. Se está voltando, não trate como episódio isolado — vale mostrar ao veterinário.' };
+  };
+
   window.nannyScore = function (dog) {
     var today = new Date(); today.setHours(0,0,0,0);
     var he = dog.health || {};
@@ -167,18 +193,18 @@
   function pickAction(rings, lacunas, atrasados, senior, temExameRecente, dog, ws, today){
     // prioridade: proteção com lacuna > atrasados > peso sem/antigo > sênior sem exame > manter
     if(lacunas.indexOf('vacina polivalente')>=0 || lacunas.indexOf('antirrábica')>=0)
-      return { t:'Suba a carteira de vacinação — é o que mais pesa no score e eu monto o histórico sozinha.', cta:'carteira', ic:'💉' };
+      return { t:'Suba a carteira de vacinação — é o que mais pesa no score e eu monto o histórico sozinha.', cta:'carteira', ic:'💉', topic:'vacina' };
     if(atrasados>0)
-      return { t:'Tem '+atrasados+(atrasados>1?' cuidados atrasados':' cuidado atrasado')+' — registrar (ou renovar) sobe o anel de Rotina.', cta:'carteira', ic:'⏰' };
+      return { t:'Tem '+atrasados+(atrasados>1?' cuidados atrasados':' cuidado atrasado')+' — registrar (ou renovar) sobe o anel de Rotina.', cta:'carteira', ic:'⏰', topic:'rotina' };
     if(lacunas.indexOf('antipulga')>=0 || lacunas.indexOf('vermífugo')>=0)
-      return { t:'Falta registrar antipulga/vermífugo — sem isso a Proteção fica no escuro.', cta:'carteira', ic:'🛡️' };
+      return { t:'Falta registrar antipulga/vermífugo — sem isso a Proteção fica no escuro.', cta:'carteira', ic:'🛡️', topic:'protecao' };
     if(!ws.length)
-      return { t:'Registre o peso uma vez — vira a linha de base que eu acompanho pra proteger as articulações.', cta:'cuidados', ic:'⚖️' };
+      return { t:'Registre o peso uma vez — vira a linha de base que eu acompanho pra proteger as articulações.', cta:'cuidados', ic:'⚖️', topic:'peso' };
     if(ws.length){ var lastD=parseD(ws[ws.length-1].d); if(lastD && daysBetween(lastD,today)>190)
-      return { t:'A última pesagem é antiga — uma nova me deixa ver a tendência de peso de novo.', cta:'cuidados', ic:'⚖️' }; }
+      return { t:'A última pesagem é antiga — uma nova me deixa ver a tendência de peso de novo.', cta:'cuidados', ic:'⚖️', topic:'peso' }; }
     if(senior && !temExameRecente)
-      return { t:'Cão sênior: um check-up com exame de sangue nos próximos meses mantém o score sólido — vale falar com o vet.', cta:null, ic:'🩺' };
-    return { t:'Está tudo em dia. Continue registrando que o histórico fica cada vez mais valioso.', cta:null, ic:'✅' };
+      return { t:'Cão sênior: um check-up com exame de sangue nos próximos meses mantém o score sólido — vale falar com o vet.', cta:null, ic:'🩺', topic:'exame' };
+    return { t:'Está tudo em dia. Continue registrando que o histórico fica cada vez mais valioso.', cta:null, ic:'✅', topic:'manter' };
   }
 
   // ---------------- RENDER ----------------
@@ -258,6 +284,25 @@
         + '<div style="font-size:13px;color:'+CT.pri+';line-height:1.5">'+esc(s.topAction.t)+'</div>'
         + (s.topAction.cta?('<button onclick="setTab(\''+s.topAction.cta+'\');window.scrollTo({top:0,behavior:\'smooth\'})" style="margin-top:8px;background:'+CT.greenSoft+';color:#fff;border:0;border-radius:9px;padding:8px 14px;font-weight:600;font-size:12.5px;cursor:pointer;font-family:inherit">Resolver agora</button>'):'')
         + '</div></div>';
+    }
+
+    // A Nanny reparou: 1 insight cruzado dentro do card (recorrência tem prioridade).
+    // Fundido aqui pra ser a ÚNICA superfície de inteligência da Hoje.
+    var reparou = null;
+    try { reparou = (typeof window.nannyRecurring==='function') ? window.nannyRecurring(dog) : null; } catch(e){}
+    if(!reparou && typeof window.nannyInsights==='function'){
+      var b2 = g('getBreed') ? window.getBreed(dog) : {};
+      var c2 = (typeof BREED_CARE!=='undefined' && dog.breedKey && BREED_CARE[dog.breedKey]) || {};
+      var ins = []; try { ins = window.nannyInsights(dog, b2, c2) || []; } catch(e){}
+      var actTopic = (s.topAction && s.topAction.topic) || '';
+      ins = ins.filter(function(k){ return !(actTopic==='peso' && k.ic==='⚖️'); });  // não repete o que a ação já diz
+      if(ins.length) reparou = ins[0];
+    }
+    if(reparou){
+      h += '<div style="display:flex;gap:11px;align-items:flex-start;margin-top:11px;padding-top:12px;border-top:1px solid '+CT.cream+'">'
+        + '<span style="flex:0 0 30px;width:30px;height:30px;border-radius:50%;background:'+CT.cream+';display:flex;align-items:center;justify-content:center;font-size:15px">'+(reparou.ic||'💡')+'</span>'
+        + '<div style="flex:1"><div style="font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:'+CT.mut+';font-weight:700;margin-bottom:2px">A Nanny reparou</div>'
+        + '<div style="font-size:13px;color:'+CT.pri+';line-height:1.5">'+esc(reparou.t||'')+'</div></div></div>';
     }
 
     // flags da raça (gerenciar) + tendência de peso

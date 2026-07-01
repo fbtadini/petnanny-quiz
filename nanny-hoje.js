@@ -198,20 +198,8 @@
       h += '<div style="height:6px"></div>';
     }
 
-    // --- A Nanny reparou: insights cruzados (a inteligência) ---
-    var bc = (typeof BREED_CARE!=='undefined' && dog.breedKey && BREED_CARE[dog.breedKey]) || {};
-    var bObj = (typeof window.getBreed === 'function') ? window.getBreed(dog) : {};
-    var insights = window.nannyInsights(dog, bObj, bc);
-    if (insights.length) {
-      h += '<div style="font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:'+CT.mut+';margin:2px 2px 8px">A Nanny reparou</div>';
-      h += '<div style="background:#fff;border:1px solid '+CT.line+';border-radius:14px;padding:4px 13px;margin-bottom:12px">';
-      insights.forEach(function(k,i){ h += '<div style="display:flex;gap:11px;align-items:flex-start;padding:11px 0;'+(i?'border-top:1px solid '+CT.cream:'')+'">'
-        + '<span style="flex-shrink:0;width:30px;height:30px;border-radius:50%;background:'+CT.cream+';display:flex;align-items:center;justify-content:center;font-size:15px">'+(k.ic||'💡')+'</span>'
-        + '<span style="font-size:13px;color:'+CT.pri+';line-height:1.5">'+esc(k.t||'')+'</span></div>'; });
-      h += '</div>';
-    }
-    // (memória de "conversamos N vezes" removida — a continuidade agora vive no card da Nanny,
-    //  que restaura a última conversa e deixa continuar/rever as anteriores.)
+    // --- inteligência (insights cruzados + recorrência) agora vive DENTRO do card de Score ---
+    // (o painel de score renderiza "A Nanny reparou" já fundido; aqui a Hoje fica enxuta.)
 
     // --- dossiê (o acúmulo, clicável) ---
     var files = dog.files || [];
