@@ -527,11 +527,14 @@ function behaviorHTML(dog,b){let h='';
     if(b.grm>=4&&q.grooming==='grooming_minimo')notes.push(`${b.name} dá trabalho de pelo, e no quiz você preferia manutenção mínima — programe escovação/tosa pra não acumular.`);
     if(notes.length)h+=`<div class="card"><div class="sec-label">📋 Do seu quiz — alinhando expectativa</div><p style="font-size:12.5px;color:var(--brown-mid);margin:0 0 6px">Cruzando o que você contou no quiz com a realidade ${gDe(dog)} ${dog.nome}:</p>${notes.map(n=>`<div class="pi-d" style="padding:6px 0;line-height:1.5">• ${n}</div>`).join('')}</div>`;}
   const sel=dog.temperamento||[];
-  h+=`<div class="card"><div class="sec-label">Como ${gArt(dog)} ${dog.nome} é</div><p style="font-size:13px;color:var(--brown-mid);margin:0 0 9px">Marque o que combina — a Nanny usa pra personalizar as dicas de convívio.</p><div class="tags">${TEMPERAMENTOS.map(t=>`<span class="tag" style="cursor:pointer;${sel.indexOf(t.key)>=0?'background:var(--accent);color:#fff':''}" onclick="toggleTemperamento('${t.key}')">${sel.indexOf(t.key)>=0?'✓ ':''}${t.label}</span>`).join('')}</div></div>`;
+  const cc=(typeof BREED_CARE!=='undefined'&&BREED_CARE[dog.breedKey])||{};
+  let ph=[];if(cc.patella)ph.push('às vezes segura a patinha');if(cc.brachy)ph.push('cansa rápido no calor');if(cc.longBack)ph.push('cuidado ao pular do sofá');if(cc.bloat)ph.push('come rápido demais');ph.push('tem medo de fogos','adora colo','não curte outros cães');
+  const phStr='Ex.: '+ph.slice(0,4).join(', ')+'…';
+  const tips=notesTips(dog);
+  h+=`<div class="card"><div class="sec-label">Como ${gArt(dog)} ${dog.nome} é</div><p style="font-size:13px;color:var(--brown-mid);margin:0 0 9px">Marque o que combina e me conte o resto — eu uso pra personalizar os cuidados e lembro quando a gente conversa.</p><div class="tags" style="margin-bottom:12px">${TEMPERAMENTOS.map(t=>`<span class="tag" style="cursor:pointer;${sel.indexOf(t.key)>=0?'background:var(--accent);color:#fff':''}" onclick="toggleTemperamento('${t.key}')">${sel.indexOf(t.key)>=0?'✓ ':''}${t.label}</span>`).join('')}</div><textarea id="dogNotes" placeholder="${phStr}">${(dog.notes||'').replace(/</g,'&lt;')}</textarea><div style="display:flex;gap:8px;margin-top:10px"><button class="chip" onclick="saveNotes()">Salvar</button></div><div class="ai-note" id="notesAi"></div>${tips.length?`<div style="margin-top:12px"><div class="sec-label" style="margin:0 0 6px">A partir do que você contou</div>${tips.map(t=>`<div class="pi-d" style="padding:6px 0;line-height:1.5">${t}</div>`).join('')}</div>`:''}</div>`;
   const cs=behaviorConcerns(dog,b);
-  if(cs.length){h+=`<div class="card"><div class="sec-label">Convívio — personalizado pra ${gArt(dog)} ${dog.nome}</div><p style="font-size:12.5px;color:var(--brown-mid);margin:0 0 6px">Com base na raça e no que você marcou. Tudo isso é comum e tem solução.</p>`;
-    cs.forEach(k=>{const c=BEHAVIOR_CATALOG[k];h+=`<div class="hw"><div class="hw-top"><div class="hw-ic">${c.ic}</div><div><div class="hw-t">${c.label}</div><div class="hw-i">Quando aparece: ${c.quando}.</div></div></div><div class="hw-q" style="color:#3a5e44">${c.normalize}</div><div style="margin:6px 0"><b style="font-size:12.5px">Primeiros passos:</b><ul style="margin:4px 0 0;padding-left:18px;font-size:13px;color:var(--brown)">${c.passos.map(p=>`<li style="margin:2px 0">${p}</li>`).join('')}</ul></div><div class="pi-when" style="margin-top:4px">🏥 ${c.escalar}</div></div>`;});
-    
+  if(cs.length){h+=`<div class="card"><div class="sec-label">Convívio — o que pode aparecer</div><p style="font-size:12.5px;color:var(--brown-mid);margin:0 0 8px">Com base na raça e no que você marcou. Toque pra abrir cada tema.</p>`;
+    cs.forEach(k=>{const c=BEHAVIOR_CATALOG[k];h+=`<details class="hw" style="padding:0;border:1px solid var(--line);border-radius:12px;margin-bottom:8px"><summary style="cursor:pointer;padding:11px 13px;display:flex;align-items:center;gap:9px"><span class="hw-ic">${c.ic}</span><span style="flex:1"><span class="hw-t">${c.label}</span><span class="hw-i" style="display:block">${c.quando}</span></span></summary><div style="padding:0 13px 13px"><div class="hw-q" style="color:#3a5e44">${c.normalize}</div><div style="margin:6px 0"><b style="font-size:12.5px">Primeiros passos:</b><ul style="margin:4px 0 0;padding-left:18px;font-size:13px;color:var(--brown)">${c.passos.map(pp=>`<li style="margin:2px 0">${pp}</li>`).join('')}</ul></div><div class="pi-when" style="margin-top:4px">🏥 ${c.escalar}</div></div></details>`;});
     h+=`</div>`;}
   return h;}
 
@@ -545,14 +548,6 @@ function renderGuide(dog){const b=getBreed(dog);let h='';
     if(b.variantes)h+=`<div class="card"><div class="sec-label">Variações de tamanho</div>${Object.values(b.variantes).map(v=>`<div class="var">${v}</div>`).join('')}</div>`;
   }
   h+=behaviorHTML(dog,b);
-  // O QUE A NANNY SABE (campo livre + dicas)
-  const tips=notesTips(dog);
-  h+=`<div class="card"><div class="sec-label">Conte pra Nanny sobre ${gArt(dog)} ${dog.nome}</div><p style="font-size:13px;color:var(--brown-mid);margin:0 0 9px">Conte medos, manias, condições e gostos. A Nanny usa isso pra personalizar os cuidados — e vai lembrar disso quando você conversar com ela.</p>
-  <textarea id="dogNotes" placeholder="Ex.: tem medo de fogos, pequena luxação na patela, está um pouco acima do peso, adora gente mas não curte outros cães…">${(dog.notes||'').replace(/</g,'&lt;')}</textarea>
-  <div style="display:flex;gap:8px;margin-top:10px"><button class="chip" onclick="saveNotes()">Salvar</button></div>
-  <div class="ai-note" id="notesAi"></div>`;
-  if(tips.length)h+=`<div style="margin-top:12px"><div class="sec-label" style="margin:0 0 6px">A partir do que você contou</div>`+tips.map(t=>`<div class="pi-d" style="padding:6px 0;line-height:1.5">${t}</div>`).join('')+`</div>`;
-  h+=`</div>`;
   h+=`<div class="card" style="background:var(--green-light);border-color:#cfe3d4"><p style="margin:0;font-size:13.5px;color:#3a5e44">Cada cão é único — temperamento e saúde variam com genética, socialização e educação. Esta guia é um ponto de partida confiável, não um veredito.</p></div>`;
   document.getElementById('tab-guia').innerHTML=h;}
 

@@ -14,6 +14,7 @@
  * downscaleImage, nannySync, BREED_CARE, WESTIE, gtag, startRegister.
  */
 (function () {
+  var NANNY_WESTIE='<svg viewBox="0 0 100 100"><path d="M24 42 L20 10 L42 24 Z" fill="#fff" stroke="#c9b798" stroke-width="3" stroke-linejoin="round"/><path d="M76 42 L80 10 L58 24 Z" fill="#fff" stroke="#c9b798" stroke-width="3" stroke-linejoin="round"/><path d="M20 55 Q20 28 50 28 Q80 28 80 55 Q80 78 72 83 Q64 89 54 88 Q50 92 46 88 Q36 89 28 83 Q20 78 20 55 Z" fill="#fff" stroke="#c9b798" stroke-width="3" stroke-linejoin="round"/><ellipse cx="38" cy="53" rx="4" ry="5" fill="#3d2c1e"/><ellipse cx="62" cy="53" rx="4" ry="5" fill="#3d2c1e"/><ellipse cx="50" cy="67" rx="6" ry="5" fill="#3d2c1e"/></svg>';
   var ENDPOINT = '/api/nanny-ask', PEND_KEY = 'petnanny_pergunta_avulsa';
   var CT = { pri:'#3d2c1e', sec:'#5f5142', mut:'#7a6a58', line:'#e8ddd2', green:'#7a9970', cream:'#f7f2ea' };
   var NIVEL = {
@@ -25,7 +26,7 @@
   function g(fn){ return (typeof window[fn]==='function')?window[fn]:null; }
   function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
   function track(ev,p){ try{ if(window.gtag) window.gtag('event',ev,p||{});}catch(e){} }
-  function nannyFace(px){ var s=window.WESTIE||'<svg viewBox="0 0 100 100"><circle cx="50" cy="55" r="30" fill="#fff" stroke="#c9b798" stroke-width="3"/></svg>'; return '<span class="na-face" aria-hidden="true" style="display:inline-flex;width:'+px+'px;height:'+px+'px;border-radius:50%;background:#f3ddc9;border:1px solid #f3d9c2;padding:4px;box-sizing:border-box;flex-shrink:0">'+s+'</span>'; }
+  function nannyFace(px){ var s=(typeof WESTIE!=='undefined'&&WESTIE)?WESTIE:NANNY_WESTIE; return '<span class="na-face" aria-hidden="true" style="display:inline-flex;width:'+px+'px;height:'+px+'px;border-radius:50%;background:#f3ddc9;border:1px solid #f3d9c2;padding:4px;box-sizing:border-box;flex-shrink:0">'+s+'</span>'; }
 
   function styleOnce(){
     if(document.getElementById('nanny-ask-css')) return;
@@ -89,7 +90,10 @@
         if(c.longBack)a.push(['Cuidar da coluna','Como proteger a coluna dele no dia a dia?']);
         a.push(['Que ração comprar?','Que ração é a certa pra ele?']);
         a.push(['Comportamento','Ele tem um comportamento que me preocupa, posso te contar?']);
-        chips=a.slice(0,4);
+        var day=[];
+        try{ var ups=g('upcomingReminders')?window.upcomingReminders(dog):[]; var over=(ups||[]).filter(function(u){return u.status==='overdue'||u.status==='stale';})[0]; if(over){ var nm=(over.t||'cuidado').split('(')[0].trim(); day.push([nm+' atrasado',(over.t||'cuidado')+' está atrasado — como eu resolvo?']); } }catch(e){}
+        var pg=dog.perguntas||[]; if(pg.length){ var lp=pg[pg.length-1]; if(lp&&(lp.nivel==='observar'||lp.nivel==='procurar_vet')) day.push(['Como ficou?','Sobre o que te perguntei antes ('+(lp.texto||'').slice(0,28)+'): como está agora?']); }
+        chips=day.concat(a).slice(0,4);
       }
     }
     return '<div id="na-chips-'+mode+'" style="margin-top:9px">'+chips.map(function(ch){return '<span class="na-chip" data-q="'+ch[1].replace(/"/g,'&quot;')+'">'+ch[0]+'</span>';}).join('')+'</div>';

@@ -53,8 +53,15 @@
       + sec('Próximas datas registradas', prox.length?tbl(['Item','Previsão'],rows(prox,[function(v){return v.o_que;},function(v){return br(v.data);}])):'')
       + sec('Exames e laudos', ex.length?tbl(['Tipo','Achado (transcrito)','Data'],rows(ex,[function(v){return v.tipo;},function(v){return v.achado;},function(v){return br(v.data);}])):'')
       + sec('Condições registradas', cond.length?'<ul>'+cond.map(function(c){return '<li>'+esc(typeof c==='string'?c:(c.nome||JSON.stringify(c)))+'</li>';}).join('')+'</ul>':'')
+      + sec('Situação de cuidados (calculado — confirmar)', (function(){
+          var ups=[]; try{ if(typeof window!=='undefined'&&typeof window.upcomingReminders==='function') ups=window.upcomingReminders(dog)||[]; }catch(e){}
+          if(!ups.length) return '';
+          function ws(w){ try{ return (w instanceof Date)?w.toLocaleDateString('pt-BR'):br(w); }catch(e){ return ''; } }
+          function st(u){ return u.status==='overdue'?('Atrasado desde '+ws(u.when)):(u.status==='stale'?('Última faz tempo — '+ws(u.when)):('Próximo — '+ws(u.when))); }
+          return tbl(['Item','Situação'], rows(ups,[function(u){return u.t;},function(u){return st(u);}]));
+        })())
       + sec('Observações do tutor (relato)', rel.length?'<ul>'+rel.map(function(p){return '<li><span class="dt">'+br(p.data)+'</span> '+esc(p.texto)+'</li>';}).join('')+'</ul>':'')
-      + '<div class="prov"><strong>Procedência dos dados:</strong> vacinas, antiparasitário, vermífugo e exames foram lidos de documentos enviados pelo tutor. Peso, condições e observações foram informados pelo tutor. Este documento não constitui laudo nem diagnóstico.</div>'
+      + '<div class="prov"><strong>Procedência dos dados:</strong> vacinas, antiparasitário, vermífugo e exames foram lidos de documentos enviados pelo tutor. Peso, condições e observações foram informados pelo tutor. A situação de cuidados é calculada pelo app a partir das datas registradas — confirme. Este documento não constitui laudo nem diagnóstico.</div>'
       + '<div class="foot">Documento gerado pelo tutor via PetNanny · dados a confirmar com o responsável</div>';
 
     return '<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>Resumo clínico — '+esc(dog.nome||'Cão')+'</title>'
