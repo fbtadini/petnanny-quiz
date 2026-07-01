@@ -41,6 +41,31 @@
 
   function nome(dog){ return dog.nome || 'seu cão'; }
 
+  // ---- MOTOR DE INSIGHTS: cruza os dados e vira conclusão (não lista de fatos) ----
+  window.nannyInsights = function (dog, b, c) {
+    b = b || {}; c = c || {}; var out = [], n = esc(nome(dog));
+    var mo = new Date().getMonth(), quente = (mo >= 8 || mo <= 2);
+    var ws = dog.weights || [], wUp = null;
+    if (ws.length >= 2) { var d = ws[ws.length-1].kg - ws[ws.length-2].kg; if (d >= 0.3) wUp = d; }
+    var meses = (typeof window.ageInMonths === 'function') ? window.ageInMonths(dog) : null;
+    var av = (b.aviso || '').toLowerCase();
+    var engorda = /engorda|acima do peso|obesid|controle a comida|controle rigoroso|engordar/.test(av);
+    var cond = dog.conditions || {}, diag = Object.keys(cond).filter(function(k){ return cond[k] && cond[k].status === 'diagnosticado'; });
+    function kg(x){ return x.toFixed(1).replace('.', ','); }
+
+    if (wUp && (c.patella || c.longBack)) out.push({ic:'⚖️',t:'A '+n+' ganhou '+kg(wUp)+' kg desde a última pesagem. Pra uma raça com '+(c.patella?'joelho':'coluna')+' sensível, peso extra pesa direto na articulação — vale segurar a comida e comentar com o vet.'});
+    else if (wUp && engorda) out.push({ic:'⚖️',t:'Subiu '+kg(wUp)+' kg — e '+(b.name||'essa raça')+' engorda fácil. Não deixa virar bola de neve: mede a ração e corta o petisco extra.'});
+
+    if (c.brachy && (quente || wUp)) out.push({ic:'😮‍💨',t:'Focinho achatado'+(quente?' e época de calor':'')+(wUp?' com o peso subindo':'')+' — o risco respiratório sobe. Passeio nas horas frescas, sem esforço no sol, e peitoral em vez de coleira.'});
+    if (c.coat === 'double' && quente) out.push({ic:'🌡️',t:'Pelo duplo no calor: caprichar na escovação tira o subpelo e ajuda a '+n+' a se refrescar. Nunca raspar a tosa — o subpelo protege do sol.'});
+    if (diag.length) out.push({ic:'📋',t:'Com '+(diag.length>1?'condições já diagnosticadas':'uma condição já diagnosticada')+', os cuidados preventivos deixam de ser opcionais — mantém o acompanhamento com o vet em dia.'});
+    if (meses != null && meses >= 96) out.push({ic:'🎂',t:(b.name||'Ela')+' entrou na fase sênior. Daqui pra frente, exame de sangue a cada 6 meses e olho no peso e na disposição pegam problema cedo.'});
+    if (dog.chegada) { var dias = Math.floor((Date.now() - new Date(dog.chegada+'T00:00:00'))/864e5); if (dias >= 0 && dias <= 90 && ((dog.temperamento||[]).length || b.ind <= 2)) out.push({ic:'🏠',t:'Faz '+dias+' dias que ela chegou. Comportamento novo nesta fase quase sempre é adaptação, não a personalidade dela — dá tempo e rotina antes de concluir.'}); }
+    if (b.nrg >= 4 && meses != null && meses < 36 && !out.some(function(o){return o.ic==='⚡';})) out.push({ic:'⚡',t:(b.name||'Ela')+' é de energia alta e ainda jovem: sem gasto físico e mental diário, sobra pra bagunça e latido. Brinquedo de enriquecimento e passeio resolvem a maior parte.'});
+
+    return out.slice(0, 3);
+  };
+
   window.renderHoje = function (dog) {
     var el = document.getElementById('tab-hoje'); if (!el || !dog) return;
     var ss = g('statusSummary') ? window.statusSummary(dog) : { cls:'', txt:'' };
@@ -122,6 +147,18 @@
       h += '</div>';
       if (conds.length) h += '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px">'+conds.map(function(cn){return '<span style="font-size:12px;color:#8a5a1a;background:#f6efdb;border:1px solid #e8d6a8;border-radius:20px;padding:5px 11px">📋 '+esc(cn)+'</span>';}).join('')+'</div>';
     }
+    // --- A Nanny reparou: insights cruzados (a inteligência) ---
+    var bObj = (typeof window.getBreed === 'function') ? window.getBreed(dog) : {};
+    var insights = window.nannyInsights(dog, bObj, bc);
+    if (insights.length) {
+      h += '<div style="font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:'+CT.mut+';margin:2px 2px 8px">A Nanny reparou</div>';
+      h += '<div style="background:#fff;border:1px solid '+CT.line+';border-radius:14px;padding:4px 13px;margin-bottom:12px">';
+      insights.forEach(function(k,i){ h += '<div style="display:flex;gap:11px;align-items:flex-start;padding:11px 0;'+(i?'border-top:1px solid '+CT.cream:'')+'">'
+        + '<span style="flex-shrink:0;width:30px;height:30px;border-radius:50%;background:'+CT.cream+';display:flex;align-items:center;justify-content:center;font-size:15px">'+(k.ic||'💡')+'</span>'
+        + '<span style="font-size:13px;color:'+CT.pri+';line-height:1.5">'+esc(k.t||'')+'</span></div>'; });
+      h += '</div>';
+    }
+
     if (mem) h += '<div style="display:flex;gap:10px;align-items:flex-start;background:'+CT.cream+';border-radius:14px;padding:12px 13px;margin-bottom:12px">'+face(30)+'<div style="flex:1;font-size:13px;color:'+CT.pri+';line-height:1.5">'+mem+'</div></div>';
     if (hasState || mem) h += '<div style="font-size:11.5px;color:'+CT.mut+';margin:0 2px 14px;line-height:1.4">Quanto mais você me conta e me manda documentos, mais eu sei. Conte medos e manias na aba Raça.</div>';
 
