@@ -174,27 +174,21 @@
     // --- pergunta pra Nanny (montada pelo módulo) ---
     h += '<div id="nanny-ask" style="margin-bottom:16px"></div>';
 
-    // --- pra hoje (pendências; 1 = card; 2+ = um card compacto que leva à lista) ---
-    if (att.length === 1 || next && !att.length) {
-      h += '<div style="font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:'+CT.mut+';margin:0 2px 8px">Pra hoje</div>';
-      if (att.length === 1) {
-        var r = att[0];
-        h += '<div onclick="setTab(\'carteira\')" style="cursor:pointer;background:#fff;border:1px solid '+CT.line+';border-left:3px solid '+CT.amber+';border-radius:0 14px 14px 0;padding:12px 13px;margin-bottom:9px">'
-          + '<div style="font-weight:500;font-size:14px;color:'+CT.pri+'">'+esc(r.t||'Cuidado pendente')+'</div>'
-          + '<div style="font-size:12px;color:'+CT.sec+';margin-top:1px">'+(r.status==='stale'?'última faz tempo':'atrasada')+(r.when?(' · '+fmtWhen(r.when)):'')+' · toque pra ver</div></div>';
-      } else {
-        h += '<div onclick="setTab(\'carteira\')" style="cursor:pointer;background:#fff;border:1px solid '+CT.line+';border-left:3px solid '+CT.green+';border-radius:0 14px 14px 0;padding:12px 13px;margin-bottom:9px">'
-          + '<div style="font-weight:500;font-size:14px;color:'+CT.pri+'">Próximo: '+esc((next.t||'').toLowerCase())+'</div>'
-          + '<div style="font-size:12px;color:'+CT.sec+';margin-top:1px">'+(next.when?fmtWhen(next.when):'')+' · toque pra ver</div></div>';
-      }
+    // --- pra resolver: SÓ pendências atrasadas. O "próximo" e a previsão agora vivem no Score. ---
+    if (att.length === 1) {
+      var r = att[0];
+      h += '<div style="font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:'+CT.mut+';margin:0 2px 8px">Pra resolver</div>';
+      h += '<div onclick="setTab(\'saude\')" style="cursor:pointer;background:#fff;border:1px solid '+CT.line+';border-left:3px solid '+CT.amber+';border-radius:0 14px 14px 0;padding:12px 13px;margin-bottom:9px">'
+        + '<div style="font-weight:500;font-size:14px;color:'+CT.pri+'">'+esc(r.t||'Cuidado pendente')+'</div>'
+        + '<div style="font-size:12px;color:'+CT.sec+';margin-top:1px">'+(r.status==='stale'?'última faz tempo':'atrasada')+(r.when?(' · '+fmtWhen(r.when)):'')+' · toque pra registrar</div></div>';
       h += '<div style="height:6px"></div>';
     } else if (att.length >= 2) {
-      h += '<div style="font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:'+CT.mut+';margin:0 2px 8px">Pra hoje</div>';
-      h += '<div onclick="setTab(\'carteira\')" style="cursor:pointer;background:#fff;border:1px solid '+CT.line+';border-left:3px solid '+CT.amber+';border-radius:0 14px 14px 0;padding:12px 13px;margin-bottom:9px">';
-      h += '<div style="font-weight:500;font-size:14px;color:'+CT.pri+';margin-bottom:5px">'+att.length+' cuidados precisam de atenção</div>';
+      h += '<div style="font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:'+CT.mut+';margin:0 2px 8px">Pra resolver</div>';
+      h += '<div onclick="setTab(\'saude\')" style="cursor:pointer;background:#fff;border:1px solid '+CT.line+';border-left:3px solid '+CT.amber+';border-radius:0 14px 14px 0;padding:12px 13px;margin-bottom:9px">';
+      h += '<div style="font-weight:500;font-size:14px;color:'+CT.pri+';margin-bottom:5px">'+att.length+' cuidados atrasados</div>';
       att.slice(0,3).forEach(function(r){ h += '<div style="font-size:12.5px;color:'+CT.sec+';padding:2px 0">• '+esc(r.t||'')+' — '+(r.status==='stale'?'vencido':'atrasado')+'</div>'; });
       if (att.length>3) h += '<div style="font-size:12px;color:'+CT.mut+';padding:2px 0">+'+(att.length-3)+' mais</div>';
-      h += '<div style="font-size:12px;color:'+CT.green+';margin-top:5px">Ver todos nos Lembretes ›</div></div>';
+      h += '<div style="font-size:12px;color:'+CT.green+';margin-top:5px">Ver na Saúde ›</div></div>';
       h += '<div style="height:6px"></div>';
     }
 

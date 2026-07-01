@@ -83,6 +83,28 @@
       t:'Você já me trouxe '+best.label+' '+best.c+' vezes. Se está voltando, não trate como episódio isolado — vale mostrar ao veterinário.' };
   };
 
+  function fmtDate(d){ try{ return d.toLocaleDateString('pt-BR'); }catch(e){ return ''; } }
+  // A Nanny PREVÊ: o próximo evento que muda o score (vencimento futuro) + risco sazonal.
+  // É a camada preditiva — não espera vencer, avisa antes.
+  window.nannyForecast = function (dog) {
+    var today=new Date(); today.setHours(0,0,0,0);
+    var ups = g('upcomingReminders') ? (window.upcomingReminders(dog)||[]) : [];
+    var upcoming = ups.filter(function(u){ return u.status==='upcoming' && u.when; }).sort(function(a,b){ return a.when-b.when; });
+    var next = upcoming[0];
+    var care = (typeof BREED_CARE!=='undefined' && dog.breedKey && BREED_CARE[dog.breedKey]) || {};
+    var mo = today.getMonth(), hot = (mo>=8 || mo<=2);   // verão BR ~ set–mar
+    if(next){
+      var days = Math.ceil((next.when - today)/864e5);
+      if(days>=0 && days<=150){
+        var t=String(next.t||''), isProt=/vacin|antip|verm|polivalente|r[áa]bic/i.test(t) || next.tipo==='Vacina';
+        var nome=t.split(/\s[—-]\s|\s\(/)[0].trim().toLowerCase();   // "Antirrábica — anual" -> "antirrábica"
+        return { ic:'📅', t:(isProt?'Sua Proteção começa a cair em ':'Próximo cuidado em ')+'~'+days+' dia'+(days!==1?'s':'')+' — '+nome+' vence em '+fmtDate(next.when)+'.' };
+      }
+    }
+    if(care.brachy && hot) return { ic:'🌡️', t:'Estação quente chegando: focinho achatado sofre mais no calor — planeje passeios cedo/tarde e evite esforço no sol.' };
+    return null;
+  };
+
   window.nannyScore = function (dog) {
     var today = new Date(); today.setHours(0,0,0,0);
     var he = dog.health || {};
@@ -218,6 +240,17 @@
   function scoreColor(s){ return s>=85?CT.green : s>=70?CT.greenSoft : s>=50?CT.amber : CT.red; }
   function ringColor(st){ return st==='ok'?CT.greenSoft : st==='watch'?CT.amber : st==='low'?CT.red : CT.mut; }
 
+  // sparkline genérico a partir de uma lista de números (score ao longo do tempo, peso, etc.)
+  function sparklineVals(vals, color, w){
+    if(!vals || vals.length<2) return '';
+    var W=w||150, H=30, pad=3, min=Math.min.apply(null,vals), max=Math.max.apply(null,vals), span=(max-min)||1;
+    var pts=vals.map(function(v,i){ var x=pad+(W-2*pad)*(i/(vals.length-1)); var y=H-pad-(H-2*pad)*((v-min)/span); return x.toFixed(1)+','+y.toFixed(1); });
+    var lastXY=pts[pts.length-1].split(',');
+    return '<svg width="'+W+'" height="'+H+'" viewBox="0 0 '+W+' '+H+'" aria-hidden="true">'
+      + '<polyline points="'+pts.join(' ')+'" fill="none" stroke="'+(color||CT.greenSoft)+'" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>'
+      + '<circle cx="'+lastXY[0]+'" cy="'+lastXY[1]+'" r="2.6" fill="'+(color||CT.green)+'"/></svg>';
+  }
+
   function sparkline(trend){
     if(trend.length<2) return '';
     var kgs=trend.map(function(t){return t.kg;}), min=Math.min.apply(null,kgs), max=Math.max.apply(null,kgs);
@@ -232,18 +265,36 @@
   window.renderScore = function (dog) {
     if(!dog) return '';
     var s = window.nannyScore(dog);
+    var today0 = new Date(); today0.setHours(0,0,0,0);
+
+    // tendência: compara com o score de ~7 dias atrás, ANTES de gravar o de hoje
+    var histBefore = (dog.scoreHistory||[]).slice();
+    var delta = null;
+    if(histBefore.length){
+      var wk = histBefore.filter(function(hh){ var d=parseD(hh.d); return d && daysBetween(d,today0)>=6; });
+      var base = wk.length ? wk[wk.length-1].s : histBefore[0].s;
+      if(typeof base==='number') delta = s.score - base;
+    }
 
     // acumula histórico do score (1x por dia) — o switching cost longitudinal
     try {
       dog.scoreHistory = dog.scoreHistory || [];
-      var iso = new Date().toISOString().slice(0,10);
+      var iso = today0.toISOString().slice(0,10);
       var lastH = dog.scoreHistory[dog.scoreHistory.length-1];
       if(!lastH || lastH.d !== iso){ dog.scoreHistory.push({ d:iso, s:s.score }); if(dog.scoreHistory.length>60) dog.scoreHistory=dog.scoreHistory.slice(-60); if(g('saveDogs')) window.saveDogs(); }
       else if(lastH && lastH.s !== s.score){ lastH.s = s.score; if(g('saveDogs')) window.saveDogs(); }
     } catch(e){}
+    var sparkVals = (dog.scoreHistory||[]).map(function(hh){ return hh.s; });
 
     var col = scoreColor(s.score);
     var confTxt = s.conf==='alta' ? '' : (s.conf==='media' ? 'confiança média · faltam alguns dados' : 'confiança baixa · faltam dados-chave');
+    var deltaChip = '';
+    if(delta!=null && Math.abs(delta)>=1){
+      var up = delta>0, dc = up?CT.greenSoft:CT.red;
+      deltaChip = '<div><span style="display:inline-flex;align-items:center;gap:3px;font-size:11.5px;font-weight:600;color:'+dc+';background:'+(up?'#eef3ea':'#f7ece0')+';border-radius:20px;padding:2px 9px;margin-top:5px">'+(up?'▲':'▼')+' '+(up?'+':'')+delta+' esta semana</span></div>';
+    } else if(delta!=null){
+      deltaChip = '<div style="font-size:11.5px;color:'+CT.mut+';margin-top:5px">→ estável esta semana</div>';
+    }
 
     var h = '<div style="background:#fff;border:1px solid '+CT.line+';border-radius:16px;padding:16px 15px 14px;margin-bottom:14px">';
 
@@ -256,24 +307,42 @@
     h += '<div style="flex:1;min-width:0">'
       + '<div style="font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:'+CT.mut+'">Score de saúde d'+((dog.sexo==='femea')?'a ':'o ')+esc(dog.nome||'seu cão')+'</div>'
       + '<div style="font-family:\'Playfair Display\',Georgia,serif;font-weight:800;font-size:21px;color:'+col+';line-height:1.1;margin-top:2px">'+esc(s.verdito)+'</div>'
+      + deltaChip
       + (confTxt?('<div style="font-size:11.5px;color:'+CT.amber+';margin-top:3px">'+confTxt+'</div>'):'')
       + '</div></div>';
 
-    // três anéis (Proteção / Peso / Rotina) — estilo Apple, cada um leva à sua aba
-    var ringTab = { protecao:'carteira', peso:'cuidados', rotina:'carteira' };
+    // tendência do score (longitudinal) — aparece quando há histórico de alguns dias
+    if(sparkVals.length>=3){
+      h += '<div style="display:flex;align-items:center;gap:11px;margin-top:12px;padding:9px 11px;background:'+CT.cream+';border-radius:12px">'
+        + '<div style="flex:0 0 auto">'+sparklineVals(sparkVals, col, 148)+'</div>'
+        + '<div style="flex:1;font-size:11px;color:'+CT.mut+';line-height:1.35">Tendência do score · últimos '+sparkVals.length+' registros. Quanto mais você acompanha, mais fina fica a leitura.</div></div>';
+    }
+
+    // três anéis (Proteção / Peso / Rotina) — estilo Apple. Peso = registro rápido (1 toque).
     h += '<div style="display:flex;gap:8px;margin-top:16px">';
     s.rings.forEach(function(rg){
       var rc = ringColor(rg.state);
       var val = rg.known ? (rg.pct+'%') : '—';
-      var sub = rg.state==='incompleto' ? 'sem dado' : (rg.detail ? esc(rg.detail) : (rg.state==='ok'?'em dia':(rg.state==='watch'?'de olho':'atenção')));
-      var tab = ringTab[rg.key] || 'carteira';
-      h += '<button onclick="setTab(\''+tab+'\');window.scrollTo({top:0,behavior:\'smooth\'})" style="flex:1;text-align:center;background:'+CT.cream+';border:0;border-radius:12px;padding:11px 6px;cursor:pointer;font-family:inherit">'
+      var isPeso = (rg.key==='peso');
+      var canLog = isPeso && (typeof window.nannyLogWeight==='function');
+      var sub = rg.state==='incompleto' ? (canLog?'toque pra pesar':'sem dado') : (rg.detail ? esc(rg.detail) : (rg.state==='ok'?'em dia':(rg.state==='watch'?'de olho':'atenção')));
+      var onclk = canLog ? 'nannyLogWeight()' : "setTab('saude');window.scrollTo({top:0,behavior:'smooth'})";
+      h += '<button onclick="'+onclk+'" style="flex:1;text-align:center;background:'+CT.cream+';border:0;border-radius:12px;padding:11px 6px;cursor:pointer;font-family:inherit">'
         + '<div style="position:relative;width:52px;height:52px;margin:0 auto">'+ring(rg.known?rg.pct:0,52,6,rc)
         + '<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:12.5px;font-weight:700;color:'+rc+'">'+val+'</div></div>'
-        + '<div style="font-size:12px;font-weight:600;color:'+CT.pri+';margin-top:6px">'+rg.label+'</div>'
+        + '<div style="font-size:12px;font-weight:600;color:'+CT.pri+';margin-top:6px">'+rg.label+(canLog?' <span style="color:'+CT.greenSoft+'">＋</span>':'')+'</div>'
         + '<div style="font-size:10.5px;color:'+CT.mut+';margin-top:1px;line-height:1.3;min-height:26px">'+sub+'</div></button>';
     });
     h += '</div>';
+
+    // A Nanny PREVÊ: o próximo evento que muda o score (camada preditiva)
+    var prev = null; try { prev = (typeof window.nannyForecast==='function') ? window.nannyForecast(dog) : null; } catch(e){}
+    if(prev){
+      h += '<div style="display:flex;gap:11px;align-items:flex-start;background:#eef4fa;border:1px solid #d9e6f2;border-radius:12px;padding:11px 13px;margin-top:13px">'
+        + '<span style="flex:0 0 30px;width:30px;height:30px;border-radius:50%;background:#dcebf7;display:flex;align-items:center;justify-content:center;font-size:15px">'+(prev.ic||'📅')+'</span>'
+        + '<div style="flex:1"><div style="font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:#3f6a94;font-weight:700;margin-bottom:2px">A Nanny prevê</div>'
+        + '<div style="font-size:13px;color:'+CT.pri+';line-height:1.5">'+esc(prev.t)+'</div></div></div>';
+    }
 
     // A Nanny reparou: a ação #1 pra subir o score (proativo)
     if(s.topAction){
@@ -315,10 +384,9 @@
     if(s.trend.length>=2){
       var first=s.trend[0], last=s.trend[s.trend.length-1], tot=(last.kg-first.kg);
       h += '<div style="display:flex;align-items:center;gap:12px;margin-top:14px;padding-top:12px;border-top:1px solid '+CT.cream+'">'
-        + '<div style="flex:0 0 auto">'+sparkline(s.trend)+'</div>'
-        + '<div style="flex:1;font-size:11.5px;color:'+CT.mut+';line-height:1.4">Peso: '+String(first.kg).replace('.',',')+' → '+String(last.kg).replace('.',',')+' kg '
-        + '<span style="color:'+(Math.abs(tot)<0.3?CT.mut:(tot>0?CT.amber:CT.greenSoft))+'">('+(tot>0?'+':'')+tot.toFixed(1).replace('.',',')+' kg)</span>'
-        + '<br>O histórico do score cresce a cada dia que você registra.</div></div>';
+        + '<div style="flex:0 0 auto">'+sparklineVals(s.trend.map(function(t){return t.kg;}), CT.greenSoft, 120)+'</div>'
+        + '<div style="flex:1;font-size:11.5px;color:'+CT.mut+';line-height:1.4"><b style="color:'+CT.sec+';font-weight:600">Peso</b>: '+String(first.kg).replace('.',',')+' → '+String(last.kg).replace('.',',')+' kg '
+        + '<span style="color:'+(Math.abs(tot)<0.3?CT.mut:(tot>0?CT.amber:CT.greenSoft))+'">('+(tot>0?'+':'')+tot.toFixed(1).replace('.',',')+' kg)</span></div></div>';
     }
 
     h += '<div style="font-size:10.5px;color:'+CT.mut+';margin-top:12px;line-height:1.4;opacity:.9">O score é um índice de cuidado e prevenção — não é diagnóstico. A decisão de saúde é sempre do veterinário.</div>';
