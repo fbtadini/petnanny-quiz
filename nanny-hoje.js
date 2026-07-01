@@ -11,7 +11,7 @@
  */
 (function () {
   var NANNY_WESTIE='<svg viewBox="0 0 100 100"><path d="M24 42 L20 10 L42 24 Z" fill="#fff" stroke="#c9b798" stroke-width="3" stroke-linejoin="round"/><path d="M76 42 L80 10 L58 24 Z" fill="#fff" stroke="#c9b798" stroke-width="3" stroke-linejoin="round"/><path d="M20 55 Q20 28 50 28 Q80 28 80 55 Q80 78 72 83 Q64 89 54 88 Q50 92 46 88 Q36 89 28 83 Q20 78 20 55 Z" fill="#fff" stroke="#c9b798" stroke-width="3" stroke-linejoin="round"/><ellipse cx="38" cy="53" rx="4" ry="5" fill="#3d2c1e"/><ellipse cx="62" cy="53" rx="4" ry="5" fill="#3d2c1e"/><ellipse cx="50" cy="67" rx="6" ry="5" fill="#3d2c1e"/></svg>';
-  var CT = { pri:'#3d2c1e', sec:'#5f5142', mut:'#7a6a58', line:'#e8ddd2', green:'#7a9970', cream:'#f7f2ea', peach:'#f3ddc9', amber:'#b7902a' };
+  var CT = { pri:'#3d2c1e', sec:'#5f5142', mut:'#7a6a58', line:'#e8ddd2', green:'#7a9970', cream:'#f7f2ea', peach:'#f3ddc9', amber:'#b7902a', red:'#c0562e' };
   function g(fn){ return (typeof window[fn]==='function')?window[fn]:null; }
   function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
   function art(dog){ return (dog&&dog.sexo==='femea')?'a':'o'; }
@@ -94,6 +94,39 @@
     return '';
   };
 
+  // ---- ESTADO DO CÃO: um veredito diário (tipo Recovery Score, sem sensor) ----
+  window.nannyEstado = function (dog) {
+    var ups = (typeof window.upcomingReminders === 'function') ? (window.upcomingReminders(dog) || []) : [];
+    var att = ups.filter(function(u){ return u.status !== 'upcoming'; });
+    var next = ups.filter(function(u){ return u.status === 'upcoming'; })[0];
+    var he = dog.health || {};
+    var ws = dog.weights || [], wLast = ws.length ? ws[ws.length-1] : null, wDelta = null;
+    if (ws.length >= 2) { var d = ws[ws.length-1].kg - ws[ws.length-2].kg; if (Math.abs(d) >= 0.3) wDelta = d; }
+    var conds = (he.condicoes||[]).filter(Boolean);
+    var hasHealth = (he.vacinas||[]).length || (he.antiparasitario||[]).length || (he.vermifugo||[]).length || conds.length;
+    var meses = (typeof window.ageInMonths === 'function') ? window.ageInMonths(dog) : null;
+    function d1(x){ return String(Math.abs(x).toFixed(1)).replace('.', ','); }
+
+    var nivel, verdito, linha;
+    if (att.length) { nivel='atencao'; verdito='Precisa de atenção'; linha=(att.length>1?att.length+' cuidados atrasados':'Um cuidado atrasado')+' — veja em Carteira.'; }
+    else if (wDelta != null && wDelta < 0) { nivel='atencao'; verdito='De olho no peso'; linha='Perdeu '+d1(wDelta)+' kg desde a última pesagem — perda de peso merece um olhar.'; }
+    else if (!hasHealth) { nivel='comecar'; verdito='Vamos começar'; linha='Manda a carteira de vacinação que eu monto o histórico e passo a acompanhar '+nome(dog)+'.'; }
+    else if (wDelta != null && wDelta > 0) { nivel='olho'; verdito='De olho'; linha='Ganhou '+d1(wDelta)+' kg — vale acompanhar a comida.'; }
+    else if (next) { nivel='tranquilo'; verdito='Tudo tranquilo'; linha='Tudo em dia · próximo: '+(next.t||'').toLowerCase()+(next.when?(' em '+fmtWhen(next.when)):'')+'.'; }
+    else { nivel='tranquilo'; verdito='Tudo tranquilo'; linha='Nada pendente hoje com '+nome(dog)+'.'; }
+
+    var f = [];
+    if (att.length) f.push({ic:'💉', l:(att.length>1?att.length+' cuidados atrasados':'cuidado atrasado'), tone:'bad'});
+    else if (next || hasHealth) f.push({ic:'💉', l:'cuidados em dia', tone:'ok'});
+    else f.push({ic:'💉', l:'sem carteira ainda', tone:'neutral'});
+    if (wLast) f.push({ic:'⚖️', l:String(wLast.kg).replace('.',',')+' kg'+(wDelta!=null?(wDelta>0?' ↑':' ↓'):' · estável'), tone: wDelta!=null?'watch':'ok'});
+    else f.push({ic:'⚖️', l:'sem peso', tone:'neutral'});
+    if (conds.length) f.push({ic:'📋', l:conds.length+' condiç'+(conds.length>1?'ões':'ão'), tone:'watch'});
+    if (meses != null && meses >= 96) f.push({ic:'🎂', l:'fase sênior', tone:'watch'});
+
+    return { nivel:nivel, verdito:verdito, linha:linha, fatores:f };
+  };
+
   window.renderHoje = function (dog) {
     var el = document.getElementById('tab-hoje'); if (!el || !dog) return;
     var ss = g('statusSummary') ? window.statusSummary(dog) : { cls:'', txt:'' };
@@ -103,13 +136,20 @@
     var meses = (g('ageInMonths')) ? window.ageInMonths(dog) : null;
     var h = '';
 
-    // --- saudação (calma vs atenção) ---
+    // --- ESTADO DO CÃO: veredito diário (headline da Hoje) ---
     if (dog.aguardando) {
-      h += '<div style="display:flex;align-items:center;gap:8px;margin:2px 2px 14px"><span style="color:'+CT.mut+';font-size:13px">Plano de chegada — quando '+nome(dog)+' chegar, avise aqui que eu começo o acompanhamento dos primeiros 90 dias.</span></div>';
-    } else if (att.length) {
-      h += '<div style="display:flex;align-items:center;gap:7px;margin:2px 2px 14px"><span style="color:'+CT.amber+';font-size:14px">'+ (att.length>1?att.length+' coisas':'Uma coisa') +' pra você ver hoje.</span></div>';
+      h += '<div style="display:flex;align-items:center;gap:8px;margin:2px 2px 16px"><span style="color:'+CT.mut+';font-size:13px">Plano de chegada — quando '+esc(nome(dog))+' chegar, avise aqui que eu começo o acompanhamento dos primeiros 90 dias.</span></div>';
     } else {
-      h += '<div style="display:flex;align-items:center;gap:7px;margin:2px 2px 14px"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="'+CT.green+'" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg><span style="color:'+CT.green+';font-size:14px">Tudo tranquilo com '+esc(nome(dog))+' hoje.</span></div>';
+      var est = window.nannyEstado(dog);
+      var col = est.nivel==='tranquilo' ? CT.green : (est.nivel==='atencao' ? CT.red : (est.nivel==='comecar' ? CT.mut : CT.amber));
+      h += '<div style="background:#fff;border:1px solid '+CT.line+';border-left:4px solid '+col+';border-radius:0 16px 16px 0;padding:14px 15px;margin-bottom:16px">'
+        + '<div style="display:flex;align-items:center;gap:10px">'
+        + '<span style="flex-shrink:0;width:12px;height:12px;border-radius:50%;background:'+col+'"></span>'
+        + '<div><div style="font-family:\'Playfair Display\',Georgia,serif;font-weight:600;font-size:18px;color:'+col+';line-height:1.1">'+esc(est.verdito)+'</div>'
+        + '<div style="font-size:12.5px;color:'+CT.sec+';margin-top:3px;line-height:1.4">'+esc(est.linha)+'</div></div></div>';
+      if (est.fatores.length) h += '<div style="display:flex;flex-wrap:wrap;gap:7px;margin-top:12px">'+est.fatores.map(function(fa){ var fc = fa.tone==='ok'?CT.green:(fa.tone==='bad'?CT.red:(fa.tone==='watch'?CT.amber:CT.mut)); return '<span style="display:inline-flex;align-items:center;gap:5px;font-size:12px;color:'+fc+';background:#fff;border:1px solid '+CT.line+';border-radius:20px;padding:5px 11px">'+fa.ic+' '+esc(fa.l)+'</span>'; }).join('')+'</div>';
+      h += '<div style="font-size:11px;color:'+CT.mut+';margin-top:11px;line-height:1.4">Leitura de bem-estar pra te orientar — não é diagnóstico.</div>';
+      h += '</div>';
     }
 
     // --- pergunta pra Nanny (montada pelo módulo) ---
@@ -156,25 +196,6 @@
     if (notes) mem = 'Você me contou que ' + esc(notes.slice(0,90)) + (notes.length>90?'…':'') + '.';
     if (perg.length) { var lt = esc((perg[perg.length-1].texto||'').slice(0,40)); mem += (mem?' ':'') + 'A gente já conversou ' + perg.length + (perg.length>1?' vezes':' vez') + (lt?(' — a última sobre '+lt):'') + '.'; }
 
-    if (hasState || mem) h += '<div style="font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:'+CT.mut+';margin:0 2px 8px">O que eu sei d'+art(dog)+' '+esc(nome(dog))+'</div>';
-    if (hasState) {
-      h += '<div style="display:flex;gap:9px;margin-bottom:'+(conds.length?'9px':'12px')+'">';
-      // peso
-      h += '<div style="flex:1;background:#fff;border:1px solid '+CT.line+';border-radius:14px;padding:12px 13px">'
-        + '<div style="font-size:11px;color:'+CT.mut+';text-transform:uppercase;letter-spacing:.04em">Peso</div>';
-      if (wLast) h += '<div style="font-size:22px;font-weight:600;color:'+CT.pri+';line-height:1.1;margin-top:3px">'+String(wLast.kg).replace('.',',')+'<span style="font-size:13px;font-weight:400"> kg</span></div>'
-        + '<div style="font-size:11.5px;margin-top:3px;color:'+(wDelta!=null?CT.amber:CT.mut)+'">'+(wDelta!=null?((wDelta>0?'↑ +':'↓ ')+String(Math.abs(wDelta).toFixed(1)).replace('.',',')+' kg'):'estável')+'</div>';
-      else h += '<div style="font-size:18px;color:'+CT.mut+';margin-top:6px">—</div><div style="font-size:11.5px;color:'+CT.mut+';margin-top:2px">registre no Plano</div>';
-      h += '</div>';
-      // atenção da raça
-      h += '<div style="flex:1;background:#fff;border:1px solid '+CT.line+';border-radius:14px;padding:12px 13px">'
-        + '<div style="font-size:11px;color:'+CT.mut+';text-transform:uppercase;letter-spacing:.04em">Atenção da raça</div>';
-      if (flags.length) h += '<div style="display:flex;flex-wrap:wrap;gap:5px;margin-top:7px">'+flags.map(function(f){return '<span style="display:inline-flex;align-items:center;gap:4px;font-size:11.5px;color:'+CT.pri+';background:'+CT.cream+';border-radius:20px;padding:4px 9px">'+f.ic+' '+f.l+'</span>';}).join('')+'</div>';
-      else h += '<div style="font-size:13px;color:'+CT.green+';margin-top:8px">✓ nada especial</div>';
-      h += '</div>';
-      h += '</div>';
-      if (conds.length) h += '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px">'+conds.map(function(cn){return '<span style="font-size:12px;color:#8a5a1a;background:#f6efdb;border:1px solid #e8d6a8;border-radius:20px;padding:5px 11px">📋 '+esc(cn)+'</span>';}).join('')+'</div>';
-    }
     // --- A Nanny reparou: insights cruzados (a inteligência) ---
     var bObj = (typeof window.getBreed === 'function') ? window.getBreed(dog) : {};
     var insights = window.nannyInsights(dog, bObj, bc);

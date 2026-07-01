@@ -232,9 +232,9 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent)}
     <div id="p-acolher" style="display:none"></div>
     <div class="tabs">
       <div class="tab on" data-tab="hoje" onclick="setTab('hoje')">Hoje</div>
-      <div class="tab" data-tab="cuidar" onclick="setTab('cuidar')">Cuidar</div>
-      <div class="tab" data-tab="saude" onclick="setTab('saude')">Saúde</div>
-      <div class="tab" data-tab="sobre" onclick="setTab('sobre')">Sobre</div>
+      <div class="tab" data-tab="cuidados" onclick="setTab('cuidados')">Cuidados</div>
+      <div class="tab" data-tab="carteira" onclick="setTab('carteira')">Carteira</div>
+      <div class="tab" data-tab="raca" onclick="setTab('raca')">Raça</div>
     </div>
     <div id="tab-hoje"></div>
     <div id="tab-guia" style="display:none"></div>
@@ -784,7 +784,7 @@ function renderProfile(){const dog=dogObj();if(!dog)return goHome();migrateDog(d
   const pc=document.getElementById('p-chip');if(dog.microchip){pc.style.display='block';pc.textContent='🔖 Microchip: '+dog.microchip}else{pc.style.display='none'}
   const ss=statusSummary(dog),ps=document.getElementById('p-status');if(ps){if(dog.aguardando){ps.style.display='none';}else{ps.style.display='block';ps.className='status-sum '+ss.cls;ps.textContent=ss.txt;ps.style.cursor=(ss.cls==='warn')?'pointer':'';ps.onclick=(ss.cls==='warn')?function(){setTab('lembretes');window.scrollTo({top:0,behavior:'smooth'});}:null;}}
   setAvatar();renderAcolher(dog);renderGuide(dog);renderPlan(dog);renderReminders(dog);renderDocs(dog);if(window.renderHoje)window.renderHoje(dog);}
-function setTab(t){var alias={plano:'cuidar',lembretes:'saude',docs:'saude',guia:'sobre'};t=alias[t]||t;document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('on',x.dataset.tab===t));var map={hoje:['tab-hoje'],cuidar:['tab-plano'],saude:['tab-lembretes','tab-docs'],sobre:['tab-guia']};var showing=map[t]||['tab-hoje'];['tab-hoje','tab-guia','tab-plano','tab-lembretes','tab-docs'].forEach(function(id){var e=document.getElementById(id);if(e)e.style.display=(showing.indexOf(id)>=0)?'block':'none';});}
+function setTab(t){var alias={plano:'cuidados',cuidar:'cuidados',lembretes:'carteira',saude:'carteira',docs:'carteira',guia:'raca',sobre:'raca'};t=alias[t]||t;document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('on',x.dataset.tab===t));var map={hoje:['tab-hoje'],cuidados:['tab-plano'],carteira:['tab-lembretes','tab-docs'],raca:['tab-guia']};var showing=map[t]||['tab-hoje'];['tab-hoje','tab-guia','tab-plano','tab-lembretes','tab-docs'].forEach(function(id){var e=document.getElementById(id);if(e)e.style.display=(showing.indexOf(id)>=0)?'block':'none';});var ps=document.getElementById('p-status');if(ps)ps.style.display=(t!=='hoje'&&(ps.textContent||'').trim())?'block':'none';}
 
 const MARCOS=[
   {id:'casa',t:'🏡 Chegou em casa'},
