@@ -66,6 +66,34 @@
     return out.slice(0, 3);
   };
 
+  // ---- cabeçalho leve+inteligente pras abas antigas (Cuidar, Saúde) ----
+  window.tabHeader = function (dog, kind) {
+    if (!dog) return '';
+    var ss = (typeof window.statusSummary === 'function') ? window.statusSummary(dog) : {cls:'',txt:''};
+    if (kind === 'cuidar') {
+      var b = (typeof window.getBreed === 'function') ? window.getBreed(dog) : {};
+      var c = (typeof BREED_CARE !== 'undefined' && BREED_CARE[dog.breedKey]) || {};
+      var ins = (typeof window.nannyInsights === 'function') ? window.nannyInsights(dog, b, c) : [];
+      var top = ins[0];
+      var col = ss.cls === 'warn' ? CT.amber : (ss.cls === 'ok' ? CT.green : CT.mut);
+      var h = '<div style="background:#fff;border:1px solid '+CT.line+';border-radius:14px;padding:12px 14px;margin-bottom:14px">';
+      h += '<div style="font-size:13.5px;color:'+col+';font-weight:500">'+esc((ss.txt||'').replace(/^[^A-Za-zÀ-ú]+/,''))+'</div>';
+      if (top) h += '<div style="display:flex;gap:9px;align-items:flex-start;margin-top:9px;padding-top:9px;border-top:1px solid '+CT.cream+'"><span style="font-size:15px">'+(top.ic||'💡')+'</span><span style="font-size:12.5px;color:'+CT.pri+';line-height:1.45">'+esc(top.t)+'</span></div>';
+      h += '</div>';
+      return h;
+    }
+    if (kind === 'saude') {
+      var he = dog.health || {}, ws = dog.weights || [];
+      var vac = (he.vacinas||[]).length, conds = (he.condicoes||[]).length;
+      var chips = [];
+      chips.push({ic:'💉', t: vac ? (vac+' vacina'+(vac>1?'s':'')+' lida'+(vac>1?'s':'')) : 'sem carteira ainda'});
+      if (ws.length) chips.push({ic:'⚖️', t: String(ws[ws.length-1].kg).replace('.',',')+' kg'});
+      if (conds) chips.push({ic:'📋', t: conds+' condiç'+(conds>1?'ões':'ão')});
+      return '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px">'+chips.map(function(cp){return '<span style="display:inline-flex;align-items:center;gap:5px;font-size:12.5px;color:'+CT.pri+';background:#fff;border:1px solid '+CT.line+';border-radius:20px;padding:6px 12px">'+cp.ic+' '+cp.t+'</span>';}).join('')+'</div>';
+    }
+    return '';
+  };
+
   window.renderHoje = function (dog) {
     var el = document.getElementById('tab-hoje'); if (!el || !dog) return;
     var ss = g('statusSummary') ? window.statusSummary(dog) : { cls:'', txt:'' };
