@@ -155,9 +155,9 @@
         if(dog){
           var repeat=(dog.perguntas&&dog.perguntas.length>=1);
           dog.perguntas=dog.perguntas||[];
-          dog.perguntas.push({data:new Date().toISOString().slice(0,10),texto:texto||'(foto)',nivel:r.nivel,resposta:r.o_que_fazer_agora});
+          dog.perguntas.push({data:new Date().toISOString().slice(0,10),texto:texto||'(foto)',nivel:r.nivel,resposta:r.o_que_fazer_agora,por_que:r.por_que||'',pro_vet:r.pro_vet||''});
           if(Array.isArray(r.novos_eventos)){dog.eventos=dog.eventos||[];r.novos_eventos.forEach(function(e){if(e&&e.tipo)dog.eventos.push({tipo:e.tipo,origem:'observacao_nanny',data:new Date().toISOString().slice(0,10),confianca:e.confianca||'media',payload:e.payload||{}});});}
-          if(g('saveDogs'))window.saveDogs(); if(g('nannySync'))window.nannySync(true);
+          if(g('saveDogs'))window.saveDogs(); if(g('nannySync'))window.nannySync(true); refreshSaved();
           track('nanny_ask',{nivel:r.nivel,com_foto:!!body.imagens}); if(repeat)track('nanny_ask_repeat',{nivel:r.nivel});
         } else {
           try{ localStorage.setItem(PEND_KEY,JSON.stringify({data:new Date().toISOString().slice(0,10),texto:texto||'(foto)',nivel:r.nivel,resposta:r.o_que_fazer_agora})); }catch(e){}
@@ -204,7 +204,23 @@
     try{ var p=JSON.parse(raw); dog.perguntas=[p]; if(g('saveDogs'))window.saveDogs(); if(g('nannySync'))window.nannySync(true); localStorage.removeItem(PEND_KEY); }catch(e){}
   }
 
-  function mountInto(id,mode){ var box=document.getElementById(id); if(!box)return; box.innerHTML=cardHTML(mode); wire(mode); }
+  function refreshSaved(){
+    var el=document.getElementById('na-saved'); if(!el)return;
+    var dog=g('dogObj')?window.dogObj():null; if(!dog){el.innerHTML='';return;}
+    var obs=(dog.perguntas||[]).filter(function(p){return p&&p.pro_vet;});
+    if(!obs.length){el.innerHTML='';return;}
+    var h='<details class="na-fade" style="margin-top:12px;background:#fff;border:1px solid '+CT.line+';border-radius:12px;padding:11px 13px">'
+      +'<summary style="cursor:pointer;font-size:13px;color:'+CT.sec+';font-weight:600">\ud83d\udccb Observa\u00e7\u00f5es guardadas pro vet ('+obs.length+')</summary>'
+      +'<div style="font-size:11.5px;color:'+CT.mut+';margin:7px 0 2px;line-height:1.4">Ficam salvas aqui pra voc\u00ea mostrar na consulta \u2014 n\u00e3o somem quando voc\u00ea pergunta de novo.</div>';
+    obs.slice().reverse().forEach(function(pp){
+      h+='<div style="border-top:1px solid '+CT.cream+';padding:9px 0"><div style="font-size:11.5px;color:'+CT.mut+'">'+esc(pp.data||'')+(pp.nivel?(' \u00b7 '+esc(pp.nivel)):'')+'</div>'
+        +'<div style="font-size:13px;color:'+CT.pri+';font-weight:500;margin:2px 0">'+esc(pp.texto||'')+'</div>'
+        +'<div style="font-size:12.5px;color:'+CT.sec+';line-height:1.5">'+esc(pp.pro_vet)+'</div></div>';
+    });
+    h+='</details>';
+    el.innerHTML=h;
+  }
+  function mountInto(id,mode){ var box=document.getElementById(id); if(!box)return; box.innerHTML=cardHTML(mode)+(mode==='perfil'?'<div id="na-saved"></div>':''); wire(mode); refreshSaved(); }
   function boot(){ styleOnce(); var hasDogs=false; try{ hasDogs=(typeof dogs!=='undefined'&&dogs&&dogs.length>0); }catch(e){}
     if(document.getElementById('nanny-ask')){ adotarAvulsa(); mountInto('nanny-ask','perfil'); }
     if(document.getElementById('nanny-ask-home')&&!hasDogs) mountInto('nanny-ask-home','home'); }

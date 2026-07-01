@@ -267,7 +267,8 @@ const LS_KEY='petnanny_dogs_v1';
 const AI_DIRECT=false; // produção: a IA roda nas Vercel Functions, nunca no navegador
 const AI_ENDPOINT=''; // /api/nanny-chat (quando existir). A leitura de documento usa /api/nanny-read-doc
 const WRANGES={'0':{band:'< 2 kg',dose:null,porte:1},'1':{band:'2–4,5 kg',dose:'112,5 mg',porte:1},'2':{band:'4,5–10 kg',dose:'250 mg',porte:2},'3':{band:'10–20 kg',dose:'500 mg',porte:3},'4':{band:'20–40 kg',dose:'1000 mg',porte:4},'5':{band:'40–56 kg',dose:'1400 mg',porte:5}};
-function rangeOf(dog){if(dog.pesoFaixa!=null&&dog.pesoFaixa!==''&&WRANGES[dog.pesoFaixa])return WRANGES[dog.pesoFaixa];if(dog.pesoKg){const kg=dog.pesoKg,v=kg<2?'0':kg<=4.5?'1':kg<=10?'2':kg<=20?'3':kg<=40?'4':'5';return WRANGES[v]}return null}
+function faixaFromKg(kg){return kg<2?'0':kg<=4.5?'1':kg<=10?'2':kg<=20?'3':kg<=40?'4':'5'}
+function rangeOf(dog){const wk=(dog.weights&&dog.weights.length)?dog.weights[dog.weights.length-1].kg:(dog.pesoKg||null);if(wk){return WRANGES[faixaFromKg(wk)]}if(dog.pesoFaixa!=null&&dog.pesoFaixa!==''&&WRANGES[dog.pesoFaixa])return WRANGES[dog.pesoFaixa];return null}
 let dogs=[],currentId=null,sex='',neut='',porte=3,reposMode=false,editingId=null,dragged=false,healthEdit=null,fileEdit=null,pendingDoc=null;
 
 function loadDogs(){try{dogs=JSON.parse(localStorage.getItem(LS_KEY))||[]}catch(e){dogs=[]}}
@@ -387,6 +388,7 @@ function editDog(){
   if(dog.nascimento){document.getElementById('f-age-y').value='';document.getElementById('f-age-m').value='';}
   else{const m=dog.idadeMeses||0;document.getElementById('f-age-y').value=Math.floor(m/12)||'';document.getElementById('f-age-m').value=(m%12)||'';}
   document.getElementById('f-weight').value=(dog.pesoFaixa!=null?dog.pesoFaixa:'');
+  (function(){var wk=(dog.weights&&dog.weights.length)?dog.weights[dog.weights.length-1].kg:(dog.pesoKg||null);var fw=document.getElementById('f-weight');if(fw&&fw.parentNode){var old=document.getElementById('f-weight-real');if(old)old.remove();if(wk){var n=document.createElement('div');n.id='f-weight-real';n.style.cssText='font-size:12px;color:var(--brown-mid);margin-top:5px';n.innerHTML='\u2696\ufe0f Peso registrado: <b>'+String(wk).replace('.',',')+' kg</b> \u00b7 a faixa acima segue esse valor.';fw.parentNode.appendChild(n);}}})();
   document.getElementById('f-chip').value=dog.microchip||'';
   document.getElementById('f-chegada').value=dog.chegada||'';
   document.getElementById('f-origem').value=dog.origem||'';
@@ -541,7 +543,7 @@ function renderGuide(dog){const b=getBreed(dog);let h='';
   if(b._synthetic){h+=`<div class="card"><div class="sec-label">Sua raça</div><p style="margin:0 0 6px"><b>${dog.customBreed}</b></p><div class="note-soft">Ainda não temos a guia detalhada dessa raça/mistura — ela chega em breve. O <b>plano de cuidado</b> ao lado já funciona pro seu cão.</div></div>`;}
   else{const clima=b.htl<=2?'<span style="color:var(--accent-deep)">Sofre no calor</span>':(b.ctl<=2?'Sente o frio':'Boa adaptação');
     h+=`<div class="card"><div class="sec-label">Quem é a raça</div><div class="tags">${(b.tags||[]).map(t=>`<span class="tag">${t}</span>`).join('')}</div><p style="margin:6px 0 0">${b.desc||''}</p></div>
-    <div class="card"><div class="sec-label">Como ela é, em traços</div>${attrRow('Porte',b.siz,['mini','pequeno','médio','grande','gigante'])}${attrRow('Energia',b.nrg,['baixíssima','baixa','média','alta','altíssima'])}${attrRow('Manutenção',b.grm,['mínima','baixa','média','alta','altíssima'])}${attrRow('Latido',(BARK_LEVELS[dog.breedKey]||2),['raro','pouco','médio','bastante','muito'])}${attrRow('Sociável',b.soc,['reservado','seletivo','ok','sociável','muito'])}${attrRow('Pra iniciante',b.beg,['difícil','exige base','dá pra ir','tranquilo','fácil'])}<div class="attr"><div class="n">Clima</div><div style="flex:1;font-size:13.5px">${clima}</div></div><p class="hint" style="margin-top:10px">Os medidores mostram a intensidade de cada traço (mais preenchido = mais forte) — não são bom ou ruim.</p></div>`;
+    <div class="card"><div class="sec-label">${dog.origem==='adotado'?'Tendências da raça — um mapa, não um retrato':'Como ela é, em traços'}</div>${dog.origem==='adotado'?`<p style="font-size:12.5px;color:var(--brown-mid);margin:0 0 10px;line-height:1.5">A ${dog.nome} foi adotada, então cada medidor abaixo é uma <b>tendência geral da raça</b> — não necessariamente ela. O que mais vale é o que você observa no dia a dia.</p>`:''}${attrRow('Porte',b.siz,['mini','pequeno','médio','grande','gigante'])}${attrRow('Energia',b.nrg,['baixíssima','baixa','média','alta','altíssima'])}${attrRow('Manutenção',b.grm,['mínima','baixa','média','alta','altíssima'])}${attrRow('Latido',(BARK_LEVELS[dog.breedKey]||2),['raro','pouco','médio','bastante','muito'])}${attrRow('Sociável',b.soc,['reservado','seletivo','ok','sociável','muito'])}${attrRow('Pra iniciante',b.beg,['difícil','exige base','dá pra ir','tranquilo','fácil'])}<div class="attr"><div class="n">Clima</div><div style="flex:1;font-size:13.5px">${clima}</div></div><p class="hint" style="margin-top:10px">Os medidores mostram a intensidade de cada traço (mais preenchido = mais forte) — não são bom ou ruim.</p></div>`;
     if(b.aviso)h+=`<div class="card"><div class="sec-label">Convivendo no dia a dia</div><div class="aviso"><p>${b.aviso}</p></div></div>`;
     if(b.pelagem)h+=`<div class="card"><div class="sec-label">Pelagem</div><p style="margin:0;font-size:14px">${b.pelagem}</p></div>`;
     if(b.variantes)h+=`<div class="card"><div class="sec-label">Variações de tamanho</div>${Object.values(b.variantes).map(v=>`<div class="var">${v}</div>`).join('')}</div>`;
@@ -731,7 +733,7 @@ function weightCardHTML(dog){const ws=(dog.weights||[]);let rows='';
     rows+=`<div class="wlog"><div style="flex:1"><b>${w.kg} kg</b> <span class="wd">· ${fmtISO(w.d)}</span></div><div style="font-size:12.5px">${tr}</div><button class="rm" onclick="removeWeight(${i})">✕</button></div>`;}
   } else rows=`<p style="font-size:13px;color:var(--brown-mid);margin:0 0 10px">Acompanhe o peso ao longo do tempo — manter o peso ideal é a melhor proteção pras articulações${healthWatch(dog).length?' (importante pra essa raça)':''}.</p>`;
   return `<div class="card"><div class="sec-label">⚖️ Peso</div>${weightChartSVG(ws)}${rows}<div style="display:flex;gap:8px;margin-top:10px;align-items:center;flex-wrap:wrap"><input id="w-kg" class="he-in" type="number" step="0.1" min="0" placeholder="kg" style="max-width:90px;margin:0"><input id="w-date" class="he-in" type="date" style="max-width:160px;margin:0"><button class="chip" onclick="addWeight()">Registrar</button></div></div>`;}
-function addWeight(){const dog=dogObj();if(!dog)return;const kg=parseFloat((document.getElementById('w-kg')||{}).value);if(!kg||kg<=0)return;const d=((document.getElementById('w-date')||{}).value)||new Date().toISOString().slice(0,10);dog.weights=dog.weights||[];dog.weights.push({d,kg:+kg.toFixed(2)});dog.weights.sort((a,b)=>a.d<b.d?-1:1);saveDogs();renderProfile();}
+function addWeight(){const dog=dogObj();if(!dog)return;const kg=parseFloat((document.getElementById('w-kg')||{}).value);if(!kg||kg<=0)return;const d=((document.getElementById('w-date')||{}).value)||new Date().toISOString().slice(0,10);dog.weights=dog.weights||[];dog.weights.push({d,kg:+kg.toFixed(2)});dog.weights.sort((a,b)=>a.d<b.d?-1:1);const lastKg=dog.weights[dog.weights.length-1].kg;dog.pesoKg=lastKg;dog.pesoFaixa=faixaFromKg(lastKg);saveDogs();renderProfile();}
 function removeWeight(i){const dog=dogObj();if(!dog||!dog.weights)return;dog.weights.splice(i,1);saveDogs();renderProfile();}
 function buildFicha(dog){const b=getBreed(dog);const raca=b._synthetic?dog.customBreed:b.name;const he=dog.health||{};
   let h=`<div class="fh1">🐾 ${dog.nome}</div><div class="fmeta">${raca} · ${ageLabel(ageInMonths(dog))}${dog.sexo?(' · '+(dog.sexo==='femea'?'fêmea':'macho')):''}${dog.microchip?(' · Microchip '+dog.microchip):''}</div>`;
@@ -787,28 +789,30 @@ function renderProfile(){const dog=dogObj();if(!dog)return goHome();migrateDog(d
 function setTab(t){var alias={plano:'cuidados',cuidar:'cuidados',lembretes:'carteira',saude:'carteira',docs:'carteira',guia:'raca',sobre:'raca'};t=alias[t]||t;document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('on',x.dataset.tab===t));var map={hoje:['tab-hoje'],cuidados:['tab-plano'],carteira:['tab-lembretes','tab-docs'],raca:['tab-guia']};var showing=map[t]||['tab-hoje'];['tab-hoje','tab-guia','tab-plano','tab-lembretes','tab-docs'].forEach(function(id){var e=document.getElementById(id);if(e)e.style.display=(showing.indexOf(id)>=0)?'block':'none';});var ps=document.getElementById('p-status');if(ps)ps.style.display=(t!=='hoje'&&(ps.textContent||'').trim())?'block':'none';}
 
 const MARCOS=[
-  {id:'casa',t:'🏡 Chegou em casa'},
-  {id:'noite',t:'🌙 Primeira noite dormida'},
-  {id:'comeu',t:'🍽️ Primeira refeição completa'},
+  {id:'casa',t:'🏡 Chegou em casa',ta:'🏡 Chegou pra ficar'},
+  {id:'noite',t:'🌙 Primeira noite dormida',ta:'🌙 Primeira noite na sua casa'},
+  {id:'comeu',t:'🍽️ Primeira refeição completa',ta:'🍽️ Comeu tranquila pela 1ª vez'},
   {id:'xixi',t:'✅ Primeiro xixi no lugar certo'},
   {id:'passeio',t:'🦮 Primeiro passeio na rua'},
   {id:'nome',t:'🐶 Atendeu pelo nome'},
   {id:'vet',t:'🩺 Primeira ida ao vet'},
   {id:'comando',t:'🎓 Primeiro comando (senta!)'},
-  {id:'amigo',t:'🐾 Brincou com outro cão ou pessoa'}
+  {id:'amigo',t:'🐾 Brincou com outro cão ou pessoa'},
+  {id:'confianca',t:'💚 Relaxou e confiou de vez'}
 ];
 function marcosHTML(dog){
-  const done=dog.marcos||{}; let n=0;
+  const done=dog.marcos||{}; let n=0; const adot=dog.origem==='adotado';
   const rows=MARCOS.map(m=>{
     const dt=done[m.id], ck=!!dt; if(ck)n++;
     const when=ck?(' · '+fmtISO(dt)):'';
+    const label=(adot&&m.ta)?m.ta:m.t;
     return `<label style="display:flex;gap:9px;align-items:center;padding:6px 2px;cursor:pointer">`
       +`<input type="checkbox" ${ck?'checked':''} onchange="toggleMarco('${m.id}',this)" style="width:17px;height:17px;flex:none;accent-color:#4a7c59;cursor:pointer">`
-      +`<span style="font-size:13px;color:${ck?'var(--brown)':'var(--brown-mid)'}">${m.t}<span class="marco-when" style="color:#4a7c59;font-weight:600">${when}</span></span>`
+      +`<span style="font-size:13px;color:${ck?'var(--brown)':'var(--brown-mid)'}">${label}<span class="marco-when" style="color:#4a7c59;font-weight:600">${when}</span></span>`
       +`</label>`;
   }).join('');
   return `<div class="sec-label" style="margin:13px 0 2px">🎉 Diário de marcos <span style="font-weight:500;color:var(--brown-mid)">· <span class="marco-count">${n}</span>/${MARCOS.length}</span></div>`
-    +`<p style="margin:0 0 4px;font-size:12px;color:var(--brown-mid)">Marque as primeiras conquistas — a data fica guardada e vira a história de vocês.</p>`
+    +`<p style="margin:0 0 4px;font-size:12px;color:var(--brown-mid)">${adot?'As primeiras vezes de vocês dois — cada data guardada conta como a confiança foi nascendo.':'Marque as primeiras conquistas — a data fica guardada e vira a história de vocês.'}</p>`
     +rows;
 }
 function toggleMarco(id,cb){
@@ -818,32 +822,62 @@ function toggleMarco(id,cb){
   if(typeof saveDogs==='function') saveDogs();
   const span=cb.parentElement.querySelector('.marco-when');
   if(span) span.textContent=cb.checked?(' · '+fmtISO(dog.marcos[id])):'';
-  const card=cb.closest('.card'), c=card&&card.querySelector('.marco-count');
-  if(c) c.textContent=Object.keys(dog.marcos).length;
+  const n=MARCOS.filter(m=>dog.marcos[m.id]).length;
+  document.querySelectorAll('.marco-count').forEach(c=>c.textContent=n);
+  document.querySelectorAll('.marco-dot').forEach((el,i)=>{el.style.background=(i<n)?'#7a9970':'#dfe7d9';});
 }
 window.toggleMarco=toggleMarco;
+function dotsHTML(n){var h='<div style="display:flex;gap:5px;margin:2px 0 2px">';for(var i=0;i<MARCOS.length;i++){h+='<span class="marco-dot" style="width:8px;height:8px;border-radius:50%;background:'+(i<n?'#7a9970':'#dfe7d9')+'"></span>';}return h+'</div>';}
+function markMarco(id){var dog=dogObj();if(!dog)return;dog.marcos=dog.marcos||{};dog.marcos[id]=new Date().toISOString().slice(0,10);if(typeof saveDogs==='function')saveDogs();renderAcolher(dog);}
+window.markMarco=markMarco;
 function renderAcolher(dog){
   const box=document.getElementById('p-acolher'); if(!box) return;
   if(dog.aguardando){box.style.display='block';box.innerHTML=preChegadaHTML(dog);return;}
   const ph=adaptPhase(dog);
-  if(!ph){box.style.display='none';box.innerHTML='';return;}   // só nos primeiros ~120 dias com data de chegada
+  if(!ph){box.style.display='none';box.innerHTML='';return;}
   box.style.display='block';
   const d=Math.floor((startOfToday()-new Date(dog.chegada+'T00:00:00'))/86400000);
-  const itens=[];
-  itens.push('Primeira ida ao vet pra um check-up e confirmar o protocolo de vacina');
-  if(!dog.microchip) itens.push('Microchip — se ainda não tiver, vale registrar (proteção se ele se perder)');
-  itens.push('Conferir vacinas e antiparasitário na aba <b>Plano</b> <button class="chip sm" style="margin-left:4px" onclick="setTab(\'plano\')">Ir →</button>');
-  itens.push('Rotina calma e consistente desde o dia 1 — comida, água e um cantinho só dele');
+  const adot=dog.origem==='adotado';
+  const nm=dog.nome||'seu cão';
+  const done=dog.marcos||{};
+  const doneList=MARCOS.filter(m=>done[m.id]).sort((x,y)=>done[x.id]<done[y.id]?-1:1);
+  const nDone=doneList.length;
+  const closing=(d>=90)||(nDone===MARCOS.length);
+  const lbl=m=>(adot&&m.ta)?m.ta:m.t;
+  // identidade: foto + tempo afetivo
+  const face = dog.photo
+    ? `<div style="width:46px;height:46px;border-radius:50%;overflow:hidden;flex:none;border:2px solid #fff"><img src="${dog.photo}" style="width:100%;height:100%;object-fit:cover;object-position:${(dog.photoPos&&dog.photoPos.x)||50}% ${(dog.photoPos&&dog.photoPos.y)||50}%"></div>`
+    : `<div style="width:46px;height:46px;border-radius:50%;flex:none;background:#cfe3d4;display:flex;align-items:center;justify-content:center;font-weight:700;color:#2f5137;font-size:19px">${(nm[0]||'🐾').toUpperCase()}</div>`;
+  const timeLine = d<=0 ? ('A '+nm+' chegou hoje 🎉')
+    : adot ? ('Faz '+d+' dia'+(d>1?'s':'')+' que a '+nm+' tem uma casa')
+    : ('Faz '+d+' dia'+(d>1?'s':'')+' com a '+nm);
   let h='<div class="card" style="border-color:#cfe3d4;background:var(--green-light)">'
-    +`<div class="sec-label">🌱 Acolhimento · dia ${d+1} de 90</div>`
-    +`<div style="font-weight:700;font-size:15px;margin:2px 0 7px">${ph.t}</div>`
-    +`<p style="margin:0 0 6px;font-size:13.5px"><b>O que é normal agora:</b> ${ph.normal}</p>`
-    +`<p style="margin:0 0 10px;font-size:13.5px"><b>O que ajuda:</b> ${ph.faca}</p>`
-    +`<div class="sec-label" style="margin:10px 0 4px">Primeiros passos</div>`
-    +`<ul style="margin:0;padding-left:18px;font-size:13px;color:var(--brown)">${itens.map(i=>`<li style="margin:3px 0">${i}</li>`).join('')}</ul>`
-    +marcosHTML(dog)
-    +`<div class="nanny-msg" style="margin-top:11px"><div class="nanny-av">${WESTIE}</div><div class="nanny-bubble">${ph.msg}</div></div>`
-    +`</div>`;
+    +`<div style="display:flex;align-items:center;gap:11px;margin-bottom:10px">${face}`
+      +`<div style="flex:1"><div style="font-family:'Playfair Display',Georgia,serif;font-size:17px;font-weight:600;color:#2f5137;line-height:1.15">${timeLine}</div>`
+      +`<div style="font-size:11.5px;color:#5a7a60;margin-top:2px">Acolhimento · dia ${d+1} de 90</div></div></div>`
+    +dotsHTML(nDone);
+  if(closing){
+    h+=`<div style="font-family:'Playfair Display',Georgia,serif;font-size:17px;font-weight:600;color:#2f5137;margin:12px 0 3px">A história de vocês</div>`
+      +`<p style="margin:0 0 10px;font-size:13px;color:#3a5e44;line-height:1.5">${adot?('A '+nm+' chegou sem saber o que esperar — e olha só o que vocês construíram.'):('Os primeiros 90 dias da '+nm+', guardados.')}</p>`;
+    if(doneList.length){h+='<div style="border-left:2px solid #bcd3c1;margin-left:6px;padding-left:13px">'
+      +doneList.map(m=>`<div style="position:relative;padding:5px 0"><span style="position:absolute;left:-17px;top:9px;width:8px;height:8px;border-radius:50%;background:#7a9970"></span><div style="font-size:13px;color:var(--brown)">${lbl(m)}</div><div style="font-size:11px;color:var(--brown-mid)">${fmtISO(done[m.id])}</div></div>`).join('')
+      +'</div>';}
+    else{h+=`<p style="font-size:12.5px;color:var(--brown-mid)">Você não marcou nenhuma primeira vez — mas ainda dá tempo de registrar as que lembrar.</p>`;}
+    h+=`<details style="margin-top:10px"><summary style="cursor:pointer;font-size:12.5px;color:#4a7c59">Registrar ou ajustar primeiras vezes</summary><div style="margin-top:6px">${marcosHTML(dog)}</div></details>`
+      +`<div class="nanny-msg" style="margin-top:11px"><div class="nanny-av">${WESTIE}</div><div class="nanny-bubble">${adot?('Você deu um lar pra ela. Isso muda uma vida — inclusive a sua.'):('Vocês passaram da fase mais difícil juntos. Daqui é vínculo pra vida.')}</div></div>`;
+  } else {
+    h+=`<div style="font-family:'Playfair Display',Georgia,serif;font-size:16px;font-weight:600;color:#2f5137;margin:11px 0 4px">${ph.t}</div>`
+      +`<p style="margin:0 0 5px;font-size:13.5px"><b>O que é normal agora:</b> ${ph.normal}</p>`
+      +`<p style="margin:0 0 10px;font-size:13.5px"><b>O que ajuda:</b> ${ph.faca}</p>`;
+    const nextM=MARCOS.find(m=>!done[m.id]);
+    if(nextM){h+=`<div style="background:#fff;border-radius:12px;padding:12px 13px;margin-bottom:9px">`
+      +`<div style="font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:#5a7a60;margin-bottom:5px">Próxima primeira vez</div>`
+      +`<div style="display:flex;align-items:center;gap:10px"><span style="flex:1;font-size:14.5px;color:var(--brown)">${lbl(nextM)}</span>`
+      +`<button class="chip sm" style="background:#7a9970;color:#fff;border-color:#7a9970" onclick="markMarco('${nextM.id}')">Marcar</button></div></div>`;}
+    h+=`<details style="margin-bottom:2px"><summary style="cursor:pointer;font-size:12.5px;color:#4a7c59">Ver todas as primeiras vezes (${nDone}/${MARCOS.length})</summary><div style="margin-top:6px">${marcosHTML(dog)}</div></details>`
+      +`<div class="nanny-msg" style="margin-top:11px"><div class="nanny-av">${WESTIE}</div><div class="nanny-bubble">${adot?('Adotar é dar uma segunda chance — a '+nm+' vai retribuir em dobro. '+ph.msg):ph.msg}</div></div>`;
+  }
+  h+=`</div>`;
   box.innerHTML=h;
 }
 
