@@ -269,7 +269,7 @@ const AI_DIRECT=false; // produção: a IA roda nas Vercel Functions, nunca no n
 const AI_ENDPOINT=''; // /api/nanny-chat (quando existir). A leitura de documento usa /api/nanny-read-doc
 const WRANGES={'0':{band:'< 2 kg',dose:null,porte:1},'1':{band:'2–4,5 kg',dose:'112,5 mg',porte:1},'2':{band:'4,5–10 kg',dose:'250 mg',porte:2},'3':{band:'10–20 kg',dose:'500 mg',porte:3},'4':{band:'20–40 kg',dose:'1000 mg',porte:4},'5':{band:'40–56 kg',dose:'1400 mg',porte:5}};
 function rangeOf(dog){if(dog.pesoFaixa!=null&&dog.pesoFaixa!==''&&WRANGES[dog.pesoFaixa])return WRANGES[dog.pesoFaixa];if(dog.pesoKg){const kg=dog.pesoKg,v=kg<2?'0':kg<=4.5?'1':kg<=10?'2':kg<=20?'3':kg<=40?'4':'5';return WRANGES[v]}return null}
-let dogs=[],currentId=null,sex='',neut='',porte=3,reposMode=false,editingId=null,dragged=false,healthEdit=null,fileEdit=null;
+let dogs=[],currentId=null,sex='',neut='',porte=3,reposMode=false,editingId=null,dragged=false,healthEdit=null,fileEdit=null,pendingDoc=null;
 
 function loadDogs(){try{dogs=JSON.parse(localStorage.getItem(LS_KEY))||[]}catch(e){dogs=[]}}
 function saveDogs(){try{localStorage.setItem(LS_KEY,JSON.stringify(dogs))}catch(e){}; if(window.nannySync)window.nannySync();}
@@ -682,9 +682,9 @@ function addWatch(){const dog=dogObj();if(!dog)return;const inp=document.getElem
 function addWatchFromNote(label){const dog=dogObj();if(!dog)return;const key=condKey(label)||('w'+Date.now());dog.watch=dog.watch||[];if(!dog.watch.some(w=>w.key===key))dog.watch.push({key,label});saveDogs();setTab('plano');renderProfile();window.scrollTo({top:0,behavior:'smooth'});}
 function removeWatch(key){const dog=dogObj();if(!dog)return;dog.watch=(dog.watch||[]).filter(w=>w.key!==key);if(dog.conditions)delete dog.conditions[key];saveDogs();renderProfile();}
 function saveCond(k){const dog=dogObj();if(!dog)return;const st=(document.getElementById('cs-st-'+k)||{}).value||'avaliado_ok';const note=((document.getElementById('cs-note-'+k)||{}).value||'').trim();const date=(document.getElementById('cs-date-'+k)||{}).value||'';dog.conditions=dog.conditions||{};dog.conditions[k]={status:st,note,date};saveDogs();renderProfile();}
-function docCardHTML(dog){const he=dog.health;
+function docCardHTML(dog){if(pendingDoc)return docConfirmHTML(dog);const he=dog.health;
   const temDados=he&&((he.vacinas||[]).length||(he.antiparasitario||[]).length||(he.vermifugo||[]).length||(he.condicoes||[]).length||he.vet||he.microchip);
-  const tip=`<details style="margin-top:8px"><summary style="font-size:12px;color:var(--brown-mid);cursor:pointer">📸 Como tirar a foto certa</summary><div style="font-size:12px;color:var(--brown-mid);margin-top:6px;line-height:1.55">• Boa luz, sem flash e sem reflexo<br>• Câmera reta por cima, bem perto<br>• <b>Uma página/seção por foto</b> — pode mandar várias de uma vez<br>• Letra pequena? Aproxima e foca antes</div></details>`;
+  const tip=`<details open style="margin-top:8px"><summary style="font-size:12px;color:var(--brown-mid);cursor:pointer">📸 Como fotografar pra Nanny ler certo</summary><div style="font-size:12px;color:var(--brown-mid);margin-top:6px;line-height:1.55">• Boa luz, sem flash e sem reflexo<br>• Câmera reta por cima, bem perto<br>• <b>Uma página/seção por foto</b> — pode mandar várias de uma vez<br>• Letra pequena? Aproxima e foca antes</div></details>`;
   const sub=`<p style="font-size:12px;color:var(--brown-mid);margin:6px 0 0">A Nanny lê carteira, exames, laudos e pedigree — extrai o que dá (vacinas, antipulga, vermífugo, microchip, achados de exame) e guarda a foto. O histórico e os arquivos ficam na aba <b>Documentos</b>.</p>`;
   let inner;
   if(temDados){inner=`<div class="nanny-msg"><div class="nanny-av">${WESTIE}</div><div class="nanny-bubble">${nannySummary(dog,he)}</div></div>${insightsHTML(dog,he)}<p style="font-size:12px;color:var(--brown-mid);margin:10px 0 0">📁 O histórico completo (vacinas, antipulga, vermífugo lidos) e as fotos ficam na aba <b>Documentos</b>.</p><label class="chip up big" style="margin-top:12px">📷 Ler outro documento<input type="file" accept="image/*,.pdf" multiple onchange="nannyReadDoc(this,'doc')"></label>${sub}${tip}<div class="ai-note"></div>`;}
@@ -1044,10 +1044,9 @@ async function nannyReadDoc(input,cond){
   const files=input.files?Array.prototype.slice.call(input.files):[];if(!files.length)return;
   const note=document.querySelector('#tab-plano .ai-note');
   const setNote=(cls,txt)=>{if(note){note.className='ai-note '+cls;note.style.display='block';note.innerHTML=txt;}};
-  const dog=dogObj();dog.docs=dog.docs||[];let ok=0,empty=0,err=0;
+  const dog=dogObj();let ok=0,empty=0,err=0;const staged={};const thumbs=[];
   for(let i=0;i<files.length;i++){const f=files[i];
-    setNote('busy',`✨ A Nanny está lendo ${files.length>1?`(${i+1} de ${files.length}) `:''}o documento…`);
-    dog.docs.push({cond,name:f.name,at:Date.now()});
+    setNote('busy',`\u2728 A Nanny esta lendo ${files.length>1?`(${i+1} de ${files.length}) `:''}o documento...`);
     try{
       let apiData,apiType;
       const big=await downscaleImage(f,1568,0.92);
@@ -1057,19 +1056,63 @@ async function nannyReadDoc(input,cond){
       const resp=await fetch('/api/nanny-read-doc',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({data:apiData,media_type:apiType})});
       if(!resp.ok){err++;continue;}
       const j=await resp.json();let ex=j&&j.extracted;
-      if(ex&&hasUsefulData(ex)){ex=sanitizeExtraction(ex);dog.health=mergeHealth(dog.health,ex);
-        if(ex.pedigree&&Object.keys(ex.pedigree).some(k=>ex.pedigree[k])){dog.pedigree=Object.assign({},dog.pedigree||{});Object.keys(ex.pedigree).forEach(k=>{if(ex.pedigree[k])dog.pedigree[k]=ex.pedigree[k];});if(dog.pedigree.microchip&&!dog.microchip)dog.microchip=dog.pedigree.microchip;}
-        if(thumb){dog.files=dog.files||[];const amb=ex.confianca==='baixa'||!ex.tipo_documento||/outro/i.test(ex.tipo_documento||'');const tp=amb?'A categorizar':ex.tipo_documento;dog.files.push({id:uid(),type:tp,name:(tp.charAt(0).toUpperCase()+tp.slice(1))+' · '+new Date().toLocaleDateString('pt-BR'),thumb,at:Date.now()});}
-        if(dog.health.microchip&&!dog.microchip)dog.microchip=dog.health.microchip;ok++;}
+      if(ex&&hasUsefulData(ex)){ex=sanitizeExtraction(ex);
+        Object.keys(staged).length?mergeInto(staged,ex):Object.assign(staged,ex);
+        if(ex.pedigree&&Object.keys(ex.pedigree).some(k=>ex.pedigree[k])){staged.pedigree=Object.assign({},staged.pedigree||{});Object.keys(ex.pedigree).forEach(k=>{if(ex.pedigree[k])staged.pedigree[k]=ex.pedigree[k];});}
+        if(thumb){const amb=ex.confianca==='baixa'||!ex.tipo_documento||/outro/i.test(ex.tipo_documento||'');const tp=amb?'A categorizar':ex.tipo_documento;thumbs.push({id:uid(),type:tp,name:(tp.charAt(0).toUpperCase()+tp.slice(1))+' \u00b7 '+new Date().toLocaleDateString('pt-BR'),thumb,at:Date.now()});}
+        ok++;}
       else{empty++;}
     }catch(e){err++;}
   }
-  saveDogs();input.value='';
-  if(ok){applyHealthToPlan(dog,dog.health);saveDogs();setTab('plano');renderProfile();window.scrollTo({top:0,behavior:'smooth'});
-    if(err||empty){const n2=document.querySelector('#tab-plano .ai-note');if(n2){n2.className='ai-note warn';n2.style.display='block';n2.innerHTML=`Li ${ok} de ${files.length}. ${empty?'Algumas não tinham dados que eu reconheça. ':''}${err?'Outra(s) falharam — toca de novo pra tentar.':''}`;}}
-    return;}
-  if(err){setNote('warn','⚠️ Tive um problema na leitura (conexão ou servidor). Toca de novo no botão — costuma resolver na segunda.');return;}
-  setNote('warn','Li a foto, mas não encontrei vacinas nem datas. Confere se está nítida, reta e mostrando as datas — e manda <b>uma página por vez</b>.');
+  input.value='';
+  if(ok){pendingDoc={ex:staged,thumbs:thumbs,count:ok,empty:empty,err:err};renderProfile();setTab('plano');window.scrollTo({top:0,behavior:'smooth'});return;}
+  if(err){setNote('warn','\u26a0\ufe0f Tive um problema na leitura (conexao ou servidor). Toca de novo no botao - costuma resolver na segunda.');return;}
+  setNote('warn','Li a foto, mas nao encontrei vacinas nem datas. Confere se esta nitida, reta e mostrando as datas - e manda <b>uma pagina por vez</b>.');
+}
+function mergeInto(prev,ex){Object.keys(ex).forEach(k=>{if(Array.isArray(ex[k])){prev[k]=prev[k]||[];const seen=new Set(prev[k].map(x=>JSON.stringify(x)));ex[k].forEach(it=>{const key=JSON.stringify(it);if(!seen.has(key)){seen.add(key);prev[k].push(it);}});}else if(ex[k]&&typeof ex[k]!=='object'){if(!prev[k])prev[k]=ex[k];}});return prev;}
+
+function pdRow(cat,i,nome,data,incerto,extra){
+  const flag=(incerto||!data);
+  const bd=flag?'border:1.5px solid #e0a84f;background:#fdf6ea':'border:1px solid var(--line)';
+  return `<div style="${bd};border-radius:10px;padding:9px 10px;margin-bottom:7px">
+    <input id="pd-${cat}-${i}-n" class="he-in" style="margin:0 0 6px" value="${(nome||'').replace(/"/g,'&quot;')}" placeholder="nome">
+    <div style="display:flex;gap:6px;align-items:center"><span style="font-size:11.5px;color:var(--brown-mid);white-space:nowrap">Data</span><input id="pd-${cat}-${i}-d" class="he-in" style="margin:0" type="date" value="${data||''}"></div>
+    ${extra||''}
+    ${flag?'<div style="font-size:11.5px;color:#b5722a;margin-top:5px">\u26a0\ufe0f Confirme esta data \u2014 nao li com certeza.</div>':''}
+  </div>`;
+}
+function docConfirmHTML(dog){const ex=pendingDoc.ex||{};let h='';
+  const anyIncerto=['vacinas','antiparasitario','vermifugo','exames'].some(c=>(ex[c]||[]).some(it=>it.incerto||!it.data))||ex.confianca==='baixa';
+  h+=`<div class="card" style="border-color:#e0a84f">
+    <div class="nanny-msg"><div class="nanny-av">${WESTIE}</div><div class="nanny-bubble">Li o documento. <b>Confere as datas antes de eu guardar</b> \u2014 eu nao gravo nada sem voce confirmar.</div></div>`;
+  if(anyIncerto)h+=`<div class="ai-disc" style="margin:8px 0">\u26a0\ufe0f Alguns itens estao <b>marcados em laranja</b>: nao consegui ler a data com certeza. Confira olhando o documento.</div>`;
+  const vac=(ex.vacinas||[]);if(vac.length){h+=`<div class="sec-label" style="margin:10px 0 6px">Vacinas</div>`;vac.forEach((v,i)=>h+=pdRow('vacinas',i,v.nome,v.data,v.incerto));}
+  const an=(ex.antiparasitario||[]);if(an.length){h+=`<div class="sec-label" style="margin:10px 0 6px">Antipulga / carrapato</div>`;an.forEach((v,i)=>h+=pdRow('antiparasitario',i,v.produto,v.data,v.incerto));}
+  const vm=(ex.vermifugo||[]);if(vm.length){h+=`<div class="sec-label" style="margin:10px 0 6px">Vermifugo</div>`;vm.forEach((v,i)=>h+=pdRow('vermifugo',i,v.produto,v.data,v.incerto));}
+  const exs=(ex.exames||[]);if(exs.length){h+=`<div class="sec-label" style="margin:10px 0 6px">Exames / laudos</div>`;exs.forEach((e,i)=>h+=pdRow('exames',i,e.tipo,e.data,e.incerto,`<textarea id="pd-exames-${i}-a" placeholder="achado (do laudo)" style="margin-top:6px;min-height:44px">${(e.achado||'').replace(/</g,'&lt;')}</textarea>`));}
+  const pr=(ex.proximas_datas||[]);if(pr.length){h+=`<div class="sec-label" style="margin:10px 0 6px">Proximas datas (anotadas pelo vet)</div>`;pr.forEach((v,i)=>h+=pdRow('proximas_datas',i,v.o_que,v.data,false));}
+  const cd=(ex.condicoes||[]);if(cd.length){h+=`<div class="sec-label" style="margin:10px 0 6px">Condicoes</div>`;cd.forEach((c,i)=>h+=`<input id="pd-condicoes-${i}-n" class="he-in" value="${((typeof c==='string'?c:(c&&c.nome)||'')).replace(/"/g,'&quot;')}">`);}
+  if(ex.microchip||ex.pedigree&&ex.pedigree.microchip){h+=`<div class="sec-label" style="margin:10px 0 6px">Microchip</div><input id="pd-microchip" class="he-in" value="${(ex.microchip||(ex.pedigree&&ex.pedigree.microchip)||'').replace(/"/g,'&quot;')}">`;}
+  h+=`<div style="display:flex;gap:8px;margin-top:14px"><button class="btn" style="flex:1;margin:0;box-shadow:none" onclick="confirmDoc()">Confirmar e guardar</button><button class="chip" onclick="discardDoc()">Descartar</button></div>
+    <div class="ai-disc" style="margin-top:10px">A Nanny e uma IA e pode errar na leitura \u2014 por isso voce confirma antes. Depois de guardado, ainda da pra corrigir (\u270e) ou remover (\u2715).</div>
+  </div>`;
+  return h;
+}
+function discardDoc(){pendingDoc=null;renderProfile();}
+function confirmDoc(){const dog=dogObj();if(!dog||!pendingDoc)return;const ex=pendingDoc.ex||{};
+  const val=(id)=>{const e=document.getElementById(id);return e?(''+e.value).trim():'';};
+  ['vacinas','antiparasitario','vermifugo'].forEach(cat=>{(ex[cat]||[]).forEach((it,i)=>{const nm=val('pd-'+cat+'-'+i+'-n');const dt=val('pd-'+cat+'-'+i+'-d');if(cat==='vacinas')it.nome=nm;else it.produto=nm;it.data=dt;delete it.incerto;});ex[cat]=(ex[cat]||[]).filter(it=>((it.nome||it.produto||'').trim())||it.data);});
+  (ex.exames||[]).forEach((e,i)=>{e.tipo=val('pd-exames-'+i+'-n');e.data=val('pd-exames-'+i+'-d');e.achado=val('pd-exames-'+i+'-a');delete e.incerto;});
+  (ex.proximas_datas||[]).forEach((v,i)=>{v.o_que=val('pd-proximas_datas-'+i+'-n');v.data=val('pd-proximas_datas-'+i+'-d');});ex.proximas_datas=(ex.proximas_datas||[]).filter(v=>v.data);
+  if(ex.condicoes)ex.condicoes=ex.condicoes.map((c,i)=>val('pd-condicoes-'+i+'-n')||c).filter(Boolean);
+  const mc=val('pd-microchip');if(mc)ex.microchip=mc;
+  dog.health=mergeHealth(dog.health,ex);
+  if(ex.pedigree&&Object.keys(ex.pedigree).some(k=>ex.pedigree[k])){dog.pedigree=Object.assign({},dog.pedigree||{});Object.keys(ex.pedigree).forEach(k=>{if(ex.pedigree[k])dog.pedigree[k]=ex.pedigree[k];});}
+  if(ex.microchip&&!dog.microchip)dog.microchip=ex.microchip;
+  (pendingDoc.thumbs||[]).forEach(t=>{dog.files=dog.files||[];dog.files.push(t);});
+  applyHealthToPlan(dog,dog.health);
+  pendingDoc=null;saveDogs();setTab('plano');renderProfile();window.scrollTo({top:0,behavior:'smooth'});
+  const n=document.querySelector('#tab-plano .ai-note');if(n){n.className='ai-note ok';n.style.display='block';n.innerHTML='\u2705 Guardei no dossie. Datas conferidas por voce.';}
 }
 
 /* ---------- listas ---------- */
