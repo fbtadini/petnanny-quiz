@@ -458,10 +458,16 @@ function upcomingReminders(dog){const out=[],today=startOfToday();
 function hasHealthData(dog){const he=dog.health||{};const done=dog.done||{};
   return (he.vacinas||[]).length||(he.antiparasitario||[]).length||(he.vermifugo||[]).length||(he.condicoes||[]).length||he.microchip||he.vet||Object.keys(done).some(k=>done[k]);}
 function statusSummary(dog){const ups=upcomingReminders(dog);const att=ups.filter(u=>u.status!=='upcoming');const next=ups.filter(u=>u.status==='upcoming')[0];
-  if(!hasHealthData(dog))return {cls:'',txt:'Mande a carteira de vacinação no Plano pra Nanny montar o histórico e o status.'};
+  const he=dog.health||{};const falta=[];
+  if(!(he.vacinas||[]).length)falta.push('vacinas');
+  if(!(he.antiparasitario||[]).length)falta.push('antipulga');
+  if(!(he.vermifugo||[]).length)falta.push('vermífugo');
+  if(!(dog.weights||[]).length)falta.push('peso');
+  if(!hasHealthData(dog)&&!(dog.weights||[]).length)return {cls:'',txt:'Mande a carteira de vacinação em Cuidados pra Nanny montar o histórico e o status.'};
   if(att.length)return {cls:'warn',txt:`⚠️ ${att.length} ${att.length>1?'itens precisam de atenção':'item precisa de atenção'}`+(next?` · próxima: ${next.t.toLowerCase()} em ${fmt(next.when)}`:'')};
-  if(next)return {cls:'ok',txt:`✓ Tudo em dia · próxima: ${next.t.toLowerCase()} em ${fmt(next.when)}`};
-  return {cls:'ok',txt:'✓ Tudo registrado e em dia.'};}
+  if(falta.length)return {cls:'',txt:`Quase lá · do que sei está ok, ainda falta: ${falta.join(', ')}`};
+  if(next)return {cls:'ok',txt:`✓ Quadro completo e em dia · próxima: ${next.t.toLowerCase()} em ${fmt(next.when)}`};
+  return {cls:'ok',txt:'✓ Quadro completo e em dia.'};}
 const HEALTH_RULES=[
   {m:t=>t.includes('patela')||t.includes('luxação'),ic:'🦴',cond:'Luxação de patela (joelho)',q:'Já avaliou os joelhos com o vet?',watch:'Sinais: ele "pula" uma passada, segura a patinha no ar ou evita saltar. Evite saltos do sofá e da cama — rampas ajudam.'},
   {m:t=>t.includes('hérnia de disco')||t.includes('ivdd')||t.includes('corpo comprido'),ic:'⚠️',cond:'Coluna / risco de hérnia (IVDD)',q:'Já conversou com o vet sobre proteger a coluna?',watch:'Sinais: relutância em pular, costas arqueadas, andar trêmulo. Sem escadas, use rampas e mantenha o peso sob controle.'},

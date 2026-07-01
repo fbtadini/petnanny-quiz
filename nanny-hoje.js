@@ -44,6 +44,7 @@
   // ---- MOTOR DE INSIGHTS: cruza os dados e vira conclusão (não lista de fatos) ----
   window.nannyInsights = function (dog, b, c) {
     b = b || {}; c = c || {}; var out = [], n = esc(nome(dog));
+    var adot = dog.origem === 'adotado';
     var mo = new Date().getMonth(), quente = (mo >= 8 || mo <= 2);
     var ws = dog.weights || [], wUp = null;
     if (ws.length >= 2) { var d = ws[ws.length-1].kg - ws[ws.length-2].kg; if (d >= 0.3) wUp = d; }
@@ -61,7 +62,8 @@
     if (diag.length) out.push({ic:'📋',t:'Com '+(diag.length>1?'condições já diagnosticadas':'uma condição já diagnosticada')+', os cuidados preventivos deixam de ser opcionais — mantém o acompanhamento com o vet em dia.'});
     if (meses != null && meses >= 96) out.push({ic:'🎂',t:(b.name||'Ela')+' entrou na fase sênior. Daqui pra frente, exame de sangue a cada 6 meses e olho no peso e na disposição pegam problema cedo.'});
     if (dog.chegada) { var dias = Math.floor((Date.now() - new Date(dog.chegada+'T00:00:00'))/864e5); if (dias >= 0 && dias <= 90 && ((dog.temperamento||[]).length || b.ind <= 2)) out.push({ic:'🏠',t:'Faz '+dias+' dias que ela chegou. Comportamento novo nesta fase quase sempre é adaptação, não a personalidade dela — dá tempo e rotina antes de concluir.'}); }
-    if (b.nrg >= 4 && meses != null && meses < 36 && !out.some(function(o){return o.ic==='⚡';})) out.push({ic:'⚡',t:(b.name||'Ela')+' é de energia alta e ainda jovem: sem gasto físico e mental diário, sobra pra bagunça e latido. Brinquedo de enriquecimento e passeio resolvem a maior parte.'});
+    if (b.nrg >= 4 && meses != null && meses < 36 && !adot && !out.some(function(o){return o.ic==='⚡';})) out.push({ic:'⚡',t:(b.name||'Ela')+' é de energia alta e ainda jovem: sem gasto físico e mental diário, sobra pra bagunça e latido. Brinquedo de enriquecimento e passeio resolvem a maior parte.'});
+    if (b.nrg >= 4 && meses != null && meses < 36 && adot && (dog.temperamento||[]).length && !out.some(function(o){return o.ic==='⚡';})) out.push({ic:'⚡',t:'Pelo que você contou, a '+n+' tem bastante energia — sem gasto físico e mental diário, sobra pra bagunça. Brinquedo de enriquecimento e passeio ajudam muito.'});
 
     return out.slice(0, 3);
   };
