@@ -25,7 +25,7 @@
   function g(fn){ return (typeof window[fn]==='function')?window[fn]:null; }
   function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
   function track(ev,p){ try{ if(window.gtag) window.gtag('event',ev,p||{});}catch(e){} }
-  function nannyFace(px){ var s=window.WESTIE||'<svg viewBox="0 0 100 100"><circle cx="50" cy="55" r="30" fill="#fff" stroke="#c9b798" stroke-width="3"/></svg>'; return '<span class="na-face" aria-hidden="true" style="display:inline-flex;width:'+px+'px;height:'+px+'px;border-radius:50%;background:#eef3ea;padding:4px;box-sizing:border-box;flex-shrink:0">'+s+'</span>'; }
+  function nannyFace(px){ var s=window.WESTIE||'<svg viewBox="0 0 100 100"><circle cx="50" cy="55" r="30" fill="#fff" stroke="#c9b798" stroke-width="3"/></svg>'; return '<span class="na-face" aria-hidden="true" style="display:inline-flex;width:'+px+'px;height:'+px+'px;border-radius:50%;background:#f3ddc9;border:1px solid #f3d9c2;padding:4px;box-sizing:border-box;flex-shrink:0">'+s+'</span>'; }
 
   function styleOnce(){
     if(document.getElementById('nanny-ask-css')) return;
@@ -74,13 +74,33 @@
 
   var pendingImg={};
 
+  function chipsHTML(mode){
+    var chips=[['Que ração comprar?','Que ração é a certa pra ele?'],['Late quando saio','Ele late ou chora quando fico fora. O que faço?'],['O que pode comer?','O que ele pode e o que não pode comer?'],['Coçando muito','Tá se coçando muito, o que pode ser?']];
+    if(mode==='perfil'){
+      var dog=g('dogObj')?window.dogObj():null;
+      if(dog){
+        var c=(typeof BREED_CARE!=='undefined'&&dog.breedKey&&BREED_CARE[dog.breedKey])||{};
+        var meses=g('ageInMonths')?window.ageInMonths(dog):null, filhote=(dog.origem==='filhote_criador')||(meses!=null&&meses<12), senior=(meses!=null&&meses>=96);
+        var a=[];
+        if(filhote){a.push(['Vacinas do filhote?','Quais vacinas o filhote precisa e quando?']);a.push(['Ensinar o xixi','Como ensino ele a fazer xixi no lugar certo?']);a.push(['Quando castrar?','Qual a idade certa pra castrar?']);}
+        else if(senior){a.push(['Exames de idoso','Que exames de rotina um cão idoso precisa?']);a.push(['Sinais de dor','Como sei se ele está sentindo dor ou envelhecendo mal?']);}
+        if(c.brachy)a.push(['Ofegante no calor','Ele fica muito ofegante no calor, é normal?']);
+        if(c.coat==='double')a.push(['Queda de pelo','Ele solta muito pelo, como lido com isso?']);
+        if(c.longBack)a.push(['Cuidar da coluna','Como proteger a coluna dele no dia a dia?']);
+        a.push(['Que ração comprar?','Que ração é a certa pra ele?']);
+        a.push(['Comportamento','Ele tem um comportamento que me preocupa, posso te contar?']);
+        chips=a.slice(0,4);
+      }
+    }
+    return '<div id="na-chips-'+mode+'" style="margin-top:9px">'+chips.map(function(ch){return '<span class="na-chip" data-q="'+ch[1].replace(/"/g,'&quot;')+'">'+ch[0]+'</span>';}).join('')+'</div>';
+  }
   function cardHTML(mode){
     var semCao=(mode==='home');
     return '<div class="na-fade" style="background:#fff;border:1px solid '+CT.line+';border-radius:16px;padding:15px 15px 14px">'
       + '<div style="display:flex;align-items:center;gap:9px;margin-bottom:9px">'+nannyFace(30)
       + '<div><div style="font-weight:500;font-size:15px;color:'+CT.pri+'">Pergunta pra Nanny</div>'
       + '<div style="font-size:12px;color:'+CT.sec+'">'+(semCao?'Uma dúvida agora? Pode perguntar — não precisa cadastrar antes.':'Descreva ou mande uma foto. Ela usa o que sabe do seu cão.')+'</div></div></div>'
-      + '<textarea id="na-text-'+mode+'" rows="2" aria-label="Sua dúvida sobre o cão" placeholder="Pode ser qualquer coisa: saúde, comportamento, ração, banho, passeio…" style="width:100%;box-sizing:border-box;border:1.5px solid '+CT.line+';border-radius:12px;padding:12px 13px;font-size:15px;font-family:inherit;color:'+CT.pri+';resize:vertical"></textarea>'+ '<div id="na-chips-'+mode+'" style="margin-top:9px">'+ '<span class="na-chip" data-q="Que ração é a certa pra ele?">Que ração comprar?</span>'+ '<span class="na-chip" data-q="Ele late/chora quando fico fora. O que faço?">Late quando saio</span>'+ '<span class="na-chip" data-q="Posso dar osso pra ele? E o que não pode comer?">O que pode comer?</span>'+ '<span class="na-chip" data-q="Tá se coçando muito, o que pode ser?">Coçando muito</span>'+ '</div>'
+      + '<textarea id="na-text-'+mode+'" rows="2" aria-label="Sua dúvida sobre o cão" placeholder="Pode ser qualquer coisa: saúde, comportamento, ração, banho, passeio…" style="width:100%;box-sizing:border-box;border:1.5px solid '+CT.line+';border-radius:12px;padding:12px 13px;font-size:15px;font-family:inherit;color:'+CT.pri+';resize:vertical"></textarea>'+ chipsHTML(mode)
       + '<div style="display:flex;align-items:center;gap:6px;margin-top:8px">'
       + '<button type="button" class="na-btn-ic" id="na-cam-'+mode+'" aria-label="Anexar foto"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="'+CT.mut+'" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="3.5"/></svg></button>'
       + '<span id="na-tag-'+mode+'" style="font-size:12px;color:'+CT.green+';display:none"><span>foto anexada</span> · <a href="#" id="na-clr-'+mode+'" style="color:#b02a1f">remover</a></span>'

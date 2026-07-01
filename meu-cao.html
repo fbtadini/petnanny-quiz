@@ -230,14 +230,15 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent)}
     <div style="display:flex;gap:8px;margin:2px 0 10px;flex-wrap:wrap"><button class="chip" onclick="editDog()">✎ Editar dados</button><button class="chip" onclick="window.nannyVetResumo&&nannyVetResumo()">🩺 Resumo pro vet (PDF)</button></div>
     <div id="p-status" class="status-sum" style="display:none"></div>
     <div id="p-acolher" style="display:none"></div>
-    <div id="nanny-ask"></div>
     <div class="tabs">
-      <div class="tab on" data-tab="guia" onclick="setTab('guia')">Raça</div>
+      <div class="tab on" data-tab="hoje" onclick="setTab('hoje')">Hoje</div>
+      <div class="tab" data-tab="guia" onclick="setTab('guia')">Raça</div>
       <div class="tab" data-tab="plano" onclick="setTab('plano')">Plano</div>
       <div class="tab" data-tab="lembretes" onclick="setTab('lembretes')">Lembretes</div>
       <div class="tab" data-tab="docs" onclick="setTab('docs')">Documentos</div>
     </div>
-    <div id="tab-guia"></div>
+    <div id="tab-hoje"></div>
+    <div id="tab-guia" style="display:none"></div>
     <div id="tab-plano" style="display:none"></div>
     <div id="tab-lembretes" style="display:none"></div>
     <div id="tab-docs" style="display:none"></div>
@@ -546,7 +547,7 @@ function renderGuide(dog){const b=getBreed(dog);let h='';
   h+=behaviorHTML(dog,b);
   // O QUE A NANNY SABE (campo livre + dicas)
   const tips=notesTips(dog);
-  h+=`<div class="card"><div class="sec-label">O que a Nanny sabe sobre ${gArt(dog)} ${dog.nome}</div><p style="font-size:13px;color:var(--brown-mid);margin:0 0 9px">Conte medos, manias, condições e gostos. A Nanny usa isso pra personalizar os cuidados — e vai lembrar disso quando você conversar com ela.</p>
+  h+=`<div class="card"><div class="sec-label">Conte pra Nanny sobre ${gArt(dog)} ${dog.nome}</div><p style="font-size:13px;color:var(--brown-mid);margin:0 0 9px">Conte medos, manias, condições e gostos. A Nanny usa isso pra personalizar os cuidados — e vai lembrar disso quando você conversar com ela.</p>
   <textarea id="dogNotes" placeholder="Ex.: tem medo de fogos, pequena luxação na patela, está um pouco acima do peso, adora gente mas não curte outros cães…">${(dog.notes||'').replace(/</g,'&lt;')}</textarea>
   <div style="display:flex;gap:8px;margin-top:10px"><button class="chip" onclick="saveNotes()">Salvar</button></div>
   <div class="ai-note" id="notesAi"></div>`;
@@ -786,9 +787,9 @@ function renderProfile(){const dog=dogObj();if(!dog)return goHome();migrateDog(d
   if(dog.aguardando){document.getElementById('p-meta').textContent=raca+' · plano de chegada'+(dog.previsao?(' · previsão '+fmtISO(dog.previsao)):'');}
   else{const rg=rangeOf(dog);document.getElementById('p-meta').textContent=`${raca} · ${ageLabel(ageInMonths(dog))}${rg?(' · '+rg.band):''}${dog.sexo?(' · '+(dog.sexo==='femea'?'fêmea':'macho')):''}`;}
   const pc=document.getElementById('p-chip');if(dog.microchip){pc.style.display='block';pc.textContent='🔖 Microchip: '+dog.microchip}else{pc.style.display='none'}
-  const ss=statusSummary(dog),ps=document.getElementById('p-status');if(ps){if(dog.aguardando){ps.style.display='none';}else{ps.style.display='block';ps.className='status-sum '+ss.cls;ps.textContent=ss.txt;}}
-  setAvatar();renderAcolher(dog);renderGuide(dog);renderPlan(dog);renderReminders(dog);renderDocs(dog);}
-function setTab(t){document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('on',x.dataset.tab===t));['guia','plano','lembretes','docs'].forEach(x=>document.getElementById('tab-'+x).style.display=(x===t)?'block':'none')}
+  const ss=statusSummary(dog),ps=document.getElementById('p-status');if(ps){if(dog.aguardando){ps.style.display='none';}else{ps.style.display='block';ps.className='status-sum '+ss.cls;ps.textContent=ss.txt;ps.style.cursor=(ss.cls==='warn')?'pointer':'';ps.onclick=(ss.cls==='warn')?function(){setTab('lembretes');window.scrollTo({top:0,behavior:'smooth'});}:null;}}
+  setAvatar();renderAcolher(dog);renderGuide(dog);renderPlan(dog);renderReminders(dog);renderDocs(dog);if(window.renderHoje)window.renderHoje(dog);}
+function setTab(t){document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('on',x.dataset.tab===t));['hoje','guia','plano','lembretes','docs'].forEach(x=>document.getElementById('tab-'+x).style.display=(x===t)?'block':'none')}
 
 const MARCOS=[
   {id:'casa',t:'🏡 Chegou em casa'},
@@ -1084,7 +1085,7 @@ function renderList(){const el=document.getElementById('dogList');const qc=quizC
   }
   if(!dogs.length){el.innerHTML=banner;return}
   el.innerHTML=banner+'<div class="sec-label" style="margin-top:6px">Seus cães</div>'+dogs.map(d=>{const b=getBreed(d);const av=d.photo?`<img src="${d.photo}" style="object-position:${d.photoPos.x}% ${d.photoPos.y}%">`:(b._synthetic?WESTIE:(b.emoji||'🐶'));return `<div class="dog-list-item" onclick="openDog('${d.id}')"><div class="dll-em">${av}</div><div><div style="font-weight:700">${d.nome}</div><div style="font-size:12.5px;color:var(--brown-mid)">${b._synthetic?d.customBreed:b.name} · ${ageLabel(ageInMonths(d))}</div></div></div>`}).join('');}
-function openDog(id){currentId=id;reposMode=false;renderProfile();show('s-profile');setTab('guia')}
+function openDog(id){currentId=id;reposMode=false;renderProfile();show('s-profile');setTab('hoje')}
 function renderAdmin(){const el=document.getElementById('adminList');const reqs=dogs.filter(d=>d.breedKey==='__outra'&&d.customBreed);
   if(!reqs.length){el.innerHTML='<div class="empty">Nenhuma raça "Outra" cadastrada ainda neste aparelho.</div>';return;}
   el.innerHTML=reqs.map(d=>`<div class="admin-row"><span><b>${d.customBreed}</b></span><span style="color:var(--brown-light)">${d.nome} · ${ageLabel(ageInMonths(d))}</span></div>`).join('');}
@@ -1095,6 +1096,7 @@ loadDogs();fillBreeds();renderList();document.getElementById('f-birth').max=new 
 <div id="ficha"></div>
 <script src="nanny-identity.js"></script>
 <script src="nanny-ask-ui.js"></script>
+<script src="nanny-hoje.js"></script>
 <script src="nanny-vet-resumo.js"></script>
 <script>document.addEventListener('DOMContentLoaded',function(){window.nannyBoot&&window.nannyBoot();});</script>
 </body>
