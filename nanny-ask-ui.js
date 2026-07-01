@@ -200,7 +200,7 @@
         var r=j.resposta; threads[mode].push({de:'nanny',r:r});
         if(dog){
           var repeat=(dog.perguntas&&dog.perguntas.length>=1); dog.perguntas=dog.perguntas||[];
-          dog.perguntas.push({id:Date.now()+'-'+Math.random().toString(36).slice(2,7),data:new Date().toISOString().slice(0,10),texto:texto||'(foto)',nivel:r.nivel,resposta:r.o_que_fazer_agora,por_que:r.por_que||'',pro_vet:r.pro_vet||''});
+          dog.perguntas.push({id:Date.now()+'-'+Math.random().toString(36).slice(2,7),data:new Date().toISOString().slice(0,10),texto:texto||'(foto)',entendi:r.entendi||'',nivel:r.nivel,resposta:r.o_que_fazer_agora,por_que:r.por_que||'',pro_vet:r.pro_vet||''});
           if(Array.isArray(r.novos_eventos)){dog.eventos=dog.eventos||[];r.novos_eventos.forEach(function(e){if(e&&e.tipo)dog.eventos.push({tipo:e.tipo,origem:'observacao_nanny',data:new Date().toISOString().slice(0,10),confianca:e.confianca||'media',payload:e.payload||{}});});}
           if(g('saveDogs'))window.saveDogs(); if(g('nannySync'))window.nannySync(true);
           if(g('renderDocs')){try{window.renderDocs(dog);}catch(e){}}

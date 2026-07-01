@@ -24,6 +24,7 @@
     var sexo=dog.sexo==='femea'?'Fêmea':(dog.sexo==='macho'?'Macho':'Não informado');
     var h=dog.health||{}, ped=dog.pedigree||{};
     var vac=(h.vacinas||[]).slice().sort(byDateDesc);
+    var obs=(dog.perguntas||[]).filter(function(p){return p&&p.pro_vet&&!p.no_vet;}).slice().sort(function(a,b){return String(b.data||'').localeCompare(String(a.data||''));});
     var anti=(h.antiparasitario||[]).slice().sort(byDateDesc);
     var verm=(h.vermifugo||[]).slice().sort(byDateDesc);
     var ex=(h.exames||[]).slice().sort(byDateDesc);
@@ -52,6 +53,7 @@
       + sec('Próximas datas registradas', prox.length?tbl(['Item','Previsão'],rows(prox,[function(v){return v.o_que;},function(v){return br(v.data);}])):'')
       + sec('Exames e laudos', ex.length?tbl(['Tipo','Achado (transcrito)','Data'],rows(ex,[function(v){return v.tipo;},function(v){return v.achado;},function(v){return br(v.data);}])):'')
       + sec('Condições registradas', cond.length?'<ul>'+cond.map(function(c){return '<li>'+esc(typeof c==='string'?c:(c.nome||JSON.stringify(c)))+'</li>';}).join('')+'</ul>':'')
+      + sec('Observações relatadas (triagem Nanny)', obs.length?tbl(['Data','Observação'],rows(obs,[function(o){return br(o.data);},function(o){return o.pro_vet;}])):'')
       + sec('Evolução de peso', (function(){
           var ws=(dog.weights||[]).slice().sort(function(a,b){return String(a.d).localeCompare(String(b.d));});
           if(!ws.length) return '';

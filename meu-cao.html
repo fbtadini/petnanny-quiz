@@ -269,6 +269,8 @@ const AI_ENDPOINT=''; // /api/nanny-chat (quando existir). A leitura de document
 const WRANGES={'0':{band:'< 2 kg',dose:null,porte:1},'1':{band:'2–4,5 kg',dose:'112,5 mg',porte:1},'2':{band:'4,5–10 kg',dose:'250 mg',porte:2},'3':{band:'10–20 kg',dose:'500 mg',porte:3},'4':{band:'20–40 kg',dose:'1000 mg',porte:4},'5':{band:'40–56 kg',dose:'1400 mg',porte:5}};
 function faixaFromKg(kg){return kg<2?'0':kg<=4.5?'1':kg<=10?'2':kg<=20?'3':kg<=40?'4':'5'}
 function rangeOf(dog){const wk=(dog.weights&&dog.weights.length)?dog.weights[dog.weights.length-1].kg:(dog.pesoKg||null);if(wk){return WRANGES[faixaFromKg(wk)]}if(dog.pesoFaixa!=null&&dog.pesoFaixa!==''&&WRANGES[dog.pesoFaixa])return WRANGES[dog.pesoFaixa];return null}
+function pesoExato(dog){var wk=(dog.weights&&dog.weights.length)?dog.weights[dog.weights.length-1].kg:(dog.pesoKg||null);return wk||null;}
+function pesoDisplay(dog){var wk=pesoExato(dog);if(wk)return String(wk).replace('.',',')+' kg';var r=rangeOf(dog);return r?r.band:'';}
 let dogs=[],currentId=null,sex='',neut='',porte=3,reposMode=false,editingId=null,dragged=false,healthEdit=null,fileEdit=null,pendingDoc=null;
 
 function loadDogs(){try{dogs=JSON.parse(localStorage.getItem(LS_KEY))||[]}catch(e){dogs=[]}}
@@ -752,13 +754,28 @@ function saudePainelHTML(dog){
 }
 function delVetObs(idx){const dog=dogObj();if(!dog||!dog.perguntas||!dog.perguntas[idx])return;dog.perguntas.splice(idx,1);saveDogs();if(window.nannySync){try{window.nannySync(true);}catch(e){}}renderDocs(dog);}
 window.delVetObs=delVetObs;
+function toggleVetObs(idx){const dog=dogObj();if(!dog||!dog.perguntas||!dog.perguntas[idx])return;const p=dog.perguntas[idx];p.no_vet=!p.no_vet;saveDogs();if(window.nannySync){try{window.nannySync(true);}catch(e){}}renderDocs(dog);}
+window.toggleVetObs=toggleVetObs;
 function vetObsCardHTML(dog){
   const all=dog.perguntas||[];const items=[];all.forEach((p,idx)=>{if(p&&p.pro_vet)items.push({p,idx});});
   if(!items.length) return '';
-  const rows=items.slice().reverse().map(it=>{const p=it.p;return `<div style="border-top:1px solid #f0e9dd;padding:10px 0"><div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px"><div style="font-size:11.5px;color:var(--brown-mid)">${p.data||''}${p.nivel?` · ${p.nivel}`:''}</div><button onclick="delVetObs(${it.idx})" aria-label="Remover observação" style="background:none;border:0;color:var(--brown-light);cursor:pointer;font-size:15px;line-height:1;padding:2px 4px">✕</button></div><div style="font-size:13.5px;color:var(--brown);font-weight:600;margin:1px 0 2px">${(p.texto||'').replace(/</g,'&lt;')}</div><div style="font-size:13px;color:var(--brown-mid);line-height:1.5">${(p.pro_vet||'').replace(/</g,'&lt;')}</div></div>`;}).join('');
+  const inclui=items.filter(it=>!it.p.no_vet).length;
+  const rows=items.slice().reverse().map(it=>{const p=it.p;const off=!!p.no_vet;
+    const titulo=(p.entendi||p.texto||'').replace(/</g,'&lt;');
+    return `<div style="border-top:1px solid #f0e9dd;padding:10px 0;${off?'opacity:.5':''}">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
+        <div style="font-size:11.5px;color:var(--brown-mid)">${p.data||''}${p.nivel?` · ${p.nivel}`:''}${off?' · <span style="color:var(--brown-light)">fora do resumo</span>':''}</div>
+        <div style="display:flex;gap:2px;align-items:center">
+          <button onclick="toggleVetObs(${it.idx})" aria-label="${off?'Incluir no resumo':'Tirar do resumo'}" title="${off?'Incluir no resumo do vet':'Tirar do resumo do vet'}" style="background:none;border:0;color:${off?'var(--brown-light)':'var(--green)'};cursor:pointer;font-size:12.5px;line-height:1;padding:3px 6px;font-weight:600">${off?'+ levar':'✓ levar'}</button>
+          <button onclick="delVetObs(${it.idx})" aria-label="Remover observação" style="background:none;border:0;color:var(--brown-light);cursor:pointer;font-size:15px;line-height:1;padding:2px 4px">✕</button>
+        </div>
+      </div>
+      <div style="font-size:13.5px;color:var(--brown);font-weight:600;margin:1px 0 2px">${titulo}</div>
+      <div style="font-size:13px;color:var(--brown-mid);line-height:1.5">${(p.pro_vet||'').replace(/</g,'&lt;')}</div>
+    </div>`;}).join('');
   return `<div class="card" style="border-color:#dfe7d9">
-    <div style="display:flex;align-items:center;gap:8px"><span style="font-size:18px">🩺</span><div><div class="sec-label" style="margin:0">Pra levar ao vet</div><div style="font-size:11.5px;color:var(--brown-mid)">${items.length} observaç${items.length>1?'ões':'ão'} que a Nanny guardou das suas conversas</div></div></div>
-    <p style="font-size:12.5px;color:var(--brown-mid);margin:9px 0 0;line-height:1.5">O que você contou pra Nanny, resumido em linguagem clínica pra mostrar na consulta. Fica guardado aqui e não some.</p>
+    <div style="display:flex;align-items:center;gap:8px"><span style="font-size:18px">🩺</span><div><div class="sec-label" style="margin:0">Pra levar ao vet</div><div style="font-size:11.5px;color:var(--brown-mid)">${inclui} observaç${inclui===1?'ão':'ões'} clínica${inclui===1?'':'s'} que a Nanny separou das suas conversas</div></div></div>
+    <p style="font-size:12.5px;color:var(--brown-mid);margin:9px 0 0;line-height:1.5">Só o que tem sinal de saúde, resumido em linguagem clínica pra mostrar na consulta. Use <b>✓ levar</b> pra tirar ou repor um item no resumo.</p>
     ${rows}
     <button class="chip" style="margin-top:11px" onclick="nannyVetResumo&&nannyVetResumo()">Gerar resumo completo (PDF)</button>
   </div>`;
@@ -840,7 +857,7 @@ function renderProfile(){const dog=dogObj();if(!dog)return goHome();migrateDog(d
   let raca=b._synthetic?(dog.customBreed||'Raça a definir'):b.name;
   if(dog.indeciso) raca='Ainda decidindo a raça';
   if(dog.aguardando){document.getElementById('p-meta').textContent=raca+' · plano de chegada'+(dog.previsao?(' · previsão '+fmtISO(dog.previsao)):'');}
-  else{const rg=rangeOf(dog);document.getElementById('p-meta').textContent=`${raca} · ${ageLabel(ageInMonths(dog))}${rg?(' · '+rg.band):''}${dog.sexo?(' · '+(dog.sexo==='femea'?'fêmea':'macho')):''}`;}
+  else{const pd=pesoDisplay(dog);document.getElementById('p-meta').textContent=`${raca} · ${ageLabel(ageInMonths(dog))}${pd?(' · '+pd):''}${dog.sexo?(' · '+(dog.sexo==='femea'?'fêmea':'macho')):''}`;}
   const pc=document.getElementById('p-chip');if(dog.microchip){pc.style.display='block';pc.textContent='🔖 Microchip: '+dog.microchip}else{pc.style.display='none'}
   const ss=statusSummary(dog),ps=document.getElementById('p-status');if(ps){if(dog.aguardando){ps.style.display='none';}else{ps.style.display='block';ps.className='status-sum '+ss.cls;ps.textContent=ss.txt;ps.style.cursor=(ss.cls==='warn')?'pointer':'';ps.onclick=(ss.cls==='warn')?function(){setTab('lembretes');window.scrollTo({top:0,behavior:'smooth'});}:null;}}
   setAvatar();renderAcolher(dog);renderGuide(dog);renderPlan(dog);renderReminders(dog);renderDocs(dog);if(window.renderHoje)window.renderHoje(dog);}

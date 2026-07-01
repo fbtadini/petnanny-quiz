@@ -18,25 +18,33 @@
   function face(px){ var s=(typeof WESTIE!=='undefined'&&WESTIE)?WESTIE:NANNY_WESTIE; return '<span aria-hidden="true" style="display:inline-flex;width:'+px+'px;height:'+px+'px;border-radius:50%;background:'+CT.peach+';border:1px solid #f3d9c2;padding:3px;box-sizing:border-box;flex-shrink:0"><span style="display:block;width:100%;height:100%">'+s+'</span></span>'; }
   function fmtWhen(d){ try{ if(g('fmt'))return window.fmt(d); }catch(e){} try{ return new Date(d).toLocaleDateString('pt-BR'); }catch(e){ return ''; } }
 
-  // ---------- insights: o que a Nanny SABE (não só o que você digitou) ----------
-  window.nannyKnows = function (dog) {
-    var out = [];
-    var c = (typeof BREED_CARE!=='undefined' && dog.breedKey && BREED_CARE[dog.breedKey]) || {};
-    if (c.brachy) out.push({ic:'😮‍💨',t:'Focinho achatado — atenção ao calor e ao esforço; peitoral, nunca coleira.'});
-    if (c.bloat)  out.push({ic:'🍽️',t:'Peito fundo — comer rápido aumenta o risco de torção; comedouro lento ajuda.'});
-    if (c.longBack) out.push({ic:'🦴',t:'Coluna alongada — rampa (não escada) poupa o disco; evite saltos.'});
-    if (c.patella) out.push({ic:'🦵',t:'Joelho propenso a luxação de patela — evite saltos do sofá e da cama.'});
-    var h = dog.health || {};
-    (h.condicoes||[]).forEach(function(x){ var t=(typeof x==='string')?x:(x&&x.nome); if(t) out.push({ic:'📋',t:'Condição registrada: '+t+'.'}); });
-    if ((dog.weights||[]).length) {
-      var w = dog.weights[dog.weights.length-1], line = 'Peso mais recente: '+w.kg+' kg.';
-      if (dog.weights.length>=2) { var p=dog.weights[dog.weights.length-2], d=w.kg-p.kg; if(Math.abs(d)>=0.3) line='Peso: '+w.kg+' kg ('+(d>0?'+':'')+d.toFixed(1)+' kg desde a última).'; }
-      out.push({ic:'⚖️',t:line});
-    }
-    var perg = dog.perguntas || [];
-    if (perg.length) { var last=perg[perg.length-1]; out.push({ic:'💬',t:'Você já me perguntou '+perg.length+(perg.length>1?' vezes':' vez')+' — a última: “'+esc((last.texto||'').slice(0,42))+'”.'}); }
-    if ((dog.notes||'').trim()) out.push({ic:'📝',t:'Você me contou: “'+esc((dog.notes||'').slice(0,80))+((dog.notes||'').length>80?'…':'')+'”'});
-    return out;
+  // ---------- faixa de status: um olhar que cruza as abas (vacina/peso/condição/vet) ----------
+  // Cada chip leva pra aba onde o dado vive. É o "denso mas leve": estado do cão sem abrir nada.
+  window.nannyStatusStrip = function (dog) {
+    var chips = [];
+    var he = dog.health || {};
+    var vac = (he.vacinas||[]).length;
+    var ws = dog.weights || [], wLast = ws.length?ws[ws.length-1]:null, wDelta = null;
+    if (ws.length>=2) { var dd = ws[ws.length-1].kg - ws[ws.length-2].kg; if (Math.abs(dd)>=0.3) wDelta = dd; }
+    var conds = (he.condicoes||[]).map(function(x){ return (typeof x==='string')?x:(x&&x.nome); }).filter(Boolean);
+    var vetObs = (dog.perguntas||[]).filter(function(p){ return p&&p.pro_vet&&!p.no_vet; }).length;
+
+    if (vac) chips.push({ic:'💉', txt:vac+' vacina'+(vac>1?'s':''), tone:'ok', tab:'carteira'});
+    else chips.push({ic:'💉', txt:'sem carteira', tone:'mut', tab:'carteira'});
+    if (wLast) { var arrow = wDelta==null?'':(wDelta>0?' ↑':' ↓'); chips.push({ic:'⚖️', txt:String(wLast.kg).replace('.',',')+' kg'+arrow, tone: wDelta!=null?'watch':'ok', tab:'cuidados'}); }
+    else chips.push({ic:'⚖️', txt:'sem peso', tone:'mut', tab:'cuidados'});
+    conds.slice(0,2).forEach(function(c){ chips.push({ic:'📋', txt:esc(String(c).slice(0,22)), tone:'watch', tab:'carteira'}); });
+    var meses = (typeof window.ageInMonths === 'function') ? window.ageInMonths(dog) : null;
+    if (meses != null && meses >= 96) chips.push({ic:'🎂', txt:'fase sênior', tone:'watch', tab:'carteira'});
+    if (vetObs) chips.push({ic:'🩺', txt:vetObs+' pro vet', tone:'accent', tab:'carteira'});
+
+    var col = {ok:CT.green, watch:CT.amber, mut:CT.mut, accent:CT.red};
+    var bg = {ok:'#eef3ea', watch:'#f6efdb', mut:CT.cream, accent:'#f7ece0'};
+    var body = chips.map(function(cp){
+      var c = col[cp.tone]||CT.mut, b = bg[cp.tone]||CT.cream;
+      return '<button onclick="setTab(\''+cp.tab+'\');window.scrollTo({top:0,behavior:\'smooth\'})" style="flex:0 0 auto;display:inline-flex;align-items:center;gap:6px;font-size:12px;color:'+c+';background:'+b+';border:0;border-radius:20px;padding:6px 11px;cursor:pointer;font-family:inherit">'+cp.ic+' '+cp.txt+'</button>';
+    }).join('');
+    return '<div style="display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;margin-bottom:16px;-webkit-overflow-scrolling:touch">'+body+'</div>';
   };
 
   function nome(dog){ return dog.nome || 'seu cão'; }
@@ -156,9 +164,9 @@
         + '<span style="flex-shrink:0;width:12px;height:12px;border-radius:50%;background:'+col+'"></span>'
         + '<div><div style="font-family:\'Playfair Display\',Georgia,serif;font-weight:600;font-size:18px;color:'+col+';line-height:1.1">'+esc(est.verdito)+'</div>'
         + '<div style="font-size:12.5px;color:'+CT.sec+';margin-top:3px;line-height:1.4">'+esc(est.linha)+'</div></div></div>';
-      if (est.fatores.length) h += '<div style="display:flex;flex-wrap:wrap;gap:7px;margin-top:12px">'+est.fatores.map(function(fa){ var fc = fa.tone==='ok'?CT.green:(fa.tone==='bad'?CT.red:(fa.tone==='watch'?CT.amber:CT.mut)); return '<span style="display:inline-flex;align-items:center;gap:5px;font-size:12px;color:'+fc+';background:#fff;border:1px solid '+CT.line+';border-radius:20px;padding:5px 11px">'+fa.ic+' '+esc(fa.l)+'</span>'; }).join('')+'</div>';
-      h += '<div style="font-size:11px;color:'+CT.mut+';margin-top:11px;line-height:1.4">Leitura de bem-estar pra te orientar — não é diagnóstico.</div>';
+      if (est.fatores.length) h += '<div style="font-size:11px;color:'+CT.mut+';margin-top:11px;line-height:1.4">Leitura de bem-estar pra te orientar — não é diagnóstico.</div>';
       h += '</div>';
+      h += window.nannyStatusStrip(dog);
     }
 
     // --- pergunta pra Nanny (montada pelo módulo) ---
