@@ -107,24 +107,31 @@
     var meses = (typeof window.ageInMonths === 'function') ? window.ageInMonths(dog) : null;
     function d1(x){ return String(Math.abs(x).toFixed(1)).replace('.', ','); }
 
+    // o que ainda falta pra eu ter o quadro completo (falta de dado != tudo bem)
+    var falta = [];
+    if (!(he.vacinas||[]).length) falta.push('vacinas');
+    if (!(he.antiparasitario||[]).length) falta.push('antipulga');
+    if (!(he.vermifugo||[]).length) falta.push('vermífugo');
+    if (!ws.length) falta.push('peso');
+
     var nivel, verdito, linha;
     if (att.length) { nivel='atencao'; verdito='Precisa de atenção'; linha=(att.length>1?att.length+' cuidados atrasados':'Um cuidado atrasado')+' — veja em Carteira.'; }
     else if (wDelta != null && wDelta < 0) { nivel='atencao'; verdito='De olho no peso'; linha='Perdeu '+d1(wDelta)+' kg desde a última pesagem — perda de peso merece um olhar.'; }
-    else if (!hasHealth) { nivel='comecar'; verdito='Vamos começar'; linha='Manda a carteira de vacinação que eu monto o histórico e passo a acompanhar '+nome(dog)+'.'; }
+    else if (!hasHealth && !ws.length) { nivel='comecar'; verdito='Vamos começar'; linha='Manda a carteira de vacinação que eu monto o histórico e passo a acompanhar '+nome(dog)+'.'; }
+    else if (falta.length) { nivel='incompleto'; verdito='Quase lá'; linha='Do que eu já sei, está tudo ok — mas pra cuidar de '+nome(dog)+' de verdade ainda falta: '+falta.join(', ')+'.'; }
     else if (wDelta != null && wDelta > 0) { nivel='olho'; verdito='De olho'; linha='Ganhou '+d1(wDelta)+' kg — vale acompanhar a comida.'; }
-    else if (next) { nivel='tranquilo'; verdito='Tudo tranquilo'; linha='Tudo em dia · próximo: '+(next.t||'').toLowerCase()+(next.when?(' em '+fmtWhen(next.when)):'')+'.'; }
-    else { nivel='tranquilo'; verdito='Tudo tranquilo'; linha='Nada pendente hoje com '+nome(dog)+'.'; }
+    else if (next) { nivel='tranquilo'; verdito='Tudo tranquilo'; linha='Quadro completo e em dia · próximo: '+(next.t||'').toLowerCase()+(next.when?(' em '+fmtWhen(next.when)):'')+'.'; }
+    else { nivel='tranquilo'; verdito='Tudo tranquilo'; linha='Quadro completo e nada pendente hoje com '+nome(dog)+'.'; }
 
     var f = [];
     if (att.length) f.push({ic:'💉', l:(att.length>1?att.length+' cuidados atrasados':'cuidado atrasado'), tone:'bad'});
-    else if (next || hasHealth) f.push({ic:'💉', l:'cuidados em dia', tone:'ok'});
-    else f.push({ic:'💉', l:'sem carteira ainda', tone:'neutral'});
+    else if ((he.vacinas||[]).length) f.push({ic:'💉', l:'vacinas em dia', tone:'ok'});
     if (wLast) f.push({ic:'⚖️', l:String(wLast.kg).replace('.',',')+' kg'+(wDelta!=null?(wDelta>0?' ↑':' ↓'):' · estável'), tone: wDelta!=null?'watch':'ok'});
-    else f.push({ic:'⚖️', l:'sem peso', tone:'neutral'});
     if (conds.length) f.push({ic:'📋', l:conds.length+' condiç'+(conds.length>1?'ões':'ão'), tone:'watch'});
     if (meses != null && meses >= 96) f.push({ic:'🎂', l:'fase sênior', tone:'watch'});
+    if (falta.length) f.push({ic:'➕', l:'falta: '+falta.join(', '), tone:'neutral'});
 
-    return { nivel:nivel, verdito:verdito, linha:linha, fatores:f };
+    return { nivel:nivel, verdito:verdito, linha:linha, fatores:f, falta:falta };
   };
 
   window.renderHoje = function (dog) {
@@ -141,7 +148,7 @@
       h += '<div style="display:flex;align-items:center;gap:8px;margin:2px 2px 16px"><span style="color:'+CT.mut+';font-size:13px">Plano de chegada — quando '+esc(nome(dog))+' chegar, avise aqui que eu começo o acompanhamento dos primeiros 90 dias.</span></div>';
     } else {
       var est = window.nannyEstado(dog);
-      var col = est.nivel==='tranquilo' ? CT.green : (est.nivel==='atencao' ? CT.red : (est.nivel==='comecar' ? CT.mut : CT.amber));
+      var col = est.nivel==='tranquilo' ? CT.green : (est.nivel==='atencao' ? CT.red : ((est.nivel==='comecar'||est.nivel==='incompleto') ? CT.mut : CT.amber));
       h += '<div style="background:#fff;border:1px solid '+CT.line+';border-left:4px solid '+col+';border-radius:0 16px 16px 0;padding:14px 15px;margin-bottom:16px">'
         + '<div style="display:flex;align-items:center;gap:10px">'
         + '<span style="flex-shrink:0;width:12px;height:12px;border-radius:50%;background:'+col+'"></span>'
