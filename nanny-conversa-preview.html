@@ -1,0 +1,526 @@
+<!DOCTYPE html><html lang="pt-BR"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PetNanny · Conversa com a Nanny (preview)</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--cream:#faf7f2;--brown:#3d2c1e;--brown-mid:#7a5c44;--accent:#e8733a;--green:#4a7c59;--line:#ece1d2}
+*{box-sizing:border-box}body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--brown);margin:0;padding:0 16px 60px;line-height:1.55}
+.wrap{max-width:420px;margin:0 auto}
+h1{font-family:'Playfair Display',serif;font-weight:800;font-size:23px;margin:22px 0 4px}
+.sub{color:var(--brown-mid);font-size:13.5px;margin:0 0 8px}
+.tips{font-size:12px;color:var(--brown-mid);background:#fff;border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin:0 0 16px;line-height:1.5}
+.tips b{color:var(--green)}
+.reset{background:none;border:1px solid var(--line);border-radius:9px;padding:7px 12px;font:inherit;font-size:12px;color:var(--brown-mid);cursor:pointer;margin-bottom:14px}
+</style></head><body>
+<div class="wrap">
+  <h1>Conversa com a Nanny</h1>
+  <p class="sub">Preview do card redesenhado. Sem servidor — as respostas são de demonstração.</p>
+  <div class="tips">Teste: (1) a <b>última conversa já vem restaurada</b> com o campo pra continuar; (2) abra <b>"Conversas anteriores"</b> e toque numa pra reler; (3) use <b>"Continuar essa conversa"</b>; (4) escreva algo e mande — vira histórico. Fim da vaidade de "conversamos N vezes".</div>
+  <button class="reset" onclick="location.reload()">↻ Recarregar (reseta o preview)</button>
+  <div id="nanny-ask"></div>
+</div>
+
+<script>var WESTIE='<svg viewBox="0 0 100 100"><path d="M24 42 L20 10 L42 24 Z" fill="#fff" stroke="#c9b798" stroke-width="3" stroke-linejoin="round"/><path d="M76 42 L80 10 L58 24 Z" fill="#fff" stroke="#c9b798" stroke-width="3" stroke-linejoin="round"/><path d="M20 55 Q20 28 50 28 Q80 28 80 55 Q80 78 72 83 Q64 89 54 88 Q50 92 46 88 Q36 89 28 83 Q20 78 20 55 Z" fill="#fff" stroke="#c9b798" stroke-width="3" stroke-linejoin="round"/><ellipse cx="38" cy="53" rx="4" ry="5" fill="#3d2c1e"/><ellipse cx="62" cy="53" rx="4" ry="5" fill="#3d2c1e"/><ellipse cx="50" cy="67" rx="6" ry="5" fill="#3d2c1e"/></svg>';</script>
+<script>// PetNanny — fonte unica de dados de raca (shared por index.html e meu-cao.html).
+// Carregue com <script src="breeds.js"></script> ANTES do script principal de cada pagina.
+
+const BREEDS = {
+  shih_tzu:{name:"Shih Tzu",emoji:"🐾",tags:["Dócil","Companheiro","Adaptável"],desc:"O #2 mais popular do Brasil. Nasceu para ser companheiro — dócil, gentil, adora colo.",custo:"R$ 320–580/mês",apt:5,nrg:2,grm:5,ind:2,kid:4,beg:5,soc:4,cst:2,siz:2,htl:3,ctl:4,drool:1,preco:1,hypo:true,dificuldade:"iniciante",aviso:"Focinho um pouco achatado (braquicefálico leve) — não corre maratona, mas no dia a dia normal não há problema. Pelo longo exige escovação diária."},
+  yorkshire:{name:"Yorkshire Terrier",emoji:"🐕‍🦺",tags:["Compacto","Corajoso","Hipoalergênico"],desc:"Pequeno em tamanho, gigante em personalidade. Animado, corajoso e forma laços profundos.",custo:"R$ 280–500/mês",apt:5,nrg:3,grm:4,ind:2,kid:2,beg:4,soc:3,cst:1,siz:1,htl:4,ctl:3,drool:1,preco:1,hypo:true,dificuldade:"iniciante",aviso:"Pode ser desconfiado com estranhos — apresentar a outras pessoas e cães desde filhote ajuda muito."},
+  lulu_pomerania:{name:"Lulu da Pomerânia / Spitz Alemão Anão",emoji:"🦊",tags:["Fofo","Vivo","Falante"],desc:"Mesma raça, dois nomes. No Brasil costumamos chamar de 'Lulu' — a FCI classifica como Spitz Alemão Anão. O #1 em registros CBKC. Pelagem exuberante, personalidade vibrante.",custo:"R$ 350–650/mês",apt:4,nrg:3,grm:5,ind:2,kid:2,beg:3,soc:3,cst:3,siz:1,htl:3,ctl:4,drool:1,preco:2,hypo:false,dificuldade:"intermediario",aviso:"⚠️ Tendência hereditária a luxação de patela (joelho desencaixa) — comum na raça, exige cuidado com saltos do sofá/cama e pode precisar de cirurgia em casos graves. Costuma latir bastante. Pelo precisa de escovação regular. Sem treino consistente, pode ficar mandão e teimoso (a tal 'síndrome do cão pequeno' — quando o cachorro miúdo manda em todo mundo da casa porque ninguém impôs limites desde filhote)."},
+  pinscher:{name:"Pinscher",emoji:"🐕",tags:["Alerta","Ágil","Econômico"],desc:"Custo acessível, pelo curtíssimo e lealdade absoluta.",custo:"R$ 220–420/mês",apt:5,nrg:3,grm:1,ind:3,kid:2,beg:3,soc:2,cst:1,siz:1,htl:5,ctl:1,drool:1,preco:1,hypo:false,dificuldade:"intermediario",aviso:"⚠️ Pode latir e atacar outros cães e pessoas se vier de criação descuidada. Pergunte ao criador sobre o histórico dos pais antes de levar pra casa."},
+  golden:{name:"Golden Retriever",emoji:"🐕",tags:["Família","Dócil","Inteligente"],desc:"Paciente, afetivo e fácil de treinar. Adora crianças e se dá bem com todos.",custo:"R$ 500–900/mês",apt:2,nrg:4,grm:4,ind:1,kid:5,beg:5,soc:5,cst:4,siz:4,htl:3,ctl:4,drool:2,preco:1,hypo:false,dificuldade:"iniciante",aviso:"Solta MUITO pelo o ano inteiro — escovação frequente é essencial. Tem tendência hereditária a câncer (estudos apontam 60% dos Goldens morrem disso). Engorda fácil, controle a comida."},
+  labrador:{name:"Labrador Retriever",emoji:"🦮",tags:["Ativo","Amigável","Versátil"],desc:"Energia pura com coração enorme. Pelo curto e fácil. Adora água e aventura.",custo:"R$ 450–850/mês",apt:2,nrg:5,grm:2,ind:1,kid:5,beg:5,soc:5,cst:3,siz:4,htl:3,ctl:4,drool:2,preco:1,hypo:false,dificuldade:"iniciante",aviso:"Engorda muito fácil — Labrador é a raça mais propensa a engordar do mundo, exige controle rigoroso da comida. Sofre com solidão (chora, destrói coisas se ficar muito tempo sozinho). Energia altíssima até os 3 anos."},
+  poodle:{name:"Poodle",emoji:"🐩",tags:["Hipoalergênico","Inteligente","Elegante"],desc:"Escolha #1 para alergia. Inteligentíssimo. Quatro tamanhos disponíveis.",custo:"R$ 350–650/mês",apt:4,nrg:3,grm:5,ind:2,kid:4,beg:4,soc:4,cst:3,siz:2,htl:4,ctl:3,drool:1,preco:1,hypo:true,dificuldade:"iniciante",aviso:"Precisa de tosa profissional a cada 6-8 semanas (custo extra de R$80-150 por tosa). Pelo embola fácil sem escovação regular. Sofre quando fica sozinho — é apegado e pode ficar ansioso.",variantes:{1:"Poodle Toy (até 3kg) — ideal para apartamento compacto",2:"Poodle Miniatura (3-6kg) — equilíbrio entre portabilidade e robustez",3:"Poodle Médio (6-12kg) — versátil para casas e aptos grandes",4:"Poodle Standard (12-25kg) — precisa de mais espaço"}},
+  bulldog_frances:{name:"Buldogue Francês",emoji:"🐶",tags:["Compacto","Calmo","Carismático"],desc:"Pouca energia, muito amor. Perfeito para apartamento. Atenção: focinho achatado (braquicefálico) traz custos veterinários e limitações físicas reais.",custo:"R$ 400–750/mês",apt:5,nrg:1,grm:1,ind:2,kid:4,beg:3,soc:3,cst:3,siz:3,htl:1,ctl:2,drool:4,preco:3,hypo:false,dificuldade:"intermediario",aviso:"⚠️ Focinho achatado (braquicefálico): sofre muito com calor e tem mais chance de problemas respiratórios. Custos vet altos (cirurgia BOAS é comum pra abrir as vias aéreas). Baba considerável. Também sensível ao frio."},
+  bulldog_ingles:{name:"Buldogue Inglês",emoji:"🐶",tags:["Calmo","Tranquilo","Robusto"],desc:"O 'British' clássico — robusto, calmo e muito tranquilo. Adora dormir e ficar perto da família. Não é cão de exercício — é cão de companhia sólida.",custo:"R$ 500–900/mês",apt:3,nrg:1,grm:2,ind:2,kid:5,beg:4,soc:4,cst:4,siz:4,htl:1,ctl:2,drool:5,preco:3,hypo:false,dificuldade:"intermediario",aviso:"⚠️ Focinho muito achatado (braquicefálico severo): sofre demais com calor — não tolera passeios em horários quentes nem clima quente em geral. Custos vet altos (cirurgia BOAS, problemas de pele nas dobras, dificuldade pra ter filhotes naturalmente). Baba muito."},
+  maltese:{name:"Maltês",emoji:"🤍",tags:["Delicado","Afetuoso","Elegante"],desc:"Puro afeto em pelo branco sedoso. O mais grudento dos pequenos — quer estar no colo 100% do tempo.",custo:"R$ 350–600/mês",apt:5,nrg:2,grm:5,ind:1,kid:2,beg:4,soc:5,cst:3,siz:1,htl:3,ctl:3,drool:1,preco:1,hypo:true,dificuldade:"iniciante",aviso:"Ossos delicados — cuidado com quedas e crianças bruscas, fratura é fácil. Pelo branco precisa de banho e escovação regulares pra não amarelar e embolar."},
+  beagle:{name:"Beagle",emoji:"🐕",tags:["Curioso","Sociável","Farejador"],desc:"Explorador nato. Muito sociável. Ideal para famílias com espaço e paciência.",custo:"R$ 320–600/mês",apt:2,nrg:4,grm:1,ind:3,kid:5,beg:4,soc:5,cst:2,siz:3,htl:4,ctl:3,drool:1,preco:1,hypo:false,dificuldade:"intermediario",aviso:"⚠️ Late bastante e tenta fugir o tempo todo. O olfato é tão forte que ele esquece dos comandos quando sente um cheiro — precisa de muita paciência no treino."},
+  schnauzer:{name:"Schnauzer",emoji:"🐕",tags:["Inteligente","Alerta","Territorial"],desc:"Quase hipoalergênico e inteligente. Alerta — late pra avisar e desconfia de estranhos no território da casa.",custo:"R$ 320–580/mês",apt:3,nrg:4,grm:4,ind:4,kid:3,beg:2,soc:1,cst:2,siz:2,htl:4,ctl:3,drool:1,preco:1,hypo:true,dificuldade:"intermediario",aviso:"⚠️ Cabeça de Terrier — teimoso, gosta de cavar e caçar bichos pequenos. Precisa de tosa profissional a cada 6-8 semanas (custo extra). Não é tão fácil quanto a aparência sugere.",variantes:{1:"Schnauzer Miniatura (5-8kg) — perfeito para apartamento",3:"Schnauzer Standard (14-20kg) — mais robusto, precisa de mais espaço"}},
+  bichon:{name:"Bichon Frisé",emoji:"☁️",tags:["Hipoalergênico","Gentil","Alegre"],desc:"Bolinha de algodão que não solta pelo. Gentil e fácil de conviver.",custo:"R$ 350–620/mês",apt:5,nrg:2,grm:5,ind:2,kid:5,beg:5,soc:5,cst:3,siz:1,htl:3,ctl:4,drool:1,preco:2,hypo:true,dificuldade:"iniciante",aviso:"Precisa de tosa profissional regular (a cada 6-8 semanas, custo extra). Pelo branco mancha de lágrima embaixo dos olhos — limpeza diária. Sofre quando fica sozinho — pode chorar e desenvolver ansiedade."},
+  cocker_spaniel:{name:"Cocker Spaniel Inglês",emoji:"🐕",tags:["Doce","Sensível","Familiar"],desc:"Um dos cães mais doces. Sensível às emoções do tutor. Variação inglesa — mais esportivo e menos pelagem que o americano.",custo:"R$ 380–650/mês",apt:3,nrg:3,grm:4,ind:1,kid:5,beg:4,soc:4,cst:3,siz:3,htl:3,ctl:3,drool:2,preco:1,hypo:false,dificuldade:"iniciante",aviso:"Sente muito o clima da casa — briga frequente entre tutores, gritos ou tensão deixam ele triste e podem mudar o comportamento (ficar mais retraído ou ansioso)."},
+  cavalier:{name:"Cavalier King Charles",emoji:"🐕",tags:["Gentil","Afetivo","Silencioso"],desc:"Um dos mais gentis do mundo. Silencioso, adora colo. Perfeito com todos.",custo:"R$ 400–700/mês",apt:5,nrg:2,grm:3,ind:1,kid:5,beg:5,soc:5,cst:3,siz:2,htl:3,ctl:3,drool:2,preco:4,hypo:false,dificuldade:"iniciante",aviso:"Tendência hereditária a problemas no coração — peça pra ver os exames cardíacos dos pais antes de levar pra casa."},
+  pastor_australiano:{name:"Pastor Australiano",emoji:"🐕",tags:["Inteligente","Ativo","Colorido"],desc:"Visual único com olhos de cores diferentes. Inteligente e enérgico.",custo:"R$ 450–800/mês",apt:1,nrg:5,grm:3,ind:2,kid:4,beg:4,soc:4,cst:3,siz:3,htl:3,ctl:4,drool:1,preco:2,hypo:false,dificuldade:"intermediario",aviso:"Precisa de muito exercício E desafios diários (jogos de obediência, esconde-esconde, brinquedos de inteligência). Sem isso, fica frustrado e destrói coisas em casa. Não dá pra ficar 8h sozinho em apartamento sem nada pra fazer."},
+  cattle_dog:{name:"Boiadeiro Australiano (Cattle Dog)",emoji:"🐕",tags:["Trabalhador","Resistente","Independente"],desc:"O 'cãozinho azul' australiano. Originalmente cão de gado, hoje conquista tutores ativos. Resistente, durão, leal — mas precisa de muita atividade e tutor que entenda cão de trabalho.",custo:"R$ 380–700/mês",apt:1,nrg:5,grm:1,ind:4,kid:2,beg:4,soc:2,cst:3,siz:3,htl:4,ctl:3,drool:1,preco:2,hypo:false,dificuldade:"avancado",aviso:"Foi feito pra trabalhar 8h por dia tocando boi — em apartamento ou casa sem atividade vira destrutivo rápido. Tem instinto de morder calcanhares (gado), pode fazer isso com crianças correndo. Reservado com estranhos."},
+  pastor_alemao:{name:"Pastor Alemão",emoji:"🐺",tags:["Leal","Protetor","Versátil"],desc:"Um dos mais inteligentes e versáteis. Extremamente leal, com traço protetor natural.",custo:"R$ 450–800/mês",apt:1,nrg:4,grm:3,ind:3,kid:4,beg:5,soc:3,cst:3,siz:4,htl:3,ctl:4,drool:2,preco:1,hypo:false,dificuldade:"avancado",aviso:"Sem treino adequado e convivência com gente/cães desde filhote, pode ficar muito desconfiado de estranhos no território da casa (territorialismo). Precisa de tutor firme e consistente, que entende o que tá pedindo."},
+  husky:{name:"Husky Siberiano",emoji:"🐕",tags:["Independente","Resistente","Dramático"],desc:"Beleza impressionante, personalidade única. Conhecido por ser dramático e independente.",custo:"R$ 500–900/mês",apt:1,nrg:5,grm:4,ind:5,kid:3,beg:1,soc:4,cst:4,siz:4,htl:1,ctl:5,drool:1,preco:2,hypo:false,dificuldade:"avancado",aviso:"Não é pra iniciantes. Pula muros e foge se tiver oportunidade — quintal precisa ser bem cercado, NUNCA solte sem guia. Sofre muito no calor brasileiro (foi feito pra Sibéria)."},
+  malamute:{name:"Malamute do Alaska",emoji:"🐺",tags:["Imponente","Tração","Ártico"],desc:"Cão de tração nórdico — 34-45kg de força bruta. Visualmente parece um Husky 'em tamanho grande', mas é bem diferente: menos energia (potência, não resistência), menos vocal, mais ligado ao tutor mas igualmente teimoso. Foi feito pra puxar carga pesada no Alasca.",custo:"R$ 600–1000/mês",apt:1,nrg:4,grm:5,ind:4,kid:2,beg:1,soc:3,cst:4,siz:5,htl:1,ctl:5,drool:1,preco:3,hypo:false,dificuldade:"avancado",aviso:"⚠️ Sofre demais no calor brasileiro — pelagem dupla feita pra -40°C. Prey drive forte: NUNCA conviver com gatos pequenos, coelhos, hamsters. Extremamente teimoso, exige tutor que saiba liderar sem confronto. Solta pelo em quantidade absurda (subpelo cai 2x ao ano em tufos). Cão grande demais pra apartamento — precisa de casa com quintal cercado e área externa."},
+  lhasa:{name:"Lhasa Apso",emoji:"🐕",tags:["Independente","Guardião","Leal"],desc:"Confiante e independente. O mais reservado dos pequenos — não precisa de você o tempo todo.",custo:"R$ 300–520/mês",apt:5,nrg:2,grm:5,ind:5,kid:2,beg:3,soc:2,cst:2,siz:2,htl:3,ctl:4,drool:1,preco:1,hypo:true,dificuldade:"intermediario",aviso:"Pelo longo bonito mas exige escovação diária senão embola feio. Pode latir pra defender território (instinto de cão de guarda do Tibete). Não combina com crianças muito pequenas — pode ser intolerante com puxões. Teimoso no treino: exige paciência e firmeza desde filhote."},
+  border_collie:{name:"Border Collie",emoji:"🐕",tags:["Genial","Intenso","Ágil"],desc:"Considerado o mais inteligente — e um dos mais exigentes. Sem estímulo mental e físico, tende a ficar destrutivo (destrói coisas em casa).",custo:"R$ 400–700/mês",apt:1,nrg:5,grm:3,ind:2,kid:3,beg:5,soc:3,cst:3,siz:3,htl:3,ctl:4,drool:1,preco:1,hypo:false,dificuldade:"avancado",aviso:"Precisa de muito exercício E estímulo mental todo dia. Sem isso, pode destruir coisas em casa por tédio ou desenvolver manias (ficar correndo em círculo, perseguindo sombra) que viram problema sério."},
+  collie:{name:"Collie (Lassie)",emoji:"🐕",tags:["Gentil","Familiar","Elegante"],desc:"O cachorro da Lassie — pastor escocês de pelagem farta e silhueta nobre. Mais gentil e equilibrado que o Border Collie, ótimo cão de família. Inteligente, sensível, vínculo profundo com o tutor.",custo:"R$ 450–800/mês",apt:2,nrg:3,grm:4,ind:2,kid:5,beg:4,soc:4,cst:3,siz:4,htl:3,ctl:4,drool:1,preco:3,hypo:false,dificuldade:"intermediario",aviso:"⚠️ Pode latir bastante — instinto pastor faz ele alertar pra qualquer movimento. Pelagem longa (variante Rough — a mais conhecida) exige escovação regular pra não embaraçar. Sensível ao stress da casa: brigas e tensão deixam ele ansioso.",pelagem:"Existe em pelo longo (Rough Collie — o clássico da Lassie, mais comum) e pelo curto (Smooth Collie — raro no Brasil). Mesmo temperamento."},
+  dachshund:{name:"Dachshund Miniatura",emoji:"🌭",tags:["Pequeno","Teimoso","Icônico"],desc:"Versão pequena do Salsicha (até 5kg) — popular no Brasil, ideal para apartamento. Silhueta icônica e personalidade gigante. Caçador curioso por instinto.",custo:"R$ 280–520/mês",apt:5,nrg:3,grm:1,ind:5,kid:3,beg:2,soc:2,cst:2,siz:2,htl:4,ctl:3,drool:1,preco:1,hypo:false,dificuldade:"intermediario",aviso:"⚠️ Nunca subir escadas ou pular do sofá — corpo comprido tem alto risco de hérnia de disco (IVDD), especialmente nas variantes pequenas. Rampas em casa são essenciais. Pode latir bastante por instinto territorial.",pelagem:"3 tipos: curto (mais popular, zero grooming), longo (escovação regular) e duro/arame (raro no Brasil, tosa especial)."},
+  dachshund_standard:{name:"Dachshund Standard",emoji:"🌭",tags:["Médio","Robusto","Caçador"],desc:"Versão original do Salsicha (7-14kg) — mais robusta e ativa que a miniatura. Caçador alemão por origem, ainda preserva instinto de seguir rastros e cavar. Precisa de mais espaço.",custo:"R$ 320–580/mês",apt:3,nrg:3,grm:1,ind:5,kid:3,beg:2,soc:2,cst:2,siz:3,htl:4,ctl:3,drool:1,preco:1,hypo:false,dificuldade:"intermediario",aviso:"⚠️ Nunca subir escadas ou pular do sofá — corpo comprido tem risco de hérnia de disco (IVDD). Rampas em casa são essenciais. Mais teimoso e independente que a versão miniatura — pode ignorar comandos quando segue um cheiro.",pelagem:"3 tipos: curto (mais popular, zero grooming), longo (escovação regular) e duro/arame (raro no Brasil, tosa especial)."},
+  corgi:{name:"Corgi Pembroke",emoji:"🐕",tags:["Inteligente","Enérgico","Teimoso"],desc:"Visual adorável mas é cão de pastoreio com instinto forte. Inteligente, teimoso e late bastante.",custo:"R$ 500–950/mês",apt:3,nrg:4,grm:4,ind:2,kid:3,beg:3,soc:4,cst:4,siz:3,htl:3,ctl:3,drool:1,preco:4,hypo:false,dificuldade:"intermediario",aviso:"⚠️ Late bastante — instinto de pastoreio. Pode mordiscar calcanhares de crianças. Solta muito pelo o ano todo. Sem exercício diário vira destrutivo.",pelagem:"Existem 2 raças de Corgi distintas: Pembroke (popular no Brasil, sem cauda longa, mais comum) e Cardigan (raríssimo no BR, tem cauda longa e cabeça mais arredondada). Temperamento similar, mas o Pembroke é mais sociável e o Cardigan mais reservado."},
+  pug:{name:"Pug",emoji:"😤",tags:["Engraçado","Carinhoso","Tranquilo"],desc:"Pequeno, engraçado e viciante. Adora dormir e comer.",custo:"R$ 380–650/mês",apt:5,nrg:1,grm:1,ind:1,kid:4,beg:5,soc:5,cst:3,siz:2,htl:1,ctl:2,drool:3,preco:1,hypo:false,dificuldade:"iniciante",aviso:"⚠️ Focinho achatado (braquicefálico): sofre muito com calor e pode ter dificuldade pra respirar em esforço. Tende a engordar fácil — controle de comida é essencial."},
+  boxer:{name:"Boxer",emoji:"🥊",tags:["Enérgico","Leal","Brincalhão"],desc:"Energia enorme, coração mole. O palhaço da família. Adora crianças.",custo:"R$ 420–750/mês",apt:2,nrg:4,grm:1,ind:1,kid:5,beg:3,soc:4,cst:3,siz:4,htl:1,ctl:3,drool:4,preco:1,hypo:false,dificuldade:"intermediario",aviso:"Focinho um pouco achatado (braquicefálico moderado) — cansa mais rápido em calor extremo. Teimoso: precisa de treino consistente desde filhote pra obedecer comandos."},
+  jack_russell:{name:"Jack Russell Terrier",emoji:"🐕",tags:["Explosivo","Corajoso","Esperto"],desc:"Pequeno com energia de cão grande. Curioso, corajoso e incansável.",custo:"R$ 280–520/mês",apt:3,nrg:5,grm:1,ind:3,kid:3,beg:2,soc:3,cst:2,siz:2,htl:4,ctl:3,drool:1,preco:1,hypo:false,dificuldade:"intermediario",aviso:"⚠️ Cabeça-dura e teimoso — sem treino firme e consistente, ignora comandos e faz só o que quer.",pelagem:"Existe em pelo liso/smooth (zero grooming, mais comum) e pelo duro/broken (visual rústico, escovação semanal). Mesmo temperamento em ambos."},
+  rottweiler:{name:"Rottweiler",emoji:"🐕",tags:["Poderoso","Leal","Protetor"],desc:"Leal, protetor e inteligente. Com criação certa é equilibrado.",custo:"R$ 480–850/mês",apt:1,nrg:4,grm:1,ind:3,kid:3,beg:3,soc:2,cst:4,siz:4,htl:3,ctl:3,drool:4,preco:1,hypo:false,dificuldade:"avancado",aviso:"⚠️ Precisa de tutor experiente que conviva com cão grande. Se for apresentado a muita gente, cães e situações desde filhote — é equilibrado e leal. Sem isso, vira guarda agressivo de verdade."},
+  doberman:{name:"Doberman",emoji:"🐕",tags:["Elegante","Leal","Vigilante"],desc:"Elegante, veloz e inteligente. Devotado à família.",custo:"R$ 450–800/mês",apt:1,nrg:4,grm:1,ind:3,kid:3,beg:4,soc:2,cst:3,siz:4,htl:3,ctl:3,drool:2,preco:1,hypo:false,dificuldade:"avancado",aviso:"⚠️ Não é pra iniciantes — precisa de tutor que sabe colocar limites firmes mas com carinho. Sem isso, pode virar guarda agressivo."},
+  chow_chow:{name:"Chow Chow",emoji:"🦁",tags:["Reservado","Independente","Majestoso"],desc:"Parece um leão. Independente, reservado com estranhos.",custo:"R$ 500–900/mês",apt:2,nrg:2,grm:5,ind:5,kid:1,beg:1,soc:1,cst:4,siz:3,htl:2,ctl:5,drool:2,preco:2,hypo:false,dificuldade:"avancado",aviso:"⚠️ Pode ser hostil com gente que não conhece se não foi apresentado a muita gente diferente desde filhote. Não recomendado pra famílias com crianças pequenas."},
+  akita:{name:"Akita Inu",emoji:"🐕",tags:["Nobre","Leal","Forte"],desc:"Símbolo de lealdade. Nobre, digno e profundamente leal.",custo:"R$ 500–950/mês",apt:1,nrg:3,grm:4,ind:4,kid:2,beg:1,soc:1,cst:4,siz:4,htl:2,ctl:5,drool:2,preco:2,hypo:false,dificuldade:"avancado",aviso:"⚠️ Só pra quem já cuidou de cão grande antes. Tem temperamento forte — não aceita comandos passivamente e pode brigar com outros cães do mesmo sexo."},
+  samoyeda:{name:"Samoyeda",emoji:"🐕",tags:["Fofo","Alegre","Amigável"],desc:"A nuvem que sorri. Pelagem espetacular, personalidade alegre.",custo:"R$ 500–900/mês",apt:1,nrg:4,grm:5,ind:2,kid:5,beg:3,soc:5,cst:4,siz:4,htl:1,ctl:5,drool:1,preco:3,hypo:false,dificuldade:"intermediario",aviso:"Sofre com calor brasileiro. Escovação frequente essencial. Late bastante."},
+  dalmata:{name:"Dálmata",emoji:"🐕",tags:["Atlético","Resistente","Elegante"],desc:"O cão dos bombeiros. Atlético, resistente e demanda bastante atividade. Elegante mas não combina com todos os perfis.",custo:"R$ 400–750/mês",apt:1,nrg:5,grm:2,ind:3,kid:3,beg:2,soc:3,cst:3,siz:4,htl:4,ctl:3,drool:2,preco:1,hypo:false,dificuldade:"intermediario",aviso:"Precisa de muito exercício diário — sem isso, destrói coisas em casa por tédio. Pode nascer surdo de um ou dos dois ouvidos (cerca de 8% da raça) — peça ao criador um teste de audição (chamado BAER) feito ainda na ninhada. Algumas linhagens têm tendência a pedras nos rins, exigindo atenção à dieta."},
+  chihuahua:{name:"Chihuahua",emoji:"🐕",tags:["Micro","Corajoso","Leal"],desc:"O menor cão do mundo com a maior personalidade. Corajoso, leal e extremamente ligado ao tutor. Cabe em qualquer lugar.",custo:"R$ 200–400/mês",apt:5,nrg:2,grm:1,ind:3,kid:1,beg:2,soc:2,cst:1,siz:1,htl:3,ctl:1,drool:1,preco:1,hypo:false,dificuldade:"intermediario",aviso:"⚠️ Muito frágil — quedas e crianças bruscas podem causar fraturas. Sem treino com firmeza desde filhote, vira mandão e teimoso (a tal 'síndrome do cão pequeno' — quando o cachorro miúdo manda em todo mundo da casa porque ninguém impôs limites). Late bastante.",pelagem:"Existe em pelo curto (zero grooming, mais popular) e pelo longo (escovação semanal, visual mais elegante). Ambos têm mesmo temperamento."},
+  westie:{name:"West Highland White Terrier",emoji:"🐕",tags:["Terrier","Hipoalergênico","Determinado"],desc:"Terrier puro-sangue em pelo branco. Alegre e corajoso mas teimoso — tem opinião sobre tudo. Quase hipoalergênico.",custo:"R$ 350–600/mês",apt:3,nrg:4,grm:4,ind:4,kid:3,beg:2,soc:3,cst:2,siz:2,htl:4,ctl:4,drool:1,preco:2,hypo:true,dificuldade:"intermediario",aviso:"⚠️ Terrier no coração — teimoso, cava, caça pequenos animais. Precisa de tosa a cada 6-8 semanas. Não é tão fácil quanto parece."},
+  shiba:{name:"Shiba Inu",emoji:"🦊",tags:["Independente","Limpo","Reservado"],desc:"Personalidade de gato num corpo de cachorro. Extremamente limpo, quase não late e muito independente. O queridinho das redes sociais.",custo:"R$ 450–800/mês",apt:3,nrg:3,grm:1,ind:5,kid:2,beg:2,soc:2,cst:3,siz:3,htl:3,ctl:4,drool:1,preco:3,hypo:false,dificuldade:"intermediario",aviso:"⚠️ Muito independente e teimoso — não espere obediência fácil como um Labrador. Pode rosnar/atacar outros cães se não foi acostumado desde filhote. Foge se tiver oportunidade — NUNCA solte sem guia em área aberta."},
+  whippet:{name:"Whippet",emoji:"🐕",tags:["Elegante","Gentil","Silencioso"],desc:"O galgo médio — 10 a 15kg de pura elegância. Silencioso, gentil e surpreendentemente calmo em casa. Reservado com estranhos.",custo:"R$ 350–600/mês",apt:4,nrg:3,grm:1,ind:4,kid:3,beg:4,soc:2,cst:2,siz:3,htl:3,ctl:2,drool:1,preco:2,hypo:false,dificuldade:"iniciante",aviso:"Instinto de caça forte — cuidado com gatos e animais pequenos. Sensível ao frio, precisa de roupinha no inverno."},
+  bernese:{name:"Bernese Mountain Dog",emoji:"🐕",tags:["Gigante Gentil","Calmo","Família"],desc:"O gigante mais gentil que existe. 40-50kg de puro amor e calma. Perfeito para famílias que querem um cão grande e tranquilo.",custo:"R$ 600–1.100/mês",apt:1,nrg:3,grm:4,ind:1,kid:5,beg:4,soc:5,cst:4,siz:5,htl:1,ctl:5,drool:4,preco:3,hypo:false,dificuldade:"iniciante",aviso:"⚠️ Vive pouco (6-8 anos só) — tem tendência hereditária a câncer, é a maior causa de morte da raça. Sofre demais no calor brasileiro. Custo alto pelo tamanho gigante."},
+  lebrel:{name:"Lebrel Italiano",emoji:"🐕",tags:["Elegante","Delicado","Silencioso"],desc:"A versão miniatura do Galgo — 3 a 5kg de pura elegância. Silencioso, pelo curtíssimo e zero grooming.",custo:"R$ 300–550/mês",apt:5,nrg:2,grm:1,ind:3,kid:2,beg:3,soc:3,cst:3,siz:2,htl:4,ctl:1,drool:1,preco:3,hypo:false,dificuldade:"iniciante",aviso:"Ossos frágeis — cuidado com quedas e crianças bruscas. Sensível ao frio."},
+  galgo:{name:"Galgo / Greyhound",emoji:"🐕",tags:["Elegante","Gentil","Silencioso"],desc:"O corredor que adora sofá. Gentil, silencioso e tranquilo.",custo:"R$ 350–650/mês",apt:3,nrg:3,grm:1,ind:3,kid:3,beg:4,soc:3,cst:2,siz:4,htl:3,ctl:2,drool:1,preco:1,hypo:false,dificuldade:"iniciante",aviso:"Tem instinto forte de perseguir bichos pequenos correndo (gatos, coelhos, esquilos) — NÃO solte sem guia em parques abertos, mesmo que pareça calmo em casa. Pelo curtinho não protege do frio — precisa de roupinha no inverno."},
+  biewer:{name:"Biewer Terrier",emoji:"🐕",tags:["Tricolor","Vivo","Raro"],desc:"Variação do Yorkshire com pelagem tricolor (preto, branco e caramelo). Reconhecido pelo AKC em 2014. Temperamento e cuidados praticamente idênticos ao Yorkshire — a escolha entre os dois é mais por pelagem do que por personalidade.",custo:"R$ 350–600/mês",apt:5,nrg:3,grm:4,ind:2,kid:2,beg:4,soc:3,cst:2,siz:1,htl:4,ctl:3,drool:1,preco:4,hypo:true,dificuldade:"iniciante",aviso:"Raça ainda rara no Brasil — validar pedigree e saúde com criador é essencial. Pode ser desconfiado com estranhos como o Yorkshire — socialização desde filhote é importante."},
+  // ─── POPULARES EM ALTA ─────────────────────────────────────
+  american_bully:{name:"American Bully",emoji:"🐕",tags:["Musculoso","Afetuoso","Compacto"],desc:"Bulldog de companhia musculoso mas afetivo. Cão de família com guarda natural moderada — forte crescimento no Brasil.",custo:"R$ 400–700/mês",apt:3,nrg:3,grm:1,ind:2,kid:4,beg:2,soc:2,cst:2,siz:3,htl:3,ctl:2,drool:3,preco:2,hypo:false,dificuldade:"intermediario",aviso:"Precisa conviver com gente, cães e situações diferentes desde filhote, todo dia, senão pode rosnar/atacar outros cães. Legislação varia por município."},
+  cane_corso:{name:"Cane Corso",emoji:"🐕‍🦺",tags:["Imponente","Protetor","Italiano"],desc:"Molosso italiano. Imponente, leal e naturalmente protetor. 40-50kg de presença. Não pra apartamento.",custo:"R$ 600–1100/mês",apt:1,nrg:3,grm:1,ind:3,kid:3,beg:3,soc:2,cst:4,siz:4,htl:3,ctl:3,drool:5,preco:3,hypo:false,dificuldade:"avancado",aviso:"Fica desconfiado de estranhos no território da casa por natureza. Pra não virar guarda agressivo, precisa de tutor experiente, espaço amplo e ser apresentado a muita gente, cães e situações desde filhote."},
+  weimaraner:{name:"Weimaraner",emoji:"🐕",tags:["Elegante","Atlético","Caçador"],desc:"Pelagem prateada marcante. Caçador alemão extremamente ativo — precisa de exercício intenso diário.",custo:"R$ 500–850/mês",apt:1,nrg:5,grm:1,ind:2,kid:3,beg:2,soc:3,cst:3,siz:4,htl:3,ctl:3,drool:2,preco:3,hypo:false,dificuldade:"intermediario",aviso:"Sofre demais quando fica sozinho — late, chora, destrói coisas em casa por angústia (chamado ansiedade de separação). Precisa de uma hora ou mais de exercício todo dia, sem falta."},
+  basset_hound:{name:"Basset Hound",emoji:"🐕",tags:["Calmo","Clássico","Orelhudo"],desc:"Pernas curtas, orelhas enormes, personalidade doce. Um dos cães mais calmos e pacientes — ideal família.",custo:"R$ 350–600/mês",apt:3,nrg:2,grm:3,ind:2,kid:5,beg:4,soc:4,cst:2,siz:3,htl:3,ctl:3,drool:4,preco:2,hypo:false,dificuldade:"iniciante",aviso:"Orelhas longas precisam de limpeza frequente (acumulam cera e infeccionam fácil). Engorda fácil — controle rigoroso da quantidade de ração."},
+  pastor_belga_malinois:{name:"Pastor Belga Malinois",emoji:"🐕‍🦺",tags:["Trabalhador","Intenso","Atlético"],desc:"O cão de polícia e militar por excelência. Mesma família do Pastor Alemão mas mais leve e intenso. Só pra tutores muito ativos e experientes.",custo:"R$ 500–900/mês",apt:1,nrg:5,grm:2,ind:2,kid:3,beg:5,soc:3,cst:3,siz:4,htl:3,ctl:4,drool:1,preco:3,hypo:false,dificuldade:"avancado",aviso:"Foi criado pra trabalhar o dia inteiro — precisa de muito exercício E desafios mentais todo dia. Sem isso, destrói coisas em casa por tédio. Não combina com casa de gente que trabalha fora 8h."},
+  // ─── RAÇAS BRASILEIRAS NATIVAS ─────────────────────────────
+  fila:{name:"Fila Brasileiro",emoji:"🐕‍🦺",tags:["Brasileiro","Imponente","Fiel"],desc:"Primeira raça brasileira reconhecida pela FCI (1960). Imponente, leal até a morte, com a famosa 'ojeriza' — palavra que significa que ele desconfia naturalmente de gente que não conhece. Patrimônio cultural.",custo:"R$ 550–950/mês",apt:1,nrg:3,grm:1,ind:2,kid:3,beg:1,soc:1,cst:4,siz:5,htl:4,ctl:3,drool:5,preco:2,hypo:false,dificuldade:"avancado",aviso:"A ojeriza é parte da raça — pode ser hostil com qualquer pessoa nova que entra na sua casa, mesmo que seja amigo seu. Proibido em alguns países. Precisa de muito espaço e tutor muito experiente."},
+  terrier_brasileiro:{name:"Terrier Brasileiro (Fox Paulistinha)",emoji:"🐕",tags:["Brasileiro","Ativo","Pequeno"],desc:"Raça nativa brasileira originária de São Paulo. Também chamado Fox Paulistinha. Pequeno, ativo, leal e adaptado ao clima tropical.",custo:"R$ 250–450/mês",apt:3,nrg:4,grm:1,ind:3,kid:4,beg:3,soc:3,cst:1,siz:2,htl:5,ctl:2,drool:1,preco:1,hypo:false,dificuldade:"iniciante",aviso:"Raça terrier — instinto de caça pode ser problemático com gatos e roedores pequenos."},
+  // ─── DISTINTAS VISUALMENTE ─────────────────────────────────
+  shar_pei:{name:"Shar Pei",emoji:"🐕",tags:["Enrugado","Reservado","Único"],desc:"Marca registrada: rugas profundas na pele. Independente, reservado com estranhos. Visual único mas exige cuidados específicos.",custo:"R$ 450–800/mês",apt:3,nrg:2,grm:2,ind:4,kid:2,beg:2,soc:2,cst:3,siz:3,htl:2,ctl:3,drool:3,preco:3,hypo:false,dificuldade:"avancado",aviso:"Rugas exigem limpeza regular. Propenso a infecções de ouvido e febre do Shar Pei (doença genética séria). Sensível ao calor brasileiro. Temperamento territorial — exige tutor experiente com socialização desde filhote."},
+  bull_terrier:{name:"Bull Terrier",emoji:"🐕",tags:["Forte","Teimoso","Distinto"],desc:"Cabeça em formato de ovo é inconfundível. Forte, corajoso e extremamente teimoso. Tem fama de palhaço da casa mas é raça que exige tutor experiente — silhueta única, origem britânica.",custo:"R$ 380–650/mês",apt:2,nrg:4,grm:1,ind:3,kid:2,beg:1,soc:1,cst:2,siz:3,htl:3,ctl:3,drool:2,preco:3,hypo:false,dificuldade:"avancado",aviso:"⚠️ Não é raça pra iniciantes — exige tutor com experiência sólida em cães de personalidade forte. Tem instinto de caça acentuado e pode rosnar/brigar com outros cães do mesmo sexo. Não combina com gatos. Precisa de socialização intensa desde filhote (gente, cães, sons, ambientes) — sem isso, vira cão reativo. Muito teimoso no treino: ignora comandos quando quer. Em algumas cidades tem restrições legais (verifique seu município)."},
+  cocker_americano:{name:"Cocker Spaniel Americano",emoji:"🐕",tags:["Fofo","Doce","Elegante"],desc:"Primo americano do Cocker Inglês — mais compacto, pelagem mais farta, cabeça arredondada. Doce, familiar e elegante.",custo:"R$ 400–700/mês",apt:4,nrg:3,grm:5,ind:1,kid:5,beg:4,soc:4,cst:3,siz:2,htl:3,ctl:3,drool:2,preco:2,hypo:false,dificuldade:"iniciante",aviso:"Pelagem exige escovação diária e tosa profissional mensal."},
+  pastor_shetland:{name:"Pastor de Shetland (Sheltie)",emoji:"🐕",tags:["Inteligente","Leal","Elegante"],desc:"Parece um Collie em miniatura. Muito inteligente, sensível e leal — raça favorita de quem quer pastor sem o porte grande. Popular em São Paulo.",custo:"R$ 380–680/mês",apt:3,nrg:4,grm:4,ind:2,kid:4,beg:4,soc:3,cst:3,siz:2,htl:3,ctl:4,drool:1,preco:2,hypo:false,dificuldade:"intermediario",aviso:"Pelagem dupla densa exige escovação regular. Tende a latir para avisar — atenção em prédios. Muito sensível a gritos e tom duro."},
+  // SRD com preco=0 é intencional: significa "grátis/adoção" (todas outras raças têm 1-5).
+  // Esse valor é tratado especialmente em qualquer lógica que usar preco — checar Number(b.preco).
+  srd:{name:"SRD — Sem Raça Definida",emoji:"🐕",tags:["Resiliente","Único","Brasileiro"],desc:"O mais popular do Brasil — 26%. Cada SRD é único, com mistura genética que dá saúde mais resistente que muitas raças puras.",custo:"R$ 150–350/mês",apt:3,nrg:3,grm:1,ind:3,kid:4,beg:4,soc:4,cst:1,siz:3,htl:5,ctl:3,drool:2,preco:0,hypo:false,dificuldade:"iniciante",aviso:"Personalidade e tamanho variam muito de cão pra cão — cada SRD é único. Visite o abrigo, conheça o cão antes de levar. Filhote pode crescer mais ou menos do que o esperado."},
+  newfoundland:{name:"Newfoundland (Terra Nova)",emoji:"🐻",tags:["Gentil","Gigante","Familiar"],desc:"O 'cão-babá' por excelência. Gigante de pelo denso, calmo e extremamente paciente com criança. Nada bem (pelas patas palmadas) e foi historicamente cão de resgate aquático.",custo:"R$ 700–1.300/mês",apt:1,nrg:2,grm:5,ind:1,kid:5,beg:4,soc:5,cst:5,siz:5,htl:1,ctl:5,drool:5,preco:4,hypo:false,dificuldade:"intermediario",aviso:"⚠️ Sofre muito com calor — pelo denso é pra água gelada do Canadá, não pra verão brasileiro. Babão pesado. Vida curta (8-10 anos) por causa do porte gigante. Tendência a displasia de quadril (problema articular) — peça exames dos pais. Custo de manutenção alto: ração, banho, vet."},
+  sao_bernardo:{name:"São Bernardo",emoji:"🐶",tags:["Gigante","Calmo","Gentil"],desc:"Gigante alpino de presença imponente e personalidade gentil. Famoso pelos resgates nos Alpes Suíços. Calmo, paciente, ideal família com espaço — mas atenção ao calor.",custo:"R$ 700–1.300/mês",apt:1,nrg:2,grm:4,ind:2,kid:5,beg:4,soc:4,cst:5,siz:5,htl:1,ctl:5,drool:5,preco:4,hypo:false,dificuldade:"intermediario",aviso:"⚠️ Sofre muito com calor — origem alpina, pelo denso, intolerância térmica. Não tolera verão brasileiro sem ar-condicionado. Baba pesado (clássico São Bernardo). Vida curta (8-10 anos) por porte gigante. Predisposição a displasia (problema articular do quadril/cotovelo) — peça exames dos pais. Custo alto de manutenção."},
+  dogue_alemao:{name:"Dogue Alemão (Great Dane)",emoji:"🐕‍🦺",tags:["Gigante","Elegante","Sereno"],desc:"O 'apolo dos cães' — gigante mais alto do mundo, com porte elegante e personalidade surpreendentemente calma. Apesar do tamanho, é cão de companhia tranquilo, ótimo dentro de casa.",custo:"R$ 600–1.200/mês",apt:2,nrg:2,grm:1,ind:2,kid:5,beg:3,soc:4,cst:5,siz:5,htl:2,ctl:3,drool:3,preco:3,hypo:false,dificuldade:"intermediario",aviso:"⚠️ Vida muito curta (6-8 anos) — porte gigante reduz expectativa drasticamente. Predisposição a torção gástrica (estômago vira sobre si — emergência veterinária mortal): exige refeições pequenas e divididas, sem exercício antes/depois de comer. Risco de problema cardíaco e displasia. Custo de ração alto. Cresce muito rápido — articulações sensíveis até 18 meses."},
+  mastim_ingles:{name:"Mastim Inglês",emoji:"🐕‍🦺",tags:["Gigante","Calmíssimo","Antigo"],desc:"Uma das raças mais antigas e maciças do mundo — pode chegar a 100kg. Personalidade DOCE e tranquila, contraste total com o porte. Cão de companhia gigante por excelência, passa o dia descansando.",custo:"R$ 700–1.300/mês",apt:1,nrg:1,grm:1,ind:2,kid:5,beg:3,soc:4,cst:5,siz:5,htl:1,ctl:3,drool:5,preco:4,hypo:false,dificuldade:"intermediario",aviso:"⚠️ Vida muito curta (6-9 anos). Babão intenso. Sofre com calor pelo porte. Cresce rápido — articulações sensíveis até 24 meses, exige dieta controlada e exercício moderado nessa fase. Custo de ração alto. Predisposição a displasia e torção gástrica."},
+  bullmastif:{name:"Bullmastif",emoji:"🐶",tags:["Guardião","Calmo","Robusto"],desc:"Cruza histórica de Buldogue Inglês com Mastim Inglês — criado pra deter caçadores furtivos em propriedades. Guardião gentil mas imponente, calmo dentro de casa, alerta sem latir muito.",custo:"R$ 600–1.100/mês",apt:2,nrg:1,grm:1,ind:2,kid:5,beg:3,soc:3,cst:4,siz:5,htl:2,ctl:3,drool:4,preco:3,hypo:false,dificuldade:"intermediario",aviso:"⚠️ Cão guardião por instinto — exige socialização precoce e tutor firme. Baba bastante. Vida curta (8-10 anos). Sofre com calor. Predisposição a displasia e problemas cardíacos. Não cabe em apartamento sem espaço, mesmo sendo calmo."},
+  pequines:{name:"Pequinês",emoji:"🐕",tags:["Antigo","Reservado","Imperial"],desc:"Raça ancestral chinesa, antes só de imperadores. Pequeno mas com porte digno e independente — não é cão de regaço submisso, tem opinião. Pelagem longa, focinho achatado.",custo:"R$ 300–550/mês",apt:5,nrg:1,grm:4,ind:3,kid:3,beg:2,soc:2,cst:2,siz:1,htl:1,ctl:3,drool:2,preco:3,hypo:false,dificuldade:"intermediario",aviso:"⚠️ Focinho achatado (braquicefálico) — sofre com calor, ronca, problemas respiratórios. Pelagem longa exige escovação diária. Independente e teimoso — adestramento exige paciência. Não tolera crianças pequenas (reage se incomodado). Olhos salientes ficam expostos a lesões."},
+  vizsla:{name:"Vizsla Húngaro",emoji:"🐕",tags:["Atleta","Vínculo intenso","Elegante"],desc:"Cão de caça húngaro elegante, magro e atlético. Hipersocial — chamam de 'cão velcro' porque cola no tutor. Precisa de muito exercício e companhia constante.",custo:"R$ 500–900/mês",apt:2,nrg:5,grm:1,ind:1,kid:4,beg:3,soc:5,cst:3,siz:4,htl:3,ctl:3,drool:1,preco:3,hypo:false,dificuldade:"intermediario",aviso:"⚠️ Sofre muito com solidão — desenvolve ansiedade de separação severa se ficar sozinho horas por dia. Não é cão de quintal isolado: precisa estar perto da família o tempo todo. Energia altíssima — sem exercício diário sério (corrida, trilha) destrói tudo. Sensível ao frio (pelo curto, pouca gordura)."},
+  buldogue_americano:{name:"Buldogue Americano",emoji:"🐕",tags:["Robusto","Protetor","Familiar"],desc:"Buldogue de trabalho americano — robusto, atlético, leal. Cão de fazenda historicamente, hoje guardião familiar carinhoso mas firme.",custo:"R$ 450–800/mês",apt:2,nrg:3,grm:1,ind:2,kid:4,beg:3,soc:3,cst:3,siz:4,htl:3,ctl:3,drool:3,preco:2,hypo:false,dificuldade:"intermediario",aviso:"⚠️ Cão poderoso — precisa de tutor firme que saiba impor limites desde filhote. Pode ser teimoso e dominante sem socialização cuidadosa. Pode ter restrição em condomínios e legislação local — verifique regras do seu município. Predisposição a problemas articulares (displasia) e dermatite nas dobras da pele."},
+  coton_tulear:{name:"Coton de Tulear",emoji:"☁️",tags:["Hipoalergênico","Macio","Doce"],desc:"O 'cão real de Madagascar' — pelagem branca de algodão (daí o nome 'coton'), super macia. Hipoalergênica, calma, doce, ótima com criança. Pequeno cão de companhia perfeito pra apartamento.",custo:"R$ 350–600/mês",apt:5,nrg:2,grm:4,ind:2,kid:5,beg:5,soc:5,cst:3,siz:1,htl:3,ctl:3,drool:1,preco:5,hypo:true,dificuldade:"iniciante",aviso:"Pelagem hipoalergênica mas EXIGE escovação frequente — sem escovar 2-3x por semana, embaraça e vira nó duro. Tosa profissional a cada 6-8 semanas. Ainda raro no Brasil — preço de filhote alto, criadores poucos (validar pedigree e saúde dos pais)."},
+  havanese:{name:"Havanese",emoji:"🐶",tags:["Hipoalergênico","Brincalhão","Sociável"],desc:"Cão nacional de Cuba — pequeno, cheio de personalidade e brincalhão. Hipoalergênico mas mais ativo que outras raças do tipo. Adora brincar e interagir com gente.",custo:"R$ 350–600/mês",apt:5,nrg:3,grm:4,ind:2,kid:5,beg:5,soc:5,cst:3,siz:1,htl:3,ctl:3,drool:1,preco:4,hypo:true,dificuldade:"iniciante",aviso:"Pelagem longa precisa de escovação regular pra não embaraçar — 2-3x por semana. Pode latir bastante quando empolgado (não é cão silencioso). Sofre com solidão — não é raça pra ficar 8h sozinho. Ainda incomum no Brasil — pesquisar criadores com cuidado."},
+
+  papillon:{name:"Papillon",emoji:"🦋",tags:["Inteligente","Alerta","Borboleta"],desc:"Pequeno e brilhante — é uma das raças mais inteligentes do mundo (top 10 em treinabilidade). As orelhas grandes em forma de borboleta deram nome à raça. Energia surpreendente pra um cão miniatura.",custo:"R$ 350–600/mês",apt:3,nrg:4,grm:3,ind:2,kid:3,beg:5,soc:4,cst:2,siz:1,htl:4,ctl:3,drool:1,preco:4,hypo:false,dificuldade:"iniciante",aviso:"⚠️ Patela frágil (luxação) — comum em raças miniatura, cuidado com saltos do sofá. Pelo médio precisa de escovação regular (2-3x/semana). Apesar do porte, tem energia alta — não é cão de sofá puro, gosta de brincar e aprender truques. Pode latir pra alertar."},
+
+  chin:{name:"Spaniel Japonês (Chin)",emoji:"🎎",tags:["Aristocrático","Reservado","Sedoso"],desc:"Antiga companhia da nobreza japonesa. Discreto, gracioso e com personalidade quase felina — independente, observador, reservado com estranhos. Pequeno cão de companhia perfeito pra apto.",custo:"R$ 350–600/mês",apt:5,nrg:2,grm:4,ind:3,kid:3,beg:3,soc:3,cst:3,siz:1,htl:1,ctl:3,drool:1,preco:4,hypo:false,dificuldade:"iniciante",aviso:"⚠️ Focinho levemente achatado (braquicefálico leve) — sente calor extremo. Olhos grandes precisam de limpeza diária (acumulam lágrimas). Patela frágil. Personalidade reservada com estranhos. Ainda raro no Brasil — criadores poucos, validar pedigree."}
+};
+
+const BARK_LEVELS={shih_tzu:1,yorkshire:3,lulu_pomerania:4,pinscher:3,golden:1,labrador:1,poodle:2,bulldog_frances:1,bulldog_ingles:2,maltese:2,beagle:5,schnauzer:3,bichon:2,cocker_spaniel:2,cavalier:1,pastor_australiano:3,cattle_dog:3,pastor_alemao:3,husky:5,malamute:2,lhasa:2,border_collie:3,collie:3,dachshund:3,dachshund_standard:3,corgi:5,pug:1,boxer:2,jack_russell:4,rottweiler:2,doberman:2,chow_chow:2,akita:1,samoyeda:4,dalmata:2,chihuahua:5,westie:3,shiba:1,whippet:1,bernese:1,lebrel:1,galgo:1,biewer:2,american_bully:2,cane_corso:2,weimaraner:3,basset_hound:5,pastor_belga_malinois:3,fila:3,terrier_brasileiro:4,shar_pei:1,bull_terrier:2,cocker_americano:3,pastor_shetland:4,srd:2,newfoundland:1,sao_bernardo:1,dogue_alemao:2,mastim_ingles:1,bullmastif:2,pequines:3,vizsla:3,buldogue_americano:2,coton_tulear:2,havanese:3,papillon:3,chin:1};
+
+const TCASA={
+  // CALMO em casa (1) — 18 raças
+  galgo:1, bulldog_ingles:1, bulldog_frances:1, bullmastif:1, bernese:1,
+  newfoundland:1, sao_bernardo:1, mastim_ingles:1, basset_hound:1, pequines:1,
+  cavalier:1, dogue_alemao:1, lebrel:1, chin:1, coton_tulear:1,
+  shih_tzu:1, pug:1, chow_chow:1,
+  // ALERTA/AGITADO em casa (3) — 20 raças
+  jack_russell:3, pinscher:3, papillon:3, yorkshire:3, biewer:3,
+  chihuahua:3, lulu_pomerania:3, schnauzer:3, westie:3, terrier_brasileiro:3,
+  beagle:3, corgi:3, cattle_dog:3, pastor_belga_malinois:3, border_collie:3,
+  pastor_shetland:3, bull_terrier:3, dachshund:3, dachshund_standard:3, vizsla:3
+  // Demais 29 raças = tcasa=2 (médio, default). Sem penalty.
+};
+
+// === BREED_CARE — flags estruturadas de cuidado (fonte de verdade do Plano de Chegada) ===
+// Classificadas com critério veterinário estabelecido (conformação/pelagem são fatos estáveis).
+// coat: 'double' (subpelo) | 'hair' (cresce contínuo, embola, tosa) | 'wire' (áspero, stripping) | 'short' (curto, baixa manut.)
+// brachy: focinho achatado (respiração/calor/peitoral) · longBack: disco/coluna · bloat: peito fundo (torção gástrica) · patella: joelho
+const BREED_CARE = {
+  shih_tzu:{coat:'hair',brachy:1,patella:1},
+  yorkshire:{coat:'hair',patella:1},
+  lulu_pomerania:{coat:'double',patella:1},
+  pinscher:{coat:'short',patella:1},
+  golden:{coat:'double',bloat:1},
+  labrador:{coat:'double',bloat:1},
+  poodle:{coat:'hair',patella:1},
+  bulldog_frances:{coat:'short',brachy:1},
+  bulldog_ingles:{coat:'short',brachy:1},
+  maltese:{coat:'hair',patella:1},
+  beagle:{coat:'short'},
+  schnauzer:{coat:'wire'},
+  bichon:{coat:'hair',patella:1},
+  cocker_spaniel:{coat:'hair'},
+  cavalier:{coat:'hair',brachy:1},
+  pastor_australiano:{coat:'double'},
+  cattle_dog:{coat:'double'},
+  pastor_alemao:{coat:'double',bloat:1},
+  husky:{coat:'double'},
+  malamute:{coat:'double',bloat:1},
+  lhasa:{coat:'hair'},
+  border_collie:{coat:'double'},
+  collie:{coat:'double'},
+  dachshund:{coat:'short',longBack:1},
+  dachshund_standard:{coat:'short',longBack:1},
+  corgi:{coat:'double',longBack:1},
+  pug:{coat:'short',brachy:1},
+  boxer:{coat:'short',brachy:1,bloat:1},
+  jack_russell:{coat:'short',patella:1},
+  rottweiler:{coat:'short',bloat:1},
+  doberman:{coat:'short',bloat:1},
+  chow_chow:{coat:'double',bloat:1},
+  akita:{coat:'double',bloat:1},
+  samoyeda:{coat:'double'},
+  dalmata:{coat:'short'},
+  chihuahua:{coat:'short',patella:1},
+  westie:{coat:'wire'},
+  shiba:{coat:'double'},
+  whippet:{coat:'short'},
+  bernese:{coat:'double',bloat:1},
+  lebrel:{coat:'short'},
+  galgo:{coat:'short',bloat:1},
+  biewer:{coat:'hair',patella:1},
+  american_bully:{coat:'short'},
+  cane_corso:{coat:'short',brachy:1,bloat:1},
+  weimaraner:{coat:'short',bloat:1},
+  basset_hound:{coat:'short',longBack:1},
+  pastor_belga_malinois:{coat:'double'},
+  fila:{coat:'short',bloat:1},
+  terrier_brasileiro:{coat:'short'},
+  shar_pei:{coat:'short',brachy:1},
+  bull_terrier:{coat:'short'},
+  cocker_americano:{coat:'hair'},
+  pastor_shetland:{coat:'double'},
+  newfoundland:{coat:'double',bloat:1},
+  sao_bernardo:{coat:'double',brachy:1,bloat:1},
+  dogue_alemao:{coat:'short',bloat:1},
+  mastim_ingles:{coat:'short',brachy:1,bloat:1},
+  bullmastif:{coat:'short',brachy:1,bloat:1},
+  pequines:{coat:'double',brachy:1,patella:1},
+  vizsla:{coat:'short',bloat:1},
+  buldogue_americano:{coat:'short'},
+  coton_tulear:{coat:'hair'},
+  havanese:{coat:'hair'},
+  papillon:{coat:'hair',patella:1},
+  chin:{coat:'hair',brachy:1,patella:1},
+  srd:{coat:'short'}
+};
+</script>
+<script>
+function iso(n){var d=new Date();d.setDate(d.getDate()-n);return d.toISOString().slice(0,10);}
+var SAMPLE={ id:'demo', nome:'Lulu', sexo:'femea', breedKey:'lulu_pomerania', __meses:64,
+  weights:[{d:iso(20),kg:4.6}], health:{ condicoes:['Luxação de patela grau 2 (joelho E)'] },
+  perguntas:[
+    { id:'p1', data:iso(24), texto:'ela ta comendo menos, isso eh normal?', entendi:'Apetite reduzido em cão adulto',
+      nivel:'observar', resposta:'Observe por 24–48h se ela mantém água e disposição. Ofereça a comida em ambiente calmo, sem petisco extra no meio. Se recusar duas refeições seguidas ou ficar quietinha, aí sim procure o vet.',
+      por_que:'Recusa pontual costuma ser leve, mas em cão pequeno vale acompanhar.', pro_vet:'Redução de apetite há ~2 dias, sem outros sinais relatados.' },
+    { id:'p2', data:iso(9), texto:'qual racao comprar pra ela', entendi:'Dúvida sobre ração adequada',
+      nivel:'leve', resposta:'Escolha uma ração premium/super-premium para porte pequeno, adulta. Confira a orientação de porção na embalagem e ajuste com o vet. Evite trocar de marca de repente.',
+      por_que:'', pro_vet:'' },
+    { id:'p3', data:iso(2), texto:'ta se coçando muito hoje', entendi:'Coceira intensa recente',
+      nivel:'procurar_vet', resposta:'Coceira intensa e súbita merece avaliação — pode ser alergia, pulga ou pele. Enquanto isso, evite banho com produto novo e não passe pomada por conta própria.',
+      por_que:'Prurido forte é sinal que vale investigar presencialmente.', pro_vet:'Prurido intenso há ~1 dia, sem lesão visível relatada.' }
+  ] };
+window.dogObj=function(){ return SAMPLE; };
+window.getBreed=function(d){ return (typeof BREEDS!=='undefined'&&BREEDS[d.breedKey])||{}; };
+window.ageInMonths=function(d){ return d.__meses; };
+window.ageLabel=function(m){ if(m==null)return''; var y=Math.floor(m/12),r=m%12; return y+'a'+(r?(' '+r+'m'):''); };
+window.rangeOf=function(){ return {band:'2–4,5 kg'}; };
+window.saveDogs=function(){}; window.nannySync=function(){}; window.renderDocs=function(){};
+window.startRegister=function(){ alert('No app, isto abre o cadastro.'); };
+window.gtag=function(){};
+// fetch mockado: devolve uma resposta de demonstração conforme o texto
+window.fetch=function(url,opts){
+  var body={}; try{ body=JSON.parse((opts&&opts.body)||'{}'); }catch(e){}
+  var t=((body.texto)||'').toLowerCase(), resp;
+  if(/coç|coce|pele|aler|pulg/.test(t)) resp={entendi:'Coceira relatada',nivel:'procurar_vet',o_que_fazer_agora:'(demo) Coceira que persiste vale o vet. Evite produto novo e não passe pomada sem orientação.',por_que:'Prurido persistente é sinal a investigar.',pro_vet:'Prurido relatado pelo tutor.'};
+  else if(/rac|raç|comida|comer|petisc/.test(t)) resp={entendi:'Dúvida sobre alimentação',nivel:'leve',o_que_fazer_agora:'(demo) Mantenha ração premium de porte pequeno e porção medida. Troca de marca sempre gradual.',por_que:'',pro_vet:''};
+  else resp={entendi:'Dúvida geral',nivel:'observar',o_que_fazer_agora:'(demo) Entendi. Observe por 24–48h e me conte se mudar algo.',por_que:'',pro_vet:''};
+  return Promise.resolve({ json:function(){ return Promise.resolve({ok:true,resposta:resp}); } });
+};
+</script>
+<script>/* nanny-ask-ui.js — A PORTA ÚNICA "Pergunta pra Nanny" (cliente) — v2
+ * <script src="nanny-ask-ui.js"></script> no meu-cao.html (depois do nanny-identity.js)
+ * Monta sozinho em #nanny-ask (perfil) e #nanny-ask-home (tela inicial, sem cão).
+ *
+ * v2:
+ *  - rosto da Nanny (WESTIE) onde ELA fala; nunca no dado puro do cão.
+ *  - acessibilidade: texto ≥12px, contraste melhor, alvos de toque de 42px, aria-label.
+ *  - skeleton de carregamento (não "✨ analisando" cru).
+ *  - dossiê de saúde (condições/vacinas/exames/peso) entra no contexto → Nanny sabe do cão.
+ *  - funciona SEM cão cadastrado: responde e convida a cadastrar pra guardar (pânico das 22h).
+ *  - micro-feedback ao guardar ("guardado no dossiê").
+ *
+ * Globais do hub: dogObj, getBreed, ageLabel, ageInMonths, rangeOf, saveDogs,
+ * downscaleImage, nannySync, BREED_CARE, WESTIE, gtag, startRegister.
+ */
+(function () {
+  var NANNY_WESTIE='<svg viewBox="0 0 100 100"><path d="M24 42 L20 10 L42 24 Z" fill="#fff" stroke="#c9b798" stroke-width="3" stroke-linejoin="round"/><path d="M76 42 L80 10 L58 24 Z" fill="#fff" stroke="#c9b798" stroke-width="3" stroke-linejoin="round"/><path d="M20 55 Q20 28 50 28 Q80 28 80 55 Q80 78 72 83 Q64 89 54 88 Q50 92 46 88 Q36 89 28 83 Q20 78 20 55 Z" fill="#fff" stroke="#c9b798" stroke-width="3" stroke-linejoin="round"/><ellipse cx="38" cy="53" rx="4" ry="5" fill="#3d2c1e"/><ellipse cx="62" cy="53" rx="4" ry="5" fill="#3d2c1e"/><ellipse cx="50" cy="67" rx="6" ry="5" fill="#3d2c1e"/></svg>';
+  var ENDPOINT = '/api/nanny-ask', PEND_KEY = 'petnanny_pergunta_avulsa';
+  var CT = { pri:'#3d2c1e', sec:'#5f5142', mut:'#7a6a58', line:'#e8ddd2', green:'#7a9970', cream:'#f7f2ea' };
+  var NIVEL = {
+    leve:        { cor:'#5c7a52', bg:'#eef3ea', label:'Tranquilo' },
+    observar:    { cor:'#9a7717', bg:'#f6efdb', label:'Vale observar' },
+    procurar_vet:{ cor:'#c0722e', bg:'#f7ece0', label:'Procure um vet' },
+    urgente:     { cor:'#b02a1f', bg:'#f7e4e1', label:'Urgente' }
+  };
+  function g(fn){ return (typeof window[fn]==='function')?window[fn]:null; }
+  function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
+  function track(ev,p){ try{ if(window.gtag) window.gtag('event',ev,p||{});}catch(e){} }
+  function nannyFace(px){ var s=(typeof WESTIE!=='undefined'&&WESTIE)?WESTIE:NANNY_WESTIE; return '<span class="na-face" aria-hidden="true" style="display:inline-flex;width:'+px+'px;height:'+px+'px;border-radius:50%;background:#f3ddc9;border:1px solid #f3d9c2;padding:4px;box-sizing:border-box;flex-shrink:0">'+s+'</span>'; }
+
+  function styleOnce(){
+    if(document.getElementById('nanny-ask-css')) return;
+    var st=document.createElement('style'); st.id='nanny-ask-css';
+    st.textContent='@keyframes naShimmer{0%{background-position:-200px 0}100%{background-position:200px 0}}'
+      +'.na-skel{height:12px;border-radius:6px;background:#efe6da;background-image:linear-gradient(90deg,#efe6da 0px,#f6f0e6 80px,#efe6da 160px);background-size:400px 100%;animation:naShimmer 1.1s infinite linear}'
+      +'.na-btn-ic{display:inline-flex;align-items:center;justify-content:center;width:42px;height:42px;border-radius:50%;border:0;cursor:pointer;background:transparent}'
+      +'.na-fade{animation:naFade .28s ease}@keyframes naFade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}'+'.na-face svg{width:100%;height:100%;display:block}'+'.na-chip{display:inline-block;font-size:12.5px;color:#5f5142;background:#f7f2ea;border:1px solid #e8ddd2;border-radius:20px;padding:7px 13px;margin:0 6px 6px 0;cursor:pointer}';
+    document.head.appendChild(st);
+  }
+
+  // ---------- contexto (dossiê de saúde entra aqui) ----------
+  function saudeSlice(dog){
+    var h=dog.health||{}, s={};
+    if((h.condicoes||[]).length) s.condicoes=h.condicoes.slice(-5);
+    if((h.vacinas||[]).length) s.vacinas_recentes=h.vacinas.slice(-4).map(function(v){return {nome:v.nome,classe:v.classe,data:v.data};});
+    if((h.exames||[]).length) s.exames=h.exames.slice(-4).map(function(e){return {tipo:e.tipo,achado:e.achado,data:e.data};});
+    if(dog.pesoFaixa!=null) s.peso_faixa='faixa '+dog.pesoFaixa+' (informada pelo tutor)';
+    if((dog.notes||'').trim()) s.o_que_o_tutor_contou=(dog.notes||'').slice(0,300);
+    return s;
+  }
+  function contextoCao(){
+    var dog=g('dogObj')?window.dogObj():null;
+    if(!dog) return { _dog:null };
+    var b=g('getBreed')?window.getBreed(dog):{};
+    var c=(typeof BREED_CARE!=='undefined'&&dog.breedKey&&BREED_CARE[dog.breedKey])||{};
+    var carac=[];
+    if(c.brachy)carac.push('braquicefálico (focinho achatado)');
+    if(c.bloat)carac.push('peito fundo (risco de torção)');
+    if(c.longBack)carac.push('coluna alongada');
+    if(c.patella)carac.push('joelho propenso a luxação de patela');
+    return { _dog:dog,
+      nome:dog.nome||'', raca:(b&&b.name)||dog.customBreed||dog.raca||'',
+      idade:(g('ageLabel')&&g('ageInMonths'))?window.ageLabel(window.ageInMonths(dog)):'',
+      porte:(g('rangeOf')&&(window.rangeOf(dog)||{}).band)||'',
+      caracteristicas_saude:carac, saude:saudeSlice(dog),
+      ultimas_perguntas:(dog.perguntas||[]).slice(-3).map(function(p){return {data:p.data,texto:p.texto,nivel:p.nivel};}) };
+  }
+
+  function fileToImg(file){
+    if(!file) return Promise.resolve(null);
+    var ds=g('downscaleImage');
+    if(ds) return window.downscaleImage(file,1400,0.82).then(function(d){return d?{data:d.split(',')[1],media_type:'image/jpeg'}:null;});
+    return new Promise(function(res){var r=new FileReader();r.onload=function(){res({data:String(r.result).split(',')[1],media_type:file.type||'image/jpeg'});};r.onerror=function(){res(null);};r.readAsDataURL(file);});
+  }
+
+  var pendingImg={};
+
+  function chipsHTML(mode){
+    var chips=[['Que ração comprar?','Que ração é a certa pra ele?'],['Late quando saio','Ele late ou chora quando fico fora. O que faço?'],['O que pode comer?','O que ele pode e o que não pode comer?'],['Coçando muito','Tá se coçando muito, o que pode ser?']];
+    if(mode==='perfil'){
+      var dog=g('dogObj')?window.dogObj():null;
+      if(dog){
+        var c=(typeof BREED_CARE!=='undefined'&&dog.breedKey&&BREED_CARE[dog.breedKey])||{};
+        var meses=g('ageInMonths')?window.ageInMonths(dog):null, filhote=(dog.origem==='filhote_criador')||(meses!=null&&meses<12), senior=(meses!=null&&meses>=96);
+        var a=[];
+        if(filhote){a.push(['Vacinas do filhote?','Quais vacinas o filhote precisa e quando?']);a.push(['Ensinar o xixi','Como ensino ele a fazer xixi no lugar certo?']);a.push(['Quando castrar?','Qual a idade certa pra castrar?']);}
+        else if(senior){a.push(['Exames de idoso','Que exames de rotina um cão idoso precisa?']);a.push(['Sinais de dor','Como sei se ele está sentindo dor ou envelhecendo mal?']);}
+        if(c.brachy)a.push(['Ofegante no calor','Ele fica muito ofegante no calor, é normal?']);
+        if(c.coat==='double')a.push(['Queda de pelo','Ele solta muito pelo, como lido com isso?']);
+        if(c.longBack)a.push(['Cuidar da coluna','Como proteger a coluna dele no dia a dia?']);
+        a.push(['Que ração comprar?','Que ração é a certa pra ele?']);
+        a.push(['Comportamento','Ele tem um comportamento que me preocupa, posso te contar?']);
+        var day=[];
+        try{ var ups=g('upcomingReminders')?window.upcomingReminders(dog):[]; var over=(ups||[]).filter(function(u){return u.status==='overdue'||u.status==='stale';})[0]; if(over){ var nm=(over.t||'cuidado').split('(')[0].trim(); day.push([nm+' atrasado',(over.t||'cuidado')+' está atrasado — como eu resolvo?']); } }catch(e){}
+        chips=day.concat(a).slice(0,4);
+      }
+    }
+    return '<div id="na-chips-'+mode+'" style="margin-top:9px">'+chips.map(function(ch){return '<span class="na-chip" data-q="'+ch[1].replace(/"/g,'&quot;')+'">'+ch[0]+'</span>';}).join('')+'</div>';
+  }
+  function cardHTML(mode){
+    var semCao=(mode==='home');
+    return '<div class="na-fade" style="background:#fff;border:1px solid '+CT.line+';border-radius:16px;padding:15px 15px 14px">'
+      + '<div style="display:flex;align-items:center;gap:9px;margin-bottom:9px">'+nannyFace(30)
+      + '<div><div style="font-weight:500;font-size:15px;color:'+CT.pri+'">Pergunta pra Nanny</div>'
+      + '<div style="font-size:12px;color:'+CT.sec+'">'+(semCao?'Uma dúvida agora? Pode perguntar — não precisa cadastrar antes.':'Descreva ou mande uma foto. Ela usa o que sabe do seu cão.')+'</div></div></div>'
+      + '<textarea id="na-text-'+mode+'" rows="2" aria-label="Sua dúvida sobre o cão" placeholder="Pode ser qualquer coisa: saúde, comportamento, ração, banho, passeio…" style="width:100%;box-sizing:border-box;border:1.5px solid '+CT.line+';border-radius:12px;padding:12px 13px;font-size:15px;font-family:inherit;color:'+CT.pri+';resize:vertical"></textarea>'+ chipsHTML(mode)
+      + '<div style="display:flex;align-items:center;gap:6px;margin-top:8px">'
+      + '<button type="button" class="na-btn-ic" id="na-cam-'+mode+'" aria-label="Anexar foto"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="'+CT.mut+'" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="3.5"/></svg></button>'
+      + '<span id="na-tag-'+mode+'" style="font-size:12px;color:'+CT.green+';display:none"><span>foto anexada</span> · <a href="#" id="na-clr-'+mode+'" style="color:#b02a1f">remover</a></span>'
+      + '<button type="button" id="na-send-'+mode+'" style="margin-left:auto;min-height:42px;background:'+CT.green+';color:#fff;border:0;border-radius:12px;padding:0 20px;font-weight:500;font-size:15px;cursor:pointer">Perguntar</button>'
+      + '<input id="na-file-'+mode+'" type="file" accept="image/*" style="display:none">'
+      + '</div>'
+      + '<div id="na-phototip-'+mode+'" style="display:none;font-size:12px;color:'+CT.sec+';margin-top:9px;line-height:1.45;background:#f7f2ea;border:1px solid '+CT.line+';border-radius:10px;padding:9px 11px"><strong>Pra foto ajudar de verdade:</strong> boa luz (perto de uma janela), aproxime bem do ponto (olho, pele, dente, orelha), segure firme e evite flash direto. Pode mandar 2 ângulos. Foto torta eu leio — nítida eu leio melhor.</div>'+ '<div style="font-size:12px;color:'+CT.mut+';margin-top:9px;line-height:1.4">A Nanny não é veterinária e isto não é consulta. É orientação pra te ajudar a decidir.</div>'
+      + '<div id="na-out-'+mode+'" style="margin-top:12px"></div>'
+      + '<div id="na-hist-'+mode+'"></div>'
+      + '</div>';
+  }
+
+  function wire(mode){
+    var cam=document.getElementById('na-cam-'+mode), file=document.getElementById('na-file-'+mode);
+    var chips=document.getElementById('na-chips-'+mode);
+    if(chips) chips.querySelectorAll('.na-chip').forEach(function(ch){ ch.onclick=function(){ var ta=document.getElementById('na-text-'+mode); ta.value=ch.getAttribute('data-q')||ch.textContent; ta.focus(); }; });
+    var tip=document.getElementById('na-phototip-'+mode);
+    cam.onclick=function(){ if(tip) tip.style.display='block'; file.click(); };
+    file.onchange=function(){var f=this.files&&this.files[0];if(!f)return;var tag=document.getElementById('na-tag-'+mode);tag.style.display='inline';tag.firstChild.textContent='anexando…';fileToImg(f).then(function(img){pendingImg[mode]=img;tag.firstChild.textContent=img?'foto anexada':'não deu pra ler a foto';});};
+    document.getElementById('na-clr-'+mode).onclick=function(e){e.preventDefault();pendingImg[mode]=null;file.value='';document.getElementById('na-tag-'+mode).style.display='none';};
+    document.getElementById('na-send-'+mode).onclick=function(){enviar(mode);};
+  }
+
+  function skeleton(out){
+    out.innerHTML='<div style="display:flex;gap:9px;align-items:flex-start">'+nannyFace(30)
+      +'<div style="flex:1"><div class="na-skel" style="width:40%;margin-bottom:8px"></div><div class="na-skel" style="width:90%;margin-bottom:6px"></div><div class="na-skel" style="width:75%"></div></div></div>';
+  }
+
+  var threads={perfil:[],home:[]};
+  var expandedHist=-1;
+
+  function relTime(iso){
+    if(!iso) return '';
+    var d=new Date(String(iso)+'T00:00:00'); if(isNaN(d)) return String(iso);
+    var days=Math.floor((Date.now()-d.getTime())/864e5);
+    if(days<=0) return 'hoje'; if(days===1) return 'ontem'; if(days<7) return 'há '+days+' dias';
+    if(days<30){ var w=Math.floor(days/7); return 'há '+w+(w>1?' semanas':' semana'); }
+    if(days<365){ var m=Math.floor(days/30); return 'há '+m+(m>1?' meses':' mês'); }
+    var y=Math.floor(days/365); return 'há '+y+(y>1?' anos':' ano');
+  }
+  function tutorFromPergunta(p){ return { de:'tutor', texto:(p.texto||'(foto)') }; }
+  function bubbleFromPergunta(p){ return { de:'nanny', r:{ nivel:p.nivel||'observar', o_que_fazer_agora:p.resposta||'', por_que:p.por_que||'', pro_vet:p.pro_vet||'' } }; }
+
+  // restaura a ÚLTIMA conversa no fio (você vê sua pergunta + a resposta, e continua abaixo).
+  // Se a última ficou em aberto (observar/vet), acrescenta um follow-up gentil.
+  function seedFromHistory(mode){
+    if(mode!=='perfil')return;
+    var dog=g('dogObj')?window.dogObj():null; if(!dog)return;
+    if(threads.perfil.length)return;
+    var pg=dog.perguntas||[]; if(!pg.length)return;
+    var last=pg[pg.length-1];
+    threads.perfil.push(tutorFromPergunta(last));
+    threads.perfil.push(bubbleFromPergunta(last));
+    if(last.nivel==='observar'||last.nivel==='procurar_vet'){
+      var t=(last.entendi||last.texto||'').slice(0,44);
+      threads.perfil.push({de:'nanny',r:{nivel:'observar',followup:true,o_que_fazer_agora:'Sobre "'+t+'" — como está agora? Pode me atualizar aqui.'}});
+    }
+  }
+  function mdLite(x){var t=esc(x==null?'':x);t=t.replace(/\*\*(.+?)\*\*/g,'<b>$1</b>');t=t.replace(/(^|<br>|\s)(\d+)\.\s/g,'$1<br>$2. ');t=t.replace(/\n/g,'<br>');t=t.replace(/^(<br>)+/,'');return t;}
+  function tutorBubble(texto){
+    return '<div class="na-fade" style="display:flex;justify-content:flex-end;margin:10px 0 0"><div style="max-width:82%;background:'+CT.cream+';border:1px solid '+CT.line+';border-radius:14px 14px 4px 14px;padding:9px 12px;font-size:13.5px;color:'+CT.pri+';line-height:1.5">'+esc(texto)+'</div></div>';
+  }
+  function nannyAnswerHTML(r,dog){
+    var n=NIVEL[r.nivel]||NIVEL.observar;
+    var h='<div class="na-fade" style="border:1px solid '+n.cor+'33;background:'+n.bg+';border-radius:14px;padding:13px 14px;margin-top:8px">'
+      + '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">'+nannyFace(28)
+      + '<span style="font-weight:500;color:'+n.cor+';font-size:14px">'+(r.followup?'A Nanny quer saber':n.label)+'</span></div>';
+    if(r.o_que_fazer_agora)h+='<div style="font-size:14.5px;color:'+CT.pri+';line-height:1.6'+(r.por_que?';margin-bottom:8px':'')+'">'+mdLite(r.o_que_fazer_agora)+'</div>';
+    if(r.por_que)h+='<div style="font-size:13px;color:'+CT.sec+';line-height:1.55">'+mdLite(r.por_que)+'</div>';
+    if(r.nivel==='urgente'||r.nivel==='procurar_vet'){
+      var termo=r.nivel==='urgente'?'pronto atendimento veterinário 24h perto de mim':'veterinário perto de mim';
+      h+='<a href="https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(termo)+'" target="_blank" rel="noopener" style="display:inline-block;margin-top:9px;background:'+n.cor+';color:#fff;text-decoration:none;border-radius:10px;padding:10px 16px;font-weight:500;font-size:13.5px">Achar um vet perto</a>';
+    }
+    if(r.pro_vet)h+='<div style="font-size:12px;color:'+CT.green+';margin-top:9px"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="'+CT.green+'" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg> Guardei um resumo pra levar ao vet \u2014 está na aba Carteira.</div>';
+    if(!r.followup)h+='<div style="font-size:11.5px;color:'+CT.mut+';margin-top:9px;line-height:1.4">A Nanny não é veterinária e isto não é consulta. A decisão de saúde é sempre do seu veterinário.</div>';
+    h+='</div>';
+    return h;
+  }
+  function renderThread(mode){
+    var out=document.getElementById('na-out-'+mode); if(!out)return;
+    var dog=g('dogObj')?window.dogObj():null; var h='';
+    threads[mode].forEach(function(m){ h+= m.de==='tutor'?tutorBubble(m.texto):nannyAnswerHTML(m.r,dog); });
+    var last=threads[mode][threads[mode].length-1];
+    if(dog && last && last.de==='nanny'){
+      h+='<div style="font-size:12px;color:'+CT.mut+';margin-top:10px;text-align:center">↑ Pode continuar a conversa na caixa acima.</div>';
+    }
+    if(!dog && last && last.de==='nanny'){
+      h+='<div class="na-fade" style="margin-top:10px;background:'+CT.cream+';border:1px solid '+CT.line+';border-radius:12px;padding:12px 13px"><div style="font-size:13px;color:'+CT.pri+';line-height:1.5;margin-bottom:9px">Quer que eu guarde isso e acompanhe? Cadastra seu cão \u2014 leva 10 segundos.</div><button type="button" id="na-go-reg" style="background:'+CT.green+';color:#fff;border:0;border-radius:10px;padding:11px 18px;font-weight:500;font-size:14px;cursor:pointer">Cadastrar meu cão</button></div>';
+    }
+    out.innerHTML=h;
+    var go=document.getElementById('na-go-reg'); if(go)go.onclick=function(){ if(g('startRegister'))window.startRegister(); };
+  }
+
+  // "Conversas anteriores" — lista navegável (título limpo do entendi + nível + quando).
+  // Cada uma expande pra reler e traz "Continuar essa conversa". Substitui a vaidade de "N vezes".
+  function renderHistory(mode){
+    if(mode!=='perfil')return;
+    var box=document.getElementById('na-hist-perfil'); if(!box)return;
+    var dog=g('dogObj')?window.dogObj():null;
+    var pg=(dog&&dog.perguntas)||[];
+    var older=pg.slice(0,-1);                 // tudo menos a última (que já está no fio ativo)
+    if(!older.length){ box.innerHTML=''; return; }
+    var open = box.getAttribute('data-open')==='1';
+    var h='<button type="button" id="na-hist-toggle" aria-expanded="'+open+'" style="width:100%;text-align:left;background:none;border:0;border-top:1px solid '+CT.line+';margin-top:14px;padding:12px 2px 6px;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:space-between">'
+      + '<span style="font-size:12.5px;font-weight:600;color:'+CT.sec+'">Conversas anteriores ('+older.length+')</span>'
+      + '<span style="color:'+CT.mut+';font-size:16px;display:inline-block;transform:rotate('+(open?'90':'0')+'deg);transition:transform .15s">\u203a</span></button>';
+    if(open){
+      h+='<div>'+older.slice().reverse().map(function(p){
+        var realIdx=pg.indexOf(p), n=NIVEL[p.nivel]||NIVEL.observar;
+        var title=esc((p.entendi||p.texto||'(foto)').slice(0,90));
+        var ex=(expandedHist===realIdx);
+        var row='<div style="border-top:1px solid '+CT.cream+'">'
+          + '<button type="button" onclick="nannyHistToggle('+realIdx+')" style="width:100%;text-align:left;background:none;border:0;padding:10px 2px;cursor:pointer;font-family:inherit;display:flex;gap:9px;align-items:flex-start">'
+          + '<span style="flex:0 0 8px;width:8px;height:8px;border-radius:50%;background:'+n.cor+';margin-top:5px"></span>'
+          + '<span style="flex:1;min-width:0"><span style="font-size:13px;color:'+CT.pri+';display:block;line-height:1.4">'+title+'</span>'
+          + '<span style="font-size:11px;color:'+CT.mut+'">'+esc(n.label)+' \u00b7 '+relTime(p.data)+'</span></span>'
+          + '<span style="color:'+CT.mut+';font-size:15px;margin-top:1px">'+(ex?'\u2212':'+')+'</span></button>';
+        if(ex){
+          row+='<div style="padding:0 2px 12px 19px">'
+            + (p.resposta?'<div style="font-size:13px;color:'+CT.pri+';line-height:1.55;margin-bottom:7px">'+mdLite(p.resposta)+'</div>':'')
+            + (p.pro_vet?'<div style="font-size:11.5px;color:'+CT.green+';margin-bottom:9px">\ud83e\ude7a Resumo pro vet guardado na Carteira.</div>':'')
+            + '<button type="button" onclick="nannyContinuar('+realIdx+')" style="background:'+CT.green+';color:#fff;border:0;border-radius:9px;padding:8px 15px;font-weight:600;font-size:12.5px;cursor:pointer;font-family:inherit">Continuar essa conversa</button>'
+            + '</div>';
+        }
+        return row+'</div>';
+      }).join('')+'</div>';
+    }
+    box.innerHTML=h;
+    var tg=document.getElementById('na-hist-toggle');
+    if(tg) tg.onclick=function(){ box.setAttribute('data-open', open?'0':'1'); renderHistory('perfil'); };
+  }
+  window.nannyHistToggle=function(idx){ expandedHist=(expandedHist===idx)?-1:idx; renderHistory('perfil'); };
+  window.nannyContinuar=function(idx){
+    var dog=g('dogObj')?window.dogObj():null; if(!dog)return;
+    var p=(dog.perguntas||[])[idx]; if(!p)return;
+    threads.perfil=[ tutorFromPergunta(p), bubbleFromPergunta(p) ];
+    var box=document.getElementById('na-hist-perfil'); if(box) box.setAttribute('data-open','0');
+    expandedHist=-1; renderThread('perfil'); renderHistory('perfil');
+    var ta=document.getElementById('na-text-perfil'); if(ta){ try{ta.scrollIntoView({behavior:'smooth',block:'center'});}catch(e){} ta.focus(); }
+  };
+
+  function enviar(mode,isReply){
+    var out=document.getElementById('na-out-'+mode);
+    var el=document.getElementById('na-text-'+mode);
+    var texto=((el&&el.value)||'').trim();
+    var img=isReply?null:pendingImg[mode];
+    if(!texto&&!img){ if(!isReply&&out)out.innerHTML='<div style="font-size:13px;color:#b02a1f">Escreve a dúvida ou anexa uma foto.</div>'; return; }
+    var ctx=contextoCao(); var dog=ctx._dog; delete ctx._dog;
+    threads[mode].push({de:'tutor',texto:texto||'(foto)'});
+    var conversa=threads[mode].map(function(m){return {de:m.de,texto:m.de==='nanny'?((m.r&&m.r.o_que_fazer_agora)||''):m.texto};});
+    var body={ texto:texto, conversa:conversa }; if(img) body.imagens=[img];
+    if(dog) body.contexto_cao=ctx;
+    if(el)el.value='';
+    if(!isReply){ pendingImg[mode]=null; var fe=document.getElementById('na-file-'+mode); if(fe)fe.value=''; var tg=document.getElementById('na-tag-'+mode); if(tg)tg.style.display='none'; }
+    renderThread(mode);
+    if(out)out.insertAdjacentHTML('beforeend','<div style="margin-top:8px;display:flex;gap:9px;align-items:flex-start">'+nannyFace(28)+'<div style="flex:1"><div class="na-skel" style="width:40%;margin-bottom:8px"></div><div class="na-skel" style="width:90%;margin-bottom:6px"></div><div class="na-skel" style="width:70%"></div></div></div>');
+    fetch(ENDPOINT,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})
+      .then(function(r){return r.json();})
+      .then(function(j){
+        if(!j||!j.ok||!j.resposta){ threads[mode].push({de:'nanny',r:{nivel:'observar',o_que_fazer_agora:'Não consegui responder agora. Tenta de novo em instantes.'}}); renderThread(mode); return; }
+        var r=j.resposta; threads[mode].push({de:'nanny',r:r});
+        if(dog){
+          var repeat=(dog.perguntas&&dog.perguntas.length>=1); dog.perguntas=dog.perguntas||[];
+          dog.perguntas.push({id:Date.now()+'-'+Math.random().toString(36).slice(2,7),data:new Date().toISOString().slice(0,10),texto:texto||'(foto)',entendi:r.entendi||'',nivel:r.nivel,resposta:r.o_que_fazer_agora,por_que:r.por_que||'',pro_vet:r.pro_vet||''});
+          if(Array.isArray(r.novos_eventos)){dog.eventos=dog.eventos||[];r.novos_eventos.forEach(function(e){if(e&&e.tipo)dog.eventos.push({tipo:e.tipo,origem:'observacao_nanny',data:new Date().toISOString().slice(0,10),confianca:e.confianca||'media',payload:e.payload||{}});});}
+          if(g('saveDogs'))window.saveDogs(); if(g('nannySync'))window.nannySync(true);
+          if(g('renderDocs')){try{window.renderDocs(dog);}catch(e){}}
+          track('nanny_ask',{nivel:r.nivel,com_foto:!!img}); if(repeat)track('nanny_ask_repeat',{nivel:r.nivel});
+        } else {
+          try{ localStorage.setItem(PEND_KEY,JSON.stringify({data:new Date().toISOString().slice(0,10),texto:texto||'(foto)',nivel:r.nivel,resposta:r.o_que_fazer_agora,pro_vet:r.pro_vet||''})); }catch(e){}
+          track('nanny_ask',{nivel:r.nivel,sem_cadastro:true});
+        }
+        renderThread(mode);
+        renderHistory(mode);
+      })
+      .catch(function(){ threads[mode].push({de:'nanny',r:{nivel:'observar',o_que_fazer_agora:'Falha de conexão. Tenta de novo.'}}); renderThread(mode); });
+  }
+
+  // adota a pergunta avulsa (feita sem cadastro) no 1º cão, sem editar o fluxo de cadastro
+  function adotarAvulsa(){
+    var dog=g('dogObj')?window.dogObj():null; if(!dog||(dog.perguntas&&dog.perguntas.length))return;
+    var raw; try{ raw=localStorage.getItem(PEND_KEY);}catch(e){} if(!raw)return;
+    try{ var p=JSON.parse(raw); dog.perguntas=[p]; if(g('saveDogs'))window.saveDogs(); if(g('nannySync'))window.nannySync(true); localStorage.removeItem(PEND_KEY); }catch(e){}
+  }
+
+  function mountInto(id,mode){ var box=document.getElementById(id); if(!box)return; box.innerHTML=cardHTML(mode); wire(mode); if(mode==='perfil'){ seedFromHistory('perfil'); renderThread('perfil'); renderHistory('perfil'); } }
+  function boot(){ styleOnce(); var hasDogs=false; try{ hasDogs=(typeof dogs!=='undefined'&&dogs&&dogs.length>0); }catch(e){}
+    if(document.getElementById('nanny-ask')){ adotarAvulsa(); mountInto('nanny-ask','perfil'); }
+    if(document.getElementById('nanny-ask-home')&&!hasDogs) mountInto('nanny-ask-home','home'); }
+  window.nannyAskMount=boot;
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot); else boot();
+})();
+</script>
+</body></html>

@@ -198,24 +198,8 @@
       h += '<div style="height:6px"></div>';
     }
 
-    // --- o que a Nanny sabe: painel visual de estado + frase de memória (voz da Nanny) ---
-    var bc = (typeof BREED_CARE!=='undefined' && dog.breedKey && BREED_CARE[dog.breedKey]) || {};
-    var flags = [];
-    if (bc.brachy) flags.push({ic:'😮‍💨',l:'respiração'});
-    if (bc.bloat) flags.push({ic:'🍽️',l:'peito fundo'});
-    if (bc.longBack) flags.push({ic:'🦴',l:'coluna'});
-    if (bc.patella) flags.push({ic:'🦵',l:'joelho'});
-    var he = dog.health || {};
-    var conds = (he.condicoes||[]).map(function(x){ return (typeof x==='string')?x:(x&&x.nome); }).filter(Boolean);
-    var ws = dog.weights || [], wLast = ws.length?ws[ws.length-1]:null, wDelta = null;
-    if (ws.length>=2) { var dd = ws[ws.length-1].kg - ws[ws.length-2].kg; if (Math.abs(dd)>=0.3) wDelta = dd; }
-    var hasState = wLast || flags.length || conds.length;
-    var mem = '';
-    var notes = (dog.notes||'').trim(), perg = dog.perguntas || [];
-    if (notes) mem = 'Você me contou que ' + esc(notes.slice(0,90)) + (notes.length>90?'…':'') + '.';
-    if (perg.length) { var lt = esc((perg[perg.length-1].texto||'').slice(0,40)); mem += (mem?' ':'') + 'A gente já conversou ' + perg.length + (perg.length>1?' vezes':' vez') + (lt?(' — a última sobre '+lt):'') + '.'; }
-
     // --- A Nanny reparou: insights cruzados (a inteligência) ---
+    var bc = (typeof BREED_CARE!=='undefined' && dog.breedKey && BREED_CARE[dog.breedKey]) || {};
     var bObj = (typeof window.getBreed === 'function') ? window.getBreed(dog) : {};
     var insights = window.nannyInsights(dog, bObj, bc);
     if (insights.length) {
@@ -226,9 +210,8 @@
         + '<span style="font-size:13px;color:'+CT.pri+';line-height:1.5">'+esc(k.t||'')+'</span></div>'; });
       h += '</div>';
     }
-
-    if (mem) h += '<div style="display:flex;gap:10px;align-items:flex-start;background:'+CT.cream+';border-radius:14px;padding:12px 13px;margin-bottom:12px">'+face(30)+'<div style="flex:1;font-size:13px;color:'+CT.pri+';line-height:1.5">'+mem+'</div></div>';
-    if (hasState || mem) h += '<div style="font-size:11.5px;color:'+CT.mut+';margin:0 2px 14px;line-height:1.4">Quanto mais você me conta e me manda documentos, mais eu sei. Conte medos e manias na aba Raça.</div>';
+    // (memória de "conversamos N vezes" removida — a continuidade agora vive no card da Nanny,
+    //  que restaura a última conversa e deixa continuar/rever as anteriores.)
 
     // --- dossiê (o acúmulo, clicável) ---
     var files = dog.files || [];

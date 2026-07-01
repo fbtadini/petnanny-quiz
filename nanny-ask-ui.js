@@ -112,6 +112,7 @@
       + '</div>'
       + '<div id="na-phototip-'+mode+'" style="display:none;font-size:12px;color:'+CT.sec+';margin-top:9px;line-height:1.45;background:#f7f2ea;border:1px solid '+CT.line+';border-radius:10px;padding:9px 11px"><strong>Pra foto ajudar de verdade:</strong> boa luz (perto de uma janela), aproxime bem do ponto (olho, pele, dente, orelha), segure firme e evite flash direto. Pode mandar 2 ângulos. Foto torta eu leio — nítida eu leio melhor.</div>'+ '<div style="font-size:12px;color:'+CT.mut+';margin-top:9px;line-height:1.4">A Nanny não é veterinária e isto não é consulta. É orientação pra te ajudar a decidir.</div>'
       + '<div id="na-out-'+mode+'" style="margin-top:12px"></div>'
+      + '<div id="na-hist-'+mode+'"></div>'
       + '</div>';
   }
 
@@ -132,16 +133,33 @@
   }
 
   var threads={perfil:[],home:[]};
+  var expandedHist=-1;
 
-  function seedFollowup(mode){
+  function relTime(iso){
+    if(!iso) return '';
+    var d=new Date(String(iso)+'T00:00:00'); if(isNaN(d)) return String(iso);
+    var days=Math.floor((Date.now()-d.getTime())/864e5);
+    if(days<=0) return 'hoje'; if(days===1) return 'ontem'; if(days<7) return 'há '+days+' dias';
+    if(days<30){ var w=Math.floor(days/7); return 'há '+w+(w>1?' semanas':' semana'); }
+    if(days<365){ var m=Math.floor(days/30); return 'há '+m+(m>1?' meses':' mês'); }
+    var y=Math.floor(days/365); return 'há '+y+(y>1?' anos':' ano');
+  }
+  function tutorFromPergunta(p){ return { de:'tutor', texto:(p.texto||'(foto)') }; }
+  function bubbleFromPergunta(p){ return { de:'nanny', r:{ nivel:p.nivel||'observar', o_que_fazer_agora:p.resposta||'', por_que:p.por_que||'', pro_vet:p.pro_vet||'' } }; }
+
+  // restaura a ÚLTIMA conversa no fio (você vê sua pergunta + a resposta, e continua abaixo).
+  // Se a última ficou em aberto (observar/vet), acrescenta um follow-up gentil.
+  function seedFromHistory(mode){
     if(mode!=='perfil')return;
     var dog=g('dogObj')?window.dogObj():null; if(!dog)return;
     if(threads.perfil.length)return;
     var pg=dog.perguntas||[]; if(!pg.length)return;
-    var lp=pg[pg.length-1];
-    if(lp&&(lp.nivel==='observar'||lp.nivel==='procurar_vet')){
-      var t=(lp.texto||'').slice(0,40);
-      threads.perfil.push({de:'nanny',r:{nivel:'observar',followup:true,o_que_fazer_agora:'Você me falou de "'+t+'" da última vez. Como está isso agora?'}});
+    var last=pg[pg.length-1];
+    threads.perfil.push(tutorFromPergunta(last));
+    threads.perfil.push(bubbleFromPergunta(last));
+    if(last.nivel==='observar'||last.nivel==='procurar_vet'){
+      var t=(last.entendi||last.texto||'').slice(0,44);
+      threads.perfil.push({de:'nanny',r:{nivel:'observar',followup:true,o_que_fazer_agora:'Sobre "'+t+'" — como está agora? Pode me atualizar aqui.'}});
     }
   }
   function mdLite(x){var t=esc(x==null?'':x);t=t.replace(/\*\*(.+?)\*\*/g,'<b>$1</b>');t=t.replace(/(^|<br>|\s)(\d+)\.\s/g,'$1<br>$2. ');t=t.replace(/\n/g,'<br>');t=t.replace(/^(<br>)+/,'');return t;}
@@ -178,6 +196,55 @@
     out.innerHTML=h;
     var go=document.getElementById('na-go-reg'); if(go)go.onclick=function(){ if(g('startRegister'))window.startRegister(); };
   }
+
+  // "Conversas anteriores" — lista navegável (título limpo do entendi + nível + quando).
+  // Cada uma expande pra reler e traz "Continuar essa conversa". Substitui a vaidade de "N vezes".
+  function renderHistory(mode){
+    if(mode!=='perfil')return;
+    var box=document.getElementById('na-hist-perfil'); if(!box)return;
+    var dog=g('dogObj')?window.dogObj():null;
+    var pg=(dog&&dog.perguntas)||[];
+    var older=pg.slice(0,-1);                 // tudo menos a última (que já está no fio ativo)
+    if(!older.length){ box.innerHTML=''; return; }
+    var open = box.getAttribute('data-open')==='1';
+    var h='<button type="button" id="na-hist-toggle" aria-expanded="'+open+'" style="width:100%;text-align:left;background:none;border:0;border-top:1px solid '+CT.line+';margin-top:14px;padding:12px 2px 6px;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:space-between">'
+      + '<span style="font-size:12.5px;font-weight:600;color:'+CT.sec+'">Conversas anteriores ('+older.length+')</span>'
+      + '<span style="color:'+CT.mut+';font-size:16px;display:inline-block;transform:rotate('+(open?'90':'0')+'deg);transition:transform .15s">\u203a</span></button>';
+    if(open){
+      h+='<div>'+older.slice().reverse().map(function(p){
+        var realIdx=pg.indexOf(p), n=NIVEL[p.nivel]||NIVEL.observar;
+        var title=esc((p.entendi||p.texto||'(foto)').slice(0,90));
+        var ex=(expandedHist===realIdx);
+        var row='<div style="border-top:1px solid '+CT.cream+'">'
+          + '<button type="button" onclick="nannyHistToggle('+realIdx+')" style="width:100%;text-align:left;background:none;border:0;padding:10px 2px;cursor:pointer;font-family:inherit;display:flex;gap:9px;align-items:flex-start">'
+          + '<span style="flex:0 0 8px;width:8px;height:8px;border-radius:50%;background:'+n.cor+';margin-top:5px"></span>'
+          + '<span style="flex:1;min-width:0"><span style="font-size:13px;color:'+CT.pri+';display:block;line-height:1.4">'+title+'</span>'
+          + '<span style="font-size:11px;color:'+CT.mut+'">'+esc(n.label)+' \u00b7 '+relTime(p.data)+'</span></span>'
+          + '<span style="color:'+CT.mut+';font-size:15px;margin-top:1px">'+(ex?'\u2212':'+')+'</span></button>';
+        if(ex){
+          row+='<div style="padding:0 2px 12px 19px">'
+            + (p.resposta?'<div style="font-size:13px;color:'+CT.pri+';line-height:1.55;margin-bottom:7px">'+mdLite(p.resposta)+'</div>':'')
+            + (p.pro_vet?'<div style="font-size:11.5px;color:'+CT.green+';margin-bottom:9px">\ud83e\ude7a Resumo pro vet guardado na Carteira.</div>':'')
+            + '<button type="button" onclick="nannyContinuar('+realIdx+')" style="background:'+CT.green+';color:#fff;border:0;border-radius:9px;padding:8px 15px;font-weight:600;font-size:12.5px;cursor:pointer;font-family:inherit">Continuar essa conversa</button>'
+            + '</div>';
+        }
+        return row+'</div>';
+      }).join('')+'</div>';
+    }
+    box.innerHTML=h;
+    var tg=document.getElementById('na-hist-toggle');
+    if(tg) tg.onclick=function(){ box.setAttribute('data-open', open?'0':'1'); renderHistory('perfil'); };
+  }
+  window.nannyHistToggle=function(idx){ expandedHist=(expandedHist===idx)?-1:idx; renderHistory('perfil'); };
+  window.nannyContinuar=function(idx){
+    var dog=g('dogObj')?window.dogObj():null; if(!dog)return;
+    var p=(dog.perguntas||[])[idx]; if(!p)return;
+    threads.perfil=[ tutorFromPergunta(p), bubbleFromPergunta(p) ];
+    var box=document.getElementById('na-hist-perfil'); if(box) box.setAttribute('data-open','0');
+    expandedHist=-1; renderThread('perfil'); renderHistory('perfil');
+    var ta=document.getElementById('na-text-perfil'); if(ta){ try{ta.scrollIntoView({behavior:'smooth',block:'center'});}catch(e){} ta.focus(); }
+  };
+
   function enviar(mode,isReply){
     var out=document.getElementById('na-out-'+mode);
     var el=document.getElementById('na-text-'+mode);
@@ -210,6 +277,7 @@
           track('nanny_ask',{nivel:r.nivel,sem_cadastro:true});
         }
         renderThread(mode);
+        renderHistory(mode);
       })
       .catch(function(){ threads[mode].push({de:'nanny',r:{nivel:'observar',o_que_fazer_agora:'Falha de conexão. Tenta de novo.'}}); renderThread(mode); });
   }
@@ -221,7 +289,7 @@
     try{ var p=JSON.parse(raw); dog.perguntas=[p]; if(g('saveDogs'))window.saveDogs(); if(g('nannySync'))window.nannySync(true); localStorage.removeItem(PEND_KEY); }catch(e){}
   }
 
-  function mountInto(id,mode){ var box=document.getElementById(id); if(!box)return; box.innerHTML=cardHTML(mode); wire(mode); if(mode==='perfil'){ seedFollowup('perfil'); renderThread('perfil'); } }
+  function mountInto(id,mode){ var box=document.getElementById(id); if(!box)return; box.innerHTML=cardHTML(mode); wire(mode); if(mode==='perfil'){ seedFromHistory('perfil'); renderThread('perfil'); renderHistory('perfil'); } }
   function boot(){ styleOnce(); var hasDogs=false; try{ hasDogs=(typeof dogs!=='undefined'&&dogs&&dogs.length>0); }catch(e){}
     if(document.getElementById('nanny-ask')){ adotarAvulsa(); mountInto('nanny-ask','perfil'); }
     if(document.getElementById('nanny-ask-home')&&!hasDogs) mountInto('nanny-ask-home','home'); }
