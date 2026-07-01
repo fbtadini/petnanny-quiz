@@ -52,6 +52,15 @@
       + sec('Próximas datas registradas', prox.length?tbl(['Item','Previsão'],rows(prox,[function(v){return v.o_que;},function(v){return br(v.data);}])):'')
       + sec('Exames e laudos', ex.length?tbl(['Tipo','Achado (transcrito)','Data'],rows(ex,[function(v){return v.tipo;},function(v){return v.achado;},function(v){return br(v.data);}])):'')
       + sec('Condições registradas', cond.length?'<ul>'+cond.map(function(c){return '<li>'+esc(typeof c==='string'?c:(c.nome||JSON.stringify(c)))+'</li>';}).join('')+'</ul>':'')
+      + sec('Evolução de peso', (function(){
+          var ws=(dog.weights||[]).slice().sort(function(a,b){return String(a.d).localeCompare(String(b.d));});
+          if(!ws.length) return '';
+          var prev=null, body='';
+          ws.forEach(function(w){ var dl=(prev!=null)?(w.kg-prev):null; body+='<tr><td>'+br(w.d)+'</td><td>'+String(w.kg).replace('.',',')+' kg</td><td>'+(dl==null?'—':((dl>0?'+':'')+dl.toFixed(1).replace('.',',')+' kg'))+'</td></tr>'; prev=w.kg; });
+          var t=tbl(['Data','Peso','Variação'], body);
+          if(ws.length>=2){ var f=ws[0], l=ws[ws.length-1], tot=l.kg-f.kg; t+='<p style="font-size:12px;color:#444;margin:6px 0 0">Tendência: '+String(f.kg).replace('.',',')+' kg ('+br(f.d)+') → '+String(l.kg).replace('.',',')+' kg ('+br(l.d)+'), variação de '+(tot>0?'+':'')+tot.toFixed(1).replace('.',',')+' kg no período.</p>'; }
+          return t;
+        })())
       + sec('Situação de vacinas e cuidados (calculado — confirmar)', (function(){
           var ups=[]; try{ if(typeof window!=='undefined'&&typeof window.upcomingReminders==='function') ups=window.upcomingReminders(dog)||[]; }catch(e){}
           if(!ups.length) return '';
