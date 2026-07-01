@@ -229,6 +229,7 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent)}
     <div style="display:flex;gap:8px;margin:2px 0 10px;flex-wrap:wrap"><button class="chip" onclick="editDog()">✎ Editar dados</button><button class="chip" onclick="printFicha()">🖨️ Ficha (PDF)</button></div>
     <div id="p-status" class="status-sum" style="display:none"></div>
     <div id="p-acolher" style="display:none"></div>
+    <div id="nanny-ask"></div>
     <div class="tabs">
       <div class="tab on" data-tab="guia" onclick="setTab('guia')">Raça</div>
       <div class="tab" data-tab="plano" onclick="setTab('plano')">Plano</div>
@@ -1092,6 +1093,7 @@ loadDogs();fillBreeds();renderList();document.getElementById('f-birth').max=new 
 <div id="lightbox"></div>
 <div id="ficha"></div>
 <script src="nanny-identity.js"></script>
+<script src="nanny-ask-ui.js"></script>
 <script>document.addEventListener('DOMContentLoaded',function(){window.nannyBoot&&window.nannyBoot();});</script>
 </body>
 </html>
