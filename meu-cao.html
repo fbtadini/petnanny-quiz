@@ -237,10 +237,10 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent)}
       <div class="tab" data-tab="raca" onclick="setTab('raca')">Raça</div>
     </div>
     <div id="tab-hoje"></div>
-    <div id="tab-guia" style="display:none"></div>
-    <div id="tab-plano" style="display:none"></div>
-    <div id="tab-lembretes" style="display:none"></div>
-    <div id="tab-docs" style="display:none"></div>
+    <div id="tab-raca" style="display:none"></div>
+    <div id="tab-cuidados" style="display:none"></div>
+    <div id="tab-carteira-agenda" style="display:none"></div>
+    <div id="tab-carteira-docs" style="display:none"></div>
     <button class="del" id="delBtn" onclick="deleteDog()">Remover este cão</button>
     <p class="foot">As recomendações são gerais e não substituem a avaliação do seu veterinário.</p>
   </section>
@@ -311,7 +311,7 @@ function submitPreChegada(){
     pesoFaixa:'',sexo:'',nascimento:null,idadeMeses:null,castrado:'',microchip:'',chegada:null,
     notes:'',photo:null,photoPos:{x:50,y:50},docs:[],done:{},
     quiz:(typeof quizCtx==='function')?quizCtx():null, criadoEm:new Date().toISOString()};
-  dogs.push(dog);saveDogs();currentId=dog.id;renderProfile();show('s-profile');setTab('guia');window.scrollTo(0,0);
+  dogs.push(dog);saveDogs();currentId=dog.id;renderProfile();show('s-profile');setTab('raca');window.scrollTo(0,0);
 }
 function openAdmin(){renderAdmin();show('s-admin')}
 
@@ -372,11 +372,11 @@ function submitDog(){
   if(pesoFaixa===''&&!regAguardando)return showErr('Escolha a faixa de peso do seu cão.');
   const nomeFinal=nome||(regAguardando?'Meu futuro cão':nome);
   const base={nome:nomeFinal,breedKey,customBreed:breedKey==='__outra'?custom:null,pesoFaixa,sexo:sex,nascimento:birth||null,idadeMeses:birth?null:(ay*12+am),castrado:neut,microchip:chip,chegada:chegada||null,origem:origem||''};
-  if(editingId){const d=dogs.find(x=>x.id===editingId);if(d){Object.assign(d,base);saveDogs();currentId=editingId}editingId=null;renderProfile();show('s-profile');setTab('guia');return;}
+  if(editingId){const d=dogs.find(x=>x.id===editingId);if(d){Object.assign(d,base);saveDogs();currentId=editingId}editingId=null;renderProfile();show('s-profile');setTab('raca');return;}
   const wasAguard=regAguardando;regAguardando=false;
   const dog=Object.assign({id:uid(),notes:'',photo:null,photoPos:{x:50,y:50},docs:[],done:{},aguardando:wasAguard,quiz:pendingQuizCtx?quizCtx():null,criadoEm:new Date().toISOString()},base);
   pendingQuizCtx=false;
-  dogs.push(dog);saveDogs();currentId=dog.id;renderProfile();show('s-profile');setTab(wasAguard?'guia':'plano');
+  dogs.push(dog);saveDogs();currentId=dog.id;renderProfile();show('s-profile');setTab(wasAguard?'raca':'cuidados');
 }
 function editDog(){
   const dog=dogObj();if(!dog)return;editingId=dog.id;
@@ -489,7 +489,7 @@ function notesTips(dog){const t=(dog.notes||'').toLowerCase(),out=[];
   if(/patela|luxa|joelho|articula/.test(t))out.push('🦴 Citou joelho/patela — registre a avaliação no card <b>"Saúde a acompanhar"</b> (no Plano) pra deixar no histórico, e evite saltos do sofá/cama.');
   if(/(n[ãa]o).{0,20}c[ãa]es|reativ|outros c[ãa]es|briga|n[ãa]o gosta de c/.test(t))out.push('🐕 Sobre conviver com outros cães: prefira passeios paralelos e apresentações graduais, sem forçar contato — respeite o ritmo '+gPoss(dog)+'.');
   if(/idos|senior|sênior|velhinh|artros/.test(t))out.push('🧓 Cão mais velho: check-ups mais frequentes e atenção a articulações e dentes fazem diferença.');
-  if(/alergia|coç|pele|dor|manca|claudic|sopro|cora[çc]|tosse|convuls|crise|tumor|caro[çc]o|problema|doen|diabet|renal|f[íi]gado/.test(t))out.push('📝 Você mencionou algo de saúde a acompanhar. Dá pra registrar isso no Plano, em <b>"Saúde a acompanhar"</b>, e anotar avaliações ao longo do tempo. <button class="chip sm" style="margin-top:6px" onclick="setTab(\'plano\')">Ir pro Plano →</button>');
+  if(/alergia|coç|pele|dor|manca|claudic|sopro|cora[çc]|tosse|convuls|crise|tumor|caro[çc]o|problema|doen|diabet|renal|f[íi]gado/.test(t))out.push('📝 Você mencionou algo de saúde a acompanhar. Dá pra registrar isso no Plano, em <b>"Saúde a acompanhar"</b>, e anotar avaliações ao longo do tempo. <button class="chip sm" style="margin-top:6px" onclick="setTab(\'cuidados\')">Ir pro Plano →</button>');
   return out;}
 const TEMPERAMENTOS=[
   {key:'medo',label:'Medroso / inseguro'},
@@ -558,7 +558,7 @@ function renderGuide(dog){const b=getBreed(dog);let h='';
   }
   h+=behaviorHTML(dog,b);
   h+=`<div class="card" style="background:var(--green-light);border-color:#cfe3d4"><p style="margin:0;font-size:13.5px;color:#3a5e44">Cada cão é único — temperamento e saúde variam com genética, socialização e educação. Esta guia é um ponto de partida confiável, não um veredito.</p></div>`;
-  document.getElementById('tab-guia').innerHTML=h;}
+  document.getElementById('tab-raca').innerHTML=h;}
 
 function planItemHTML(dog,it){const s=itemStatus(dog,it),today=new Date().toISOString().slice(0,10);
   const markBtn=(label,def)=>`<button class="chip sm2" onclick="toggleMark('${it.key}','${def||today}')">${label}</button><span class="markrow" id="mk-${it.key}"><input type="date" id="dt-${it.key}" max="${today}"><button class="chip up sm2" onclick="confirmMark('${it.key}')">Salvar</button></span>`;
@@ -688,7 +688,7 @@ function condLabel(s){return s==='diagnosticado'?'Diagnosticado':(s==='acompanha
 function toggleCond(k){const f=document.getElementById('cf-'+k);if(f)f.style.display=(f.style.display==='block'?'none':'block');}
 function condForm(ck,cs){return `<div class="cond-form" id="cf-${ck}" style="display:none"><select id="cs-st-${ck}" class="he-in"><option value="avaliado_ok"${cs&&cs.status==='avaliado_ok'?' selected':''}>Avaliado — sem alteração</option><option value="acompanhando"${cs&&cs.status==='acompanhando'?' selected':''}>Em acompanhamento</option><option value="diagnosticado"${cs&&cs.status==='diagnosticado'?' selected':''}>Diagnosticado</option></select><input id="cs-note-${ck}" class="he-in" value="${cs&&cs.note?(''+cs.note).replace(/"/g,'&quot;'):''}" placeholder="observações (ex.: grau 2, conduta, medicação)"><input id="cs-date-${ck}" class="he-in" type="date" value="${cs&&cs.date?cs.date:''}"><button class="chip sm" onclick="saveCond('${ck}')">Salvar</button></div>`;}
 function addWatch(){const dog=dogObj();if(!dog)return;const inp=document.getElementById('watch-new');const label=((inp&&inp.value)||'').trim();if(!label)return;const key=condKey(label)||('w'+Date.now());dog.watch=dog.watch||[];if(!dog.watch.some(w=>w.key===key))dog.watch.push({key,label});saveDogs();renderProfile();}
-function addWatchFromNote(label){const dog=dogObj();if(!dog)return;const key=condKey(label)||('w'+Date.now());dog.watch=dog.watch||[];if(!dog.watch.some(w=>w.key===key))dog.watch.push({key,label});saveDogs();setTab('plano');renderProfile();window.scrollTo({top:0,behavior:'smooth'});}
+function addWatchFromNote(label){const dog=dogObj();if(!dog)return;const key=condKey(label)||('w'+Date.now());dog.watch=dog.watch||[];if(!dog.watch.some(w=>w.key===key))dog.watch.push({key,label});saveDogs();setTab('cuidados');renderProfile();window.scrollTo({top:0,behavior:'smooth'});}
 function removeWatch(key){const dog=dogObj();if(!dog)return;dog.watch=(dog.watch||[]).filter(w=>w.key!==key);if(dog.conditions)delete dog.conditions[key];saveDogs();renderProfile();}
 function saveCond(k){const dog=dogObj();if(!dog)return;const st=(document.getElementById('cs-st-'+k)||{}).value||'avaliado_ok';const note=((document.getElementById('cs-note-'+k)||{}).value||'').trim();const date=(document.getElementById('cs-date-'+k)||{}).value||'';dog.conditions=dog.conditions||{};dog.conditions[k]={status:st,note,date};saveDogs();renderProfile();}
 function docCardHTML(dog){if(pendingDoc)return docConfirmHTML(dog);const he=dog.health;
@@ -796,7 +796,7 @@ function renderDocs(dog){const files=dog.files||[];const he=dog.health||{};
   }
   else{h+=`<div class="empty-doc"><div style="font-size:30px">📁</div><p style="margin:8px 0 0;font-size:13px;color:var(--brown-mid)">Nada guardado ainda. As fotos que você manda no Plano caem aqui, e você pode adicionar microchip, pedigree, atestado e exames — tudo num lugar só.</p></div>`;}
   h+=`<div style="margin-top:14px"><div style="font-size:12px;color:var(--brown-mid);margin-bottom:5px">Guardar um documento novo</div><select id="udoc-label" class="he-in"><option>Exame</option><option>Atestado de saúde</option><option>Microchip</option><option>Pedigree</option><option>Contrato / adoção</option><option>Receita</option><option>Outro</option></select><label class="chip up big" style="margin-top:8px">📎 Guardar documento<input type="file" accept="image/*,.pdf" onchange="addUserDoc(this)"></label><p style="font-size:11.5px;color:var(--brown-mid);opacity:.85;margin:8px 0 0">Por enquanto guarda imagens (foto/scan). PDF e sincronização entre aparelhos chegam com a conta na nuvem.</p></div></div>`;
-  document.getElementById('tab-docs').innerHTML=h;}
+  document.getElementById('tab-carteira-docs').innerHTML=h;}
 function addUserDoc(input){const f=input.files&&input.files[0];if(!f)return;const dog=dogObj();if(!dog)return;const type=(document.getElementById('udoc-label')||{}).value||'Documento';
   downscaleImage(f,1100,0.75).then(thumb=>{if(!thumb){alert('Por enquanto dá pra guardar imagens (foto ou scan). PDF chega com a conta na nuvem.');return;}dog.files=dog.files||[];dog.files.push({id:uid(),type,name:type,thumb,at:Date.now()});saveDogs();renderDocs(dog);});}
 function editFile(id){fileEdit=id;renderDocs(dogObj());}
@@ -839,13 +839,13 @@ function renderPlan(dog){const items=carePlan(dog),hw=healthWatch(dog),b=getBree
     h+=`<div class="hw"><div class="hw-top"><div class="hw-ic">📝</div><div style="flex:1"><div class="hw-t">${w.label}</div></div><button class="rm" title="remover" onclick="removeWatch('${ck}')">✕</button></div>${stLine}<div class="hw-actions"><button class="chip" onclick="toggleCond('${ck}')">📝 ${cs?'Editar avaliação':'Registrar avaliação'}</button></div>${condForm(ck,cs)}</div>`;});
   if(!hw.length&&!(dog.watch||[]).length)h+=`<p style="font-size:13.5px;color:var(--brown-mid);margin:0 0 4px">Sem pontos mapeados pra essa raça. Se o seu cão tem algo a acompanhar (alergia, peso, coração…), adicione abaixo.</p>`;
   h+=`<div style="margin-top:12px;border-top:1px solid var(--line);padding-top:12px"><div style="font-size:12.5px;color:var(--brown-mid);margin-bottom:6px">Acompanhar outra coisa</div><div style="display:flex;gap:8px"><input id="watch-new" class="he-in" style="margin:0;flex:1" placeholder="ex.: Alergia de pele, sopro no coração"><button class="chip up" onclick="addWatch()">+ Acompanhar</button></div></div>`;
-  h+=`</div>`;h+=weightCardHTML(dog);document.getElementById('tab-plano').innerHTML=h;}
+  h+=`</div>`;h+=weightCardHTML(dog);document.getElementById('tab-cuidados').innerHTML=h;}
 
 function renderReminders(dog){const up=upcomingReminders(dog);const att=up.filter(r=>r.status!=='upcoming'),fut=up.filter(r=>r.status==='upcoming');let h='';h+=(typeof window.tabHeader==='function'?window.tabHeader(dog,'saude'):'');
   if(att.length){h+=`<div class="card"><div class="sec-label" style="color:#b5602a">Precisa de atenção</div>`;att.forEach(r=>{const stale=r.status==='stale';h+=`<div class="remind"><div class="r-date" style="background:#f7dcd6"><div class="d" style="color:#b5483a">${r.when.getDate()}</div><div class="mo" style="color:#b5483a">${MES[r.when.getMonth()]}</div></div><div><div class="r-t">${r.t} ⚠️</div><div class="r-sub">${stale?`Última registrada faz tempo (${fmt(r.when)}) — confirme/registre a atual`:`Atrasada desde ${fmt(r.when)}`} · ${r.tipo}</div></div></div>`;});h+=`</div>`;}
   if(fut.length){h+=`<div class="card"><div class="sec-label">Próximos</div>`;fut.forEach(r=>h+=`<div class="remind"><div class="r-date"><div class="d">${r.when.getDate()}</div><div class="mo">${MES[r.when.getMonth()]}</div></div><div><div class="r-t">${r.t}</div><div class="r-sub">${r.tipo} · ${fmt(r.when)}</div></div></div>`);h+=`</div>`;}
   if(!att.length&&!fut.length){h+=`<div class="card empty"><div style="font-size:34px">🔔</div><p style="margin:10px 0 0">Mande a carteira de vacinação no Plano (ou marque o que já foi feito) pra ver os lembretes aqui.</p></div>`;}
-  document.getElementById('tab-lembretes').innerHTML=h;}
+  document.getElementById('tab-carteira-agenda').innerHTML=h;}
 
 function dogObj(){return dogs.find(d=>d.id===currentId)}
 function setAvatar(){const dog=dogObj(),b=getBreed(dog),av=document.getElementById('p-avatar');
@@ -859,9 +859,9 @@ function renderProfile(){const dog=dogObj();if(!dog)return goHome();migrateDog(d
   if(dog.aguardando){document.getElementById('p-meta').textContent=raca+' · plano de chegada'+(dog.previsao?(' · previsão '+fmtISO(dog.previsao)):'');}
   else{const pd=pesoDisplay(dog);document.getElementById('p-meta').textContent=`${raca} · ${ageLabel(ageInMonths(dog))}${pd?(' · '+pd):''}${dog.sexo?(' · '+(dog.sexo==='femea'?'fêmea':'macho')):''}`;}
   const pc=document.getElementById('p-chip');if(dog.microchip){pc.style.display='block';pc.textContent='🔖 Microchip: '+dog.microchip}else{pc.style.display='none'}
-  const ss=statusSummary(dog),ps=document.getElementById('p-status');if(ps){if(dog.aguardando){ps.style.display='none';}else{ps.style.display='block';ps.className='status-sum '+ss.cls;ps.textContent=ss.txt;ps.style.cursor=(ss.cls==='warn')?'pointer':'';ps.onclick=(ss.cls==='warn')?function(){setTab('lembretes');window.scrollTo({top:0,behavior:'smooth'});}:null;}}
+  const ss=statusSummary(dog),ps=document.getElementById('p-status');if(ps){if(dog.aguardando){ps.style.display='none';}else{ps.style.display='block';ps.className='status-sum '+ss.cls;ps.textContent=ss.txt;ps.style.cursor=(ss.cls==='warn')?'pointer':'';ps.onclick=(ss.cls==='warn')?function(){setTab('carteira');window.scrollTo({top:0,behavior:'smooth'});}:null;}}
   setAvatar();renderAcolher(dog);renderGuide(dog);renderPlan(dog);renderReminders(dog);renderDocs(dog);if(window.renderHoje)window.renderHoje(dog);}
-function setTab(t){var alias={plano:'cuidados',cuidar:'cuidados',lembretes:'carteira',saude:'carteira',docs:'carteira',guia:'raca',sobre:'raca'};t=alias[t]||t;document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('on',x.dataset.tab===t));var map={hoje:['tab-hoje'],cuidados:['tab-plano'],carteira:['tab-lembretes','tab-docs'],raca:['tab-guia']};var showing=map[t]||['tab-hoje'];['tab-hoje','tab-guia','tab-plano','tab-lembretes','tab-docs'].forEach(function(id){var e=document.getElementById(id);if(e)e.style.display=(showing.indexOf(id)>=0)?'block':'none';});var ps=document.getElementById('p-status');if(ps)ps.style.display=(t!=='hoje'&&(ps.textContent||'').trim())?'block':'none';}
+function setTab(t){/* alias = compat legado; os chamadores usam nomes canônicos (hoje/cuidados/carteira/raca) */var alias={plano:'cuidados',cuidar:'cuidados',lembretes:'carteira',saude:'carteira',docs:'carteira',guia:'raca',sobre:'raca'};t=alias[t]||t;document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('on',x.dataset.tab===t));var map={hoje:['tab-hoje'],cuidados:['tab-cuidados'],carteira:['tab-carteira-agenda','tab-carteira-docs'],raca:['tab-raca']};var showing=map[t]||['tab-hoje'];['tab-hoje','tab-raca','tab-cuidados','tab-carteira-agenda','tab-carteira-docs'].forEach(function(id){var e=document.getElementById(id);if(e)e.style.display=(showing.indexOf(id)>=0)?'block':'none';});var ps=document.getElementById('p-status');if(ps)ps.style.display=(t!=='hoje'&&(ps.textContent||'').trim())?'block':'none';}
 
 const MARCOS=[
   {id:'casa',t:'🏡 Chegou em casa',ta:'🏡 Chegou pra ficar'},
@@ -1083,7 +1083,7 @@ function marcouChegada(){
   const dog=dogObj(); if(!dog)return;
   dog.aguardando=false; dog.indeciso=false;
   dog.chegada=new Date().toISOString().slice(0,10);
-  saveDogs(); renderProfile(); setTab('guia'); window.scrollTo({top:0,behavior:'smooth'});
+  saveDogs(); renderProfile(); setTab('raca'); window.scrollTo({top:0,behavior:'smooth'});
 }
 
 /* ---------- foto: upload + reposicionar ---------- */
@@ -1151,7 +1151,7 @@ function sanitizeExtraction(ex){if(!ex)return ex;const today=new Date();today.se
   return ex;}
 async function nannyReadDoc(input,cond){
   const files=input.files?Array.prototype.slice.call(input.files):[];if(!files.length)return;
-  const note=document.querySelector('#tab-plano .ai-note');
+  const note=document.querySelector('#tab-cuidados .ai-note');
   const setNote=(cls,txt)=>{if(note){note.className='ai-note '+cls;note.style.display='block';note.innerHTML=txt;}};
   const dog=dogObj();let ok=0,empty=0,err=0;const staged={};const thumbs=[];
   for(let i=0;i<files.length;i++){const f=files[i];
@@ -1174,7 +1174,7 @@ async function nannyReadDoc(input,cond){
     }catch(e){err++;}
   }
   input.value='';
-  if(ok){pendingDoc={ex:staged,thumbs:thumbs,count:ok,empty:empty,err:err};renderProfile();setTab('plano');window.scrollTo({top:0,behavior:'smooth'});return;}
+  if(ok){pendingDoc={ex:staged,thumbs:thumbs,count:ok,empty:empty,err:err};renderProfile();setTab('cuidados');window.scrollTo({top:0,behavior:'smooth'});return;}
   if(err){setNote('warn','\u26a0\ufe0f Tive um problema na leitura (conexao ou servidor). Toca de novo no botao - costuma resolver na segunda.');return;}
   setNote('warn','Li a foto, mas nao encontrei vacinas nem datas. Confere se esta nitida, reta e mostrando as datas - e manda <b>uma pagina por vez</b>.');
 }
@@ -1222,8 +1222,8 @@ function confirmDoc(){const dog=dogObj();if(!dog||!pendingDoc)return;const ex=pe
   if(ex.microchip&&!dog.microchip)dog.microchip=ex.microchip;
   (pendingDoc.thumbs||[]).forEach(t=>{dog.files=dog.files||[];dog.files.push(t);});
   applyHealthToPlan(dog,dog.health);
-  pendingDoc=null;saveDogs();setTab('plano');renderProfile();window.scrollTo({top:0,behavior:'smooth'});
-  const n=document.querySelector('#tab-plano .ai-note');if(n){n.className='ai-note ok';n.style.display='block';n.innerHTML='\u2705 Guardei no dossie. Datas conferidas por voce.';}
+  pendingDoc=null;saveDogs();setTab('cuidados');renderProfile();window.scrollTo({top:0,behavior:'smooth'});
+  const n=document.querySelector('#tab-cuidados .ai-note');if(n){n.className='ai-note ok';n.style.display='block';n.innerHTML='\u2705 Guardei no dossie. Datas conferidas por voce.';}
 }
 
 /* ---------- listas ---------- */
