@@ -1,177 +1,186 @@
-/* nanny-ask-ui.js — A PORTA ÚNICA "Pergunta pra Nanny" (cliente) — v1 / Mágico de Oz
+/* nanny-ask-ui.js — A PORTA ÚNICA "Pergunta pra Nanny" (cliente) — v2
  * <script src="nanny-ask-ui.js"></script> no meu-cao.html (depois do nanny-identity.js)
- * Monta sozinho em <div id="nanny-ask"></div>. Zero código pra colar no meio do HTML.
+ * Monta sozinho em #nanny-ask (perfil) e #nanny-ask-home (tela inicial, sem cão).
  *
- * Usa globais que já existem no hub: dogObj, getBreed, ageLabel, ageInMonths, rangeOf,
- * saveDogs, downscaleImage, nannySync, BREED_CARE, gtag.
- * Fala com /api/nanny-ask (Haiku 4.5, teletriagem dentro da Res. CFMV 1.465/2022).
+ * v2:
+ *  - rosto da Nanny (WESTIE) onde ELA fala; nunca no dado puro do cão.
+ *  - acessibilidade: texto ≥12px, contraste melhor, alvos de toque de 42px, aria-label.
+ *  - skeleton de carregamento (não "✨ analisando" cru).
+ *  - dossiê de saúde (condições/vacinas/exames/peso) entra no contexto → Nanny sabe do cão.
+ *  - funciona SEM cão cadastrado: responde e convida a cadastrar pra guardar (pânico das 22h).
+ *  - micro-feedback ao guardar ("guardado no dossiê").
  *
- * "Append burro": cada resposta vira uma pergunta datada em dog.perguntas e os fatos em
- * dog.eventos; salva e sobe pra nuvem. Sem motor de memória — só acúmulo.
+ * Globais do hub: dogObj, getBreed, ageLabel, ageInMonths, rangeOf, saveDogs,
+ * downscaleImage, nannySync, BREED_CARE, WESTIE, gtag, startRegister.
  */
 (function () {
-  var ENDPOINT = '/api/nanny-ask';
-
+  var ENDPOINT = '/api/nanny-ask', PEND_KEY = 'petnanny_pergunta_avulsa';
+  var CT = { pri:'#3d2c1e', sec:'#5f5142', mut:'#7a6a58', line:'#e8ddd2', green:'#7a9970', cream:'#f7f2ea' };
   var NIVEL = {
-    leve:        { cor: '#7a9970', bg: '#eef3ea', label: 'Tranquilo',       ic: '🟢' },
-    observar:    { cor: '#b7902a', bg: '#f6efdb', label: 'Vale observar',   ic: '🟡' },
-    procurar_vet:{ cor: '#d98a3d', bg: '#f7ece0', label: 'Procure um vet',  ic: '🟠' },
-    urgente:     { cor: '#c0392b', bg: '#f7e4e1', label: 'Urgente',         ic: '🔴' }
+    leve:        { cor:'#5c7a52', bg:'#eef3ea', label:'Tranquilo' },
+    observar:    { cor:'#9a7717', bg:'#f6efdb', label:'Vale observar' },
+    procurar_vet:{ cor:'#c0722e', bg:'#f7ece0', label:'Procure um vet' },
+    urgente:     { cor:'#b02a1f', bg:'#f7e4e1', label:'Urgente' }
   };
+  function g(fn){ return (typeof window[fn]==='function')?window[fn]:null; }
+  function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
+  function track(ev,p){ try{ if(window.gtag) window.gtag('event',ev,p||{});}catch(e){} }
+  function nannyFace(px){ var s=window.WESTIE||'<svg viewBox="0 0 100 100"><circle cx="50" cy="55" r="30" fill="#fff" stroke="#c9b798" stroke-width="3"/></svg>'; return '<span aria-hidden="true" style="display:inline-flex;width:'+px+'px;height:'+px+'px;border-radius:50%;background:#eef3ea;padding:4px;box-sizing:border-box">'+s+'</span>'; }
 
-  function g(fn) { return (typeof window[fn] === 'function') ? window[fn] : null; }
-  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
-  function track(ev, params) { try { if (window.gtag) window.gtag('event', ev, params || {}); } catch (e) {} }
-
-  // contexto raso do cão, do que já existe no hub
-  function contextoCao() {
-    var dog = g('dogObj') ? window.dogObj() : null;
-    if (!dog) return null;
-    var b = g('getBreed') ? window.getBreed(dog) : {};
-    var c = (typeof BREED_CARE !== 'undefined' && dog.breedKey && BREED_CARE[dog.breedKey]) || {};
-    var carac = [];
-    if (c.brachy) carac.push('braquicefálico (focinho achatado)');
-    if (c.bloat) carac.push('peito fundo (risco de torção)');
-    if (c.longBack) carac.push('coluna alongada');
-    if (c.patella) carac.push('joelho propenso a luxação de patela');
-    var idade = (g('ageLabel') && g('ageInMonths')) ? window.ageLabel(window.ageInMonths(dog)) : '';
-    var porte = (g('rangeOf') && (window.rangeOf(dog) || {}).band) || '';
-    return {
-      _dog: dog,
-      nome: dog.nome || '',
-      raca: (b && b.name) || dog.raca || '',
-      idade: idade,
-      porte: porte,
-      caracteristicas_saude: carac,
-      condicoes_conhecidas: dog.condicoes || [],
-      ultimas_perguntas: (dog.perguntas || []).slice(-3).map(function (p) { return { data: p.data, texto: p.texto, nivel: p.nivel }; })
-    };
+  function styleOnce(){
+    if(document.getElementById('nanny-ask-css')) return;
+    var st=document.createElement('style'); st.id='nanny-ask-css';
+    st.textContent='@keyframes naShimmer{0%{background-position:-200px 0}100%{background-position:200px 0}}'
+      +'.na-skel{height:12px;border-radius:6px;background:#efe6da;background-image:linear-gradient(90deg,#efe6da 0px,#f6f0e6 80px,#efe6da 160px);background-size:400px 100%;animation:naShimmer 1.1s infinite linear}'
+      +'.na-btn-ic{display:inline-flex;align-items:center;justify-content:center;width:42px;height:42px;border-radius:50%;border:0;cursor:pointer;background:transparent}'
+      +'.na-fade{animation:naFade .28s ease}@keyframes naFade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}';
+    document.head.appendChild(st);
   }
 
-  function fileToImg(file) {
-    // usa o downscale do hub se existir; devolve { data(base64), media_type }
-    if (!file) return Promise.resolve(null);
-    var ds = g('downscaleImage');
-    if (ds) {
-      return window.downscaleImage(file, 1400, 0.82).then(function (durl) {
-        if (!durl) return null;
-        return { data: durl.split(',')[1], media_type: 'image/jpeg' };
-      });
-    }
-    return new Promise(function (res) {
-      var r = new FileReader();
-      r.onload = function () { res({ data: String(r.result).split(',')[1], media_type: file.type || 'image/jpeg' }); };
-      r.onerror = function () { res(null); };
-      r.readAsDataURL(file);
-    });
+  // ---------- contexto (dossiê de saúde entra aqui) ----------
+  function saudeSlice(dog){
+    var h=dog.health||{}, s={};
+    if((h.condicoes||[]).length) s.condicoes=h.condicoes.slice(-5);
+    if((h.vacinas||[]).length) s.vacinas_recentes=h.vacinas.slice(-4).map(function(v){return {nome:v.nome,classe:v.classe,data:v.data};});
+    if((h.exames||[]).length) s.exames=h.exames.slice(-4).map(function(e){return {tipo:e.tipo,achado:e.achado,data:e.data};});
+    if(dog.pesoFaixa!=null) s.peso_faixa='faixa '+dog.pesoFaixa+' (informada pelo tutor)';
+    if((dog.notes||'').trim()) s.o_que_o_tutor_contou=(dog.notes||'').slice(0,300);
+    return s;
+  }
+  function contextoCao(){
+    var dog=g('dogObj')?window.dogObj():null;
+    if(!dog) return { _dog:null };
+    var b=g('getBreed')?window.getBreed(dog):{};
+    var c=(typeof BREED_CARE!=='undefined'&&dog.breedKey&&BREED_CARE[dog.breedKey])||{};
+    var carac=[];
+    if(c.brachy)carac.push('braquicefálico (focinho achatado)');
+    if(c.bloat)carac.push('peito fundo (risco de torção)');
+    if(c.longBack)carac.push('coluna alongada');
+    if(c.patella)carac.push('joelho propenso a luxação de patela');
+    return { _dog:dog,
+      nome:dog.nome||'', raca:(b&&b.name)||dog.customBreed||dog.raca||'',
+      idade:(g('ageLabel')&&g('ageInMonths'))?window.ageLabel(window.ageInMonths(dog)):'',
+      porte:(g('rangeOf')&&(window.rangeOf(dog)||{}).band)||'',
+      caracteristicas_saude:carac, saude:saudeSlice(dog),
+      ultimas_perguntas:(dog.perguntas||[]).slice(-3).map(function(p){return {data:p.data,texto:p.texto,nivel:p.nivel};}) };
   }
 
-  var pendingImg = null;
+  function fileToImg(file){
+    if(!file) return Promise.resolve(null);
+    var ds=g('downscaleImage');
+    if(ds) return window.downscaleImage(file,1400,0.82).then(function(d){return d?{data:d.split(',')[1],media_type:'image/jpeg'}:null;});
+    return new Promise(function(res){var r=new FileReader();r.onload=function(){res({data:String(r.result).split(',')[1],media_type:file.type||'image/jpeg'});};r.onerror=function(){res(null);};r.readAsDataURL(file);});
+  }
 
-  function mount() {
-    var box = document.getElementById('nanny-ask');
-    if (!box) return;
-    box.innerHTML =
-      '<div style="background:#fff;border:1px solid #e8ddd2;border-radius:16px;padding:16px;margin:2px 0 14px;box-shadow:0 1px 4px rgba(0,0,0,.03)">'
-      + '<div style="font-weight:700;font-size:16px;color:#3d2c1e;margin-bottom:2px">Pergunta pra Nanny</div>'
-      + '<div style="font-size:12.5px;color:#7a6a58;margin-bottom:10px">Uma dúvida sobre seu cão? Descreva ou mande uma foto. Não é consulta veterinária — é uma orientação pra te ajudar a decidir.</div>'
-      + '<textarea id="na-text" rows="2" placeholder="Ex.: tá com o olho vermelho e lacrimejando desde ontem…" style="width:100%;box-sizing:border-box;border:1.5px solid #e8ddd2;border-radius:12px;padding:11px 13px;font-size:14px;font-family:inherit;resize:vertical"></textarea>'
-      + '<div style="display:flex;gap:8px;align-items:center;margin-top:8px;flex-wrap:wrap">'
-      + '<button id="na-photo-btn" type="button" style="background:#f7f2ea;border:1px solid #e8ddd2;border-radius:10px;padding:9px 13px;font-size:13px;cursor:pointer">📷 Foto</button>'
-      + '<span id="na-photo-tag" style="font-size:12px;color:#7a9970;display:none"><span>foto anexada</span> · <a href="#" id="na-photo-clear" style="color:#c0392b">remover</a></span>'
-      + '<input id="na-photo" type="file" accept="image/*" style="display:none">'
-      + '<button id="na-send" type="button" style="margin-left:auto;background:#7a9970;color:#fff;border:0;border-radius:10px;padding:10px 20px;font-weight:600;font-size:14px;cursor:pointer">Perguntar</button>'
+  var pendingImg={};
+
+  function cardHTML(mode){
+    var semCao=(mode==='home');
+    return '<div class="na-fade" style="background:#fff;border:1px solid '+CT.line+';border-radius:16px;padding:15px 15px 14px">'
+      + '<div style="display:flex;align-items:center;gap:9px;margin-bottom:9px">'+nannyFace(30)
+      + '<div><div style="font-weight:500;font-size:15px;color:'+CT.pri+'">Pergunta pra Nanny</div>'
+      + '<div style="font-size:12px;color:'+CT.sec+'">'+(semCao?'Uma dúvida agora? Pode perguntar — não precisa cadastrar antes.':'Descreva ou mande uma foto. Ela usa o que sabe do seu cão.')+'</div></div></div>'
+      + '<textarea id="na-text-'+mode+'" rows="2" aria-label="Sua dúvida sobre o cão" placeholder="Ex.: tá com o olho vermelho e lacrimejando desde ontem…" style="width:100%;box-sizing:border-box;border:1.5px solid '+CT.line+';border-radius:12px;padding:12px 13px;font-size:15px;font-family:inherit;color:'+CT.pri+';resize:vertical"></textarea>'
+      + '<div style="display:flex;align-items:center;gap:6px;margin-top:8px">'
+      + '<button type="button" class="na-btn-ic" id="na-cam-'+mode+'" aria-label="Anexar foto"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="'+CT.mut+'" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="3.5"/></svg></button>'
+      + '<span id="na-tag-'+mode+'" style="font-size:12px;color:'+CT.green+';display:none"><span>foto anexada</span> · <a href="#" id="na-clr-'+mode+'" style="color:#b02a1f">remover</a></span>'
+      + '<button type="button" id="na-send-'+mode+'" style="margin-left:auto;min-height:42px;background:'+CT.green+';color:#fff;border:0;border-radius:12px;padding:0 20px;font-weight:500;font-size:15px;cursor:pointer">Perguntar</button>'
+      + '<input id="na-file-'+mode+'" type="file" accept="image/*" style="display:none">'
       + '</div>'
-      + '<div id="na-out" style="margin-top:12px"></div>'
+      + '<div style="font-size:12px;color:'+CT.mut+';margin-top:9px;line-height:1.4">A Nanny não é veterinária e isto não é consulta. É orientação pra te ajudar a decidir.</div>'
+      + '<div id="na-out-'+mode+'" style="margin-top:12px"></div>'
       + '</div>';
-
-    document.getElementById('na-photo-btn').onclick = function () { document.getElementById('na-photo').click(); };
-    document.getElementById('na-photo').onchange = function () {
-      var f = this.files && this.files[0];
-      if (!f) return;
-      var tag = document.getElementById('na-photo-tag');
-      tag.style.display = 'inline'; tag.firstChild.textContent = 'anexando…';
-      fileToImg(f).then(function (img) { pendingImg = img; tag.firstChild.textContent = img ? 'foto anexada ' : 'não deu pra ler a foto '; });
-    };
-    document.getElementById('na-photo-clear').onclick = function (e) { e.preventDefault(); pendingImg = null; document.getElementById('na-photo').value = ''; document.getElementById('na-photo-tag').style.display = 'none'; };
-    document.getElementById('na-send').onclick = enviar;
   }
 
-  function enviar() {
-    var out = document.getElementById('na-out');
-    var texto = (document.getElementById('na-text').value || '').trim();
-    if (!texto && !pendingImg) { out.innerHTML = '<div style="font-size:13px;color:#c0392b">Escreve a dúvida ou anexa uma foto 🙂</div>'; return; }
+  function wire(mode){
+    var cam=document.getElementById('na-cam-'+mode), file=document.getElementById('na-file-'+mode);
+    cam.onclick=function(){file.click();};
+    file.onchange=function(){var f=this.files&&this.files[0];if(!f)return;var tag=document.getElementById('na-tag-'+mode);tag.style.display='inline';tag.firstChild.textContent='anexando…';fileToImg(f).then(function(img){pendingImg[mode]=img;tag.firstChild.textContent=img?'foto anexada':'não deu pra ler a foto';});};
+    document.getElementById('na-clr-'+mode).onclick=function(e){e.preventDefault();pendingImg[mode]=null;file.value='';document.getElementById('na-tag-'+mode).style.display='none';};
+    document.getElementById('na-send-'+mode).onclick=function(){enviar(mode);};
+  }
 
-    var ctx = contextoCao();
-    if (!ctx) { out.innerHTML = '<div style="font-size:13px;color:#c0392b">Cadastre/selecione um cão primeiro.</div>'; return; }
-    var dog = ctx._dog; delete ctx._dog;
+  function skeleton(out){
+    out.innerHTML='<div style="display:flex;gap:9px;align-items:flex-start">'+nannyFace(30)
+      +'<div style="flex:1"><div class="na-skel" style="width:40%;margin-bottom:8px"></div><div class="na-skel" style="width:90%;margin-bottom:6px"></div><div class="na-skel" style="width:75%"></div></div></div>';
+  }
 
-    var btn = document.getElementById('na-send');
-    btn.disabled = true; btn.textContent = 'Nanny está lendo…';
-    out.innerHTML = '<div style="font-size:13px;color:#7a6a58">✨ Nanny está analisando…</div>';
+  function enviar(mode){
+    var out=document.getElementById('na-out-'+mode);
+    var texto=(document.getElementById('na-text-'+mode).value||'').trim();
+    var img=pendingImg[mode];
+    if(!texto&&!img){out.innerHTML='<div style="font-size:13px;color:#b02a1f">Escreve a dúvida ou anexa uma foto.</div>';return;}
 
-    var body = { contexto_cao: ctx, texto: texto };
-    if (pendingImg) body.imagens = [pendingImg];
+    var ctx=contextoCao(); var dog=ctx._dog; delete ctx._dog;
+    var body={ texto:texto }; if(img) body.imagens=[img];
+    if(dog) body.contexto_cao=ctx;
 
-    fetch(ENDPOINT, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
-      .then(function (r) { return r.json(); })
-      .then(function (j) {
-        btn.disabled = false; btn.textContent = 'Perguntar';
-        if (!j || !j.ok || !j.resposta) { out.innerHTML = '<div style="font-size:13px;color:#c0392b">A Nanny não conseguiu responder agora. Tenta de novo em instantes.</div>'; return; }
-        var r = j.resposta;
+    var btn=document.getElementById('na-send-'+mode); btn.disabled=true; btn.textContent='…';
+    skeleton(out);
 
-        // ——— append burro: guarda a pergunta e os fatos, salva, sobe pra nuvem ———
-        var repeat = (dog.perguntas && dog.perguntas.length >= 1);
-        dog.perguntas = dog.perguntas || [];
-        dog.perguntas.push({ data: new Date().toISOString().slice(0, 10), texto: texto || '(foto)', nivel: r.nivel, resposta: r.o_que_fazer_agora });
-        if (Array.isArray(r.novos_eventos)) {
-          dog.eventos = dog.eventos || [];
-          r.novos_eventos.forEach(function (e) { if (e && e.tipo) dog.eventos.push({ tipo: e.tipo, origem: 'observacao_nanny', data: new Date().toISOString().slice(0, 10), confianca: e.confianca || 'media', payload: e.payload || {} }); });
+    fetch(ENDPOINT,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})
+      .then(function(r){return r.json();})
+      .then(function(j){
+        btn.disabled=false; btn.textContent='Perguntar';
+        if(!j||!j.ok||!j.resposta){out.innerHTML='<div style="font-size:13px;color:#b02a1f">A Nanny não conseguiu responder agora. Tenta de novo em instantes.</div>';return;}
+        var r=j.resposta;
+
+        if(dog){
+          var repeat=(dog.perguntas&&dog.perguntas.length>=1);
+          dog.perguntas=dog.perguntas||[];
+          dog.perguntas.push({data:new Date().toISOString().slice(0,10),texto:texto||'(foto)',nivel:r.nivel,resposta:r.o_que_fazer_agora});
+          if(Array.isArray(r.novos_eventos)){dog.eventos=dog.eventos||[];r.novos_eventos.forEach(function(e){if(e&&e.tipo)dog.eventos.push({tipo:e.tipo,origem:'observacao_nanny',data:new Date().toISOString().slice(0,10),confianca:e.confianca||'media',payload:e.payload||{}});});}
+          if(g('saveDogs'))window.saveDogs(); if(g('nannySync'))window.nannySync(true);
+          track('nanny_ask',{nivel:r.nivel,com_foto:!!body.imagens}); if(repeat)track('nanny_ask_repeat',{nivel:r.nivel});
+        } else {
+          try{ localStorage.setItem(PEND_KEY,JSON.stringify({data:new Date().toISOString().slice(0,10),texto:texto||'(foto)',nivel:r.nivel,resposta:r.o_que_fazer_agora})); }catch(e){}
+          track('nanny_ask',{nivel:r.nivel,sem_cadastro:true});
         }
-        if (g('saveDogs')) window.saveDogs();
-        if (g('nannySync')) window.nannySync(true);
 
-        track('nanny_ask', { nivel: r.nivel, com_foto: !!body.imagens });
-        if (repeat) track('nanny_ask_repeat', { nivel: r.nivel });
-
-        render(r, out);
-        pendingImg = null; document.getElementById('na-photo').value = ''; document.getElementById('na-photo-tag').style.display = 'none';
-        document.getElementById('na-text').value = '';
+        render(r,out,!!dog,dog);
+        pendingImg[mode]=null; document.getElementById('na-file-'+mode).value=''; document.getElementById('na-tag-'+mode).style.display='none';
+        document.getElementById('na-text-'+mode).value='';
       })
-      .catch(function () {
-        btn.disabled = false; btn.textContent = 'Perguntar';
-        out.innerHTML = '<div style="font-size:13px;color:#c0392b">Falha de conexão. Suas anotações não se perderam. Tenta de novo.</div>';
-      });
+      .catch(function(){ btn.disabled=false; btn.textContent='Perguntar'; out.innerHTML='<div style="font-size:13px;color:#b02a1f">Falha de conexão. Tenta de novo.</div>'; });
   }
 
-  function render(r, out) {
-    var n = NIVEL[r.nivel] || NIVEL.observar;
-    var html = '<div style="border:1px solid ' + n.cor + '33;background:' + n.bg + ';border-radius:14px;padding:14px">'
-      + '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><span style="font-size:15px">' + n.ic + '</span>'
-      + '<span style="font-weight:700;color:' + n.cor + '">' + n.label + '</span></div>';
-    if (r.o_que_fazer_agora) html += '<div style="font-size:14px;color:#3d2c1e;line-height:1.5;margin-bottom:8px">' + esc(r.o_que_fazer_agora) + '</div>';
-    if (r.por_que) html += '<div style="font-size:12.5px;color:#7a6a58;line-height:1.5;margin-bottom:8px">' + esc(r.por_que) + '</div>';
+  function render(r,out,temCao,dog){
+    var n=NIVEL[r.nivel]||NIVEL.observar;
+    var h='<div class="na-fade" style="border:1px solid '+n.cor+'33;background:'+n.bg+';border-radius:14px;padding:13px 14px">'
+      + '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">'+nannyFace(28)
+      + '<span style="font-weight:500;color:'+n.cor+';font-size:14px">'+n.label+'</span></div>';
+    if(r.o_que_fazer_agora)h+='<div style="font-size:14.5px;color:'+CT.pri+';line-height:1.55;margin-bottom:8px">'+esc(r.o_que_fazer_agora)+'</div>';
+    if(r.por_que)h+='<div style="font-size:13px;color:'+CT.sec+';line-height:1.5;margin-bottom:8px">'+esc(r.por_que)+'</div>';
+    if(r.nivel==='urgente'||r.nivel==='procurar_vet'){
+      var termo=r.nivel==='urgente'?'pronto atendimento veterinário 24h perto de mim':'veterinário perto de mim';
+      h+='<a href="https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(termo)+'" target="_blank" rel="noopener" style="display:inline-block;background:'+n.cor+';color:#fff;text-decoration:none;border-radius:10px;padding:10px 16px;font-weight:500;font-size:13.5px;min-height:42px;box-sizing:border-box">Achar um vet perto</a>';
+    }
+    if(r.pro_vet)h+='<details style="margin-top:10px"><summary style="cursor:pointer;font-size:13px;color:'+n.cor+';font-weight:500">Resumo pra mostrar ao veterinário</summary><div style="font-size:13px;color:'+CT.pri+';line-height:1.5;background:#fff;border:1px solid '+CT.line+';border-radius:10px;padding:11px;margin-top:7px">'+esc(r.pro_vet)+'</div></details>';
+    h+='<div style="font-size:11.5px;color:'+CT.mut+';margin-top:10px;line-height:1.4">A Nanny não é veterinária e isto não é consulta. A decisão de saúde é sempre do seu veterinário.</div>';
+    h+='</div>';
 
-    // urgente / procurar_vet: botão de achar vet perto
-    if (r.nivel === 'urgente' || r.nivel === 'procurar_vet') {
-      var termo = r.nivel === 'urgente' ? 'pronto atendimento veterinário 24h perto de mim' : 'veterinário perto de mim';
-      html += '<a href="https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(termo) + '" target="_blank" rel="noopener" '
-        + 'style="display:inline-block;background:' + n.cor + ';color:#fff;text-decoration:none;border-radius:10px;padding:9px 16px;font-weight:600;font-size:13px;margin-top:2px">📍 Achar um vet perto</a>';
+    if(temCao){
+      h+='<div class="na-fade" style="display:flex;align-items:center;gap:7px;font-size:12.5px;color:'+CT.green+';margin-top:9px"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="'+CT.green+'" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>Guardado no dossiê'+(dog&&dog.nome?' d'+(/a$/.test((dog.nome||'').toLowerCase())?'a ':'e ')+esc(dog.nome):'')+'</div>';
+    } else {
+      h+='<div class="na-fade" style="margin-top:10px;background:'+CT.cream+';border:1px solid '+CT.line+';border-radius:12px;padding:12px 13px">'
+        +'<div style="font-size:13px;color:'+CT.pri+';line-height:1.5;margin-bottom:9px">Quer que eu guarde isso e acompanhe? Cadastra seu cão — leva 10 segundos, e eu já começo com essa dúvida salva.</div>'
+        +'<button type="button" id="na-go-reg" style="background:'+CT.green+';color:#fff;border:0;border-radius:10px;padding:11px 18px;font-weight:500;font-size:14px;min-height:42px;cursor:pointer">Cadastrar meu cão</button></div>';
     }
-    // documento: manda pra aba Documentos
-    if (r.vira_documento) {
-      html += '<div style="margin-top:8px"><button type="button" onclick="(window.setTab&&setTab(\'docs\'))" style="background:#7a9970;color:#fff;border:0;border-radius:10px;padding:9px 16px;font-weight:600;font-size:13px;cursor:pointer">📄 Guardar no dossiê →</button></div>';
-    }
-    // resumo pro vet, dobrável
-    if (r.pro_vet) {
-      html += '<details style="margin-top:10px"><summary style="cursor:pointer;font-size:12.5px;color:' + n.cor + ';font-weight:600">📋 Resumo pra mostrar ao veterinário</summary>'
-        + '<div style="font-size:12.5px;color:#3d2c1e;line-height:1.5;background:#fff;border:1px solid #e8ddd2;border-radius:10px;padding:10px;margin-top:6px">' + esc(r.pro_vet) + '</div></details>';
-    }
-    html += '<div style="font-size:11px;color:#9a8b78;margin-top:10px;line-height:1.4">A Nanny não é veterinária e isto não é uma consulta. Orientação geral — a decisão de saúde é sempre do seu veterinário.</div>';
-    html += '</div>';
-    out.innerHTML = html;
+    out.innerHTML=h;
+    var go=document.getElementById('na-go-reg'); if(go)go.onclick=function(){ if(g('startRegister'))window.startRegister(); };
   }
 
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', mount);
-  else mount();
+  // adota a pergunta avulsa (feita sem cadastro) no 1º cão, sem editar o fluxo de cadastro
+  function adotarAvulsa(){
+    var dog=g('dogObj')?window.dogObj():null; if(!dog||(dog.perguntas&&dog.perguntas.length))return;
+    var raw; try{ raw=localStorage.getItem(PEND_KEY);}catch(e){} if(!raw)return;
+    try{ var p=JSON.parse(raw); dog.perguntas=[p]; if(g('saveDogs'))window.saveDogs(); if(g('nannySync'))window.nannySync(true); localStorage.removeItem(PEND_KEY); }catch(e){}
+  }
+
+  function mountInto(id,mode){ var box=document.getElementById(id); if(!box)return; box.innerHTML=cardHTML(mode); wire(mode); }
+  function boot(){ styleOnce(); var hasDogs=false; try{ hasDogs=(typeof dogs!=='undefined'&&dogs&&dogs.length>0); }catch(e){}
+    if(document.getElementById('nanny-ask')){ adotarAvulsa(); mountInto('nanny-ask','perfil'); }
+    if(document.getElementById('nanny-ask-home')&&!hasDogs) mountInto('nanny-ask-home','home'); }
+  window.nannyAskMount=boot;
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot); else boot();
 })();

@@ -159,6 +159,7 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent)}
     <div class="eyebrow" style="margin-top:26px">Nanny · sua babá digital</div>
     <h1>O cuidado do seu cão,<br>com a Nanny.</h1>
     <p class="sub">Cadastre seu cão e receba na hora a guia da raça e um plano de cuidado feito pra ele. Funciona pra qualquer cão — raça definida ou não.</p>
+    <div id="nanny-ask-home" style="margin:14px 0"></div>
     <div id="dogList"></div>
     <button class="btn" onclick="startRegister()">+ Cadastrar meu cão</button>
     <button class="btn" onclick="startPreChegada()" style="background:transparent;color:var(--brown);border:1.5px solid #e8ddd2;box-shadow:none;margin-top:8px">🗓️ Vou pegar um cão — plano de chegada</button>
@@ -226,7 +227,7 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent)}
       <div><div class="dog-name" id="p-name">—</div><div class="dog-meta" id="p-meta">—</div><div class="dog-meta" id="p-chip" style="display:none;margin-top:2px"></div></div>
     </div>
     <div class="repos-hint" id="reposHint">Arraste a foto pra ajustar · toque de novo pra salvar</div>
-    <div style="display:flex;gap:8px;margin:2px 0 10px;flex-wrap:wrap"><button class="chip" onclick="editDog()">✎ Editar dados</button><button class="chip" onclick="printFicha()">🖨️ Ficha (PDF)</button></div>
+    <div style="display:flex;gap:8px;margin:2px 0 10px;flex-wrap:wrap"><button class="chip" onclick="editDog()">✎ Editar dados</button><button class="chip" onclick="printFicha()">🖨️ Ficha (PDF)</button><button class="chip" onclick="window.nannyVetResumo&&nannyVetResumo()">🩺 Resumo pro vet</button></div>
     <div id="p-status" class="status-sum" style="display:none"></div>
     <div id="p-acolher" style="display:none"></div>
     <div id="nanny-ask"></div>
@@ -1094,6 +1095,7 @@ loadDogs();fillBreeds();renderList();document.getElementById('f-birth').max=new 
 <div id="ficha"></div>
 <script src="nanny-identity.js"></script>
 <script src="nanny-ask-ui.js"></script>
+<script src="nanny-vet-resumo.js"></script>
 <script>document.addEventListener('DOMContentLoaded',function(){window.nannyBoot&&window.nannyBoot();});</script>
 </body>
 </html>
