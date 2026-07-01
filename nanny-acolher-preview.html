@@ -1,0 +1,149 @@
+<!DOCTYPE html><html lang="pt-BR"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>PetNanny · Acolhimento (protótipo v2)</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--cream:#faf7f2;--brown:#3d2c1e;--brown-mid:#7a5c44;--green:#4a7c59;--line:#ece1d2}
+*{box-sizing:border-box}body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--brown);margin:0;padding:0 16px 40px;line-height:1.55}
+.wrap{max-width:420px;margin:0 auto}
+h1{font-family:'Playfair Display',serif;font-weight:800;font-size:23px;margin:22px 0 4px}
+.sub{color:var(--brown-mid);font-size:13.5px;margin:0 0 16px}
+.card-frame{background:#f3f7ef;border:1px solid #dbe7d5;border-radius:18px;padding:16px 15px}
+.bar{display:flex;gap:8px;margin:14px 0}
+.ctrl{flex:1;background:#fff;border:1.5px solid var(--line);border-radius:11px;padding:11px 8px;font:inherit;font-size:12.5px;font-weight:600;color:var(--brown);cursor:pointer}
+.ctrl.primary{background:#7a9970;color:#fff;border-color:#7a9970}
+.note{font-size:12px;color:var(--brown-mid);background:#fff;border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-top:16px;line-height:1.5}
+.note b{color:var(--green)}
+</style></head><body>
+<div class="wrap">
+  <h1>Acolhimento · versão honesta</h1>
+  <p class="sub">Event-driven, sem curva de vaidade. Toque "Passar ~1 semana" e veja: quase sempre calmo, e a Nanny só aparece quando há motivo.</p>
+  <div class="bar">
+    <button class="ctrl primary" onclick="advance(8)">⏩ Passar ~1 semana</button>
+    <button class="ctrl" onclick="jumpTo90()">Ir pra graduação (dia 90)</button>
+    <button class="ctrl" onclick="reset()">↺ Reiniciar</button>
+  </div>
+  <div class="card-frame"><div id="app"></div></div>
+  <div class="note">O que mudou do 1º protótipo: <b>sem % de acomodação</b> (era métrica de vaidade — só subia). Progresso agora é real: a barra de fases e as primeiras vezes datadas. A Nanny é <b>event-driven</b> — transição de fase, follow-up de algo que você relatou, graduação — não um check-in diário que vira nag. E o dia 90 <b>não fecha numa retrospectiva morta</b>: gradua o cão pro acompanhamento contínuo (o Score), que é onde a retenção de verdade acontece.</div>
+</div>
+<script>
+var MARCOS=[
+  {id:'casa',ic:'🏡',t:'Chegou pra ficar'},{id:'noite',ic:'🌙',t:'Primeira noite dormida'},
+  {id:'comeu',ic:'🍽️',t:'Comeu tranquila'},{id:'xixi',ic:'✅',t:'Xixi no lugar certo'},
+  {id:'passeio',ic:'🦮',t:'Primeiro passeio'},{id:'nome',ic:'🐶',t:'Atendeu pelo nome'},
+  {id:'vet',ic:'🩺',t:'Primeira ida ao vet'},{id:'comando',ic:'🎓',t:'Primeiro "senta"'},
+  {id:'amigo',ic:'🐾',t:'Brincou com outro'},{id:'confianca',ic:'💚',t:'Relaxou de vez'}
+];
+var PHASES={
+  chegada:{nome:'Semana 1 · Chegada',esperar:'Descompressão: ela pode se esconder, comer pouco e dormir muito. É normal. Menos é mais — deixa ela explorar no ritmo dela.'},
+  rotina:{nome:'Semanas 2–4 · Rotina',esperar:'Horários fixos de comida, xixi e sono são a âncora que mais acalma. A personalidade começa a aparecer.'},
+  personalidade:{nome:'Mês 2 · Personalidade',esperar:'Mais travessura ou teste é a guarda baixando — sinal de segurança, não de problema. Redireciona com brinquedo e passeio.'},
+  vinculo:{nome:'Mês 3 · Vínculo',esperar:'A confiança consolidando. O que virou rotina agora vira o jeitão dela pra vida.'}
+};
+function phaseKey(d){ return d<=7?'chegada':(d<=30?'rotina':(d<=60?'personalidade':'vinculo')); }
+var ENTRADA={
+  rotina:'Primeira semana vencida — a mais difícil. Agora entra a rotina: horários fixos são a âncora que acalma. Você chegou até aqui.',
+  personalidade:'A Nina entrou no mês 2. Se aparecer mais travessura ou teste agora, não é regressão — é a guarda baixando porque ela se sente segura. É a fase que mais assusta e menos deveria.',
+  vinculo:'Reta final dos 90 dias. A confiança está consolidando — o que você firmou de rotina vira o jeitão dela pra vida.'
+};
+// eventos: a Nanny só aparece quando há MOTIVO real (transição de fase, follow-up de algo relatado, graduação)
+var EVENTS=[
+  {day:1,type:'chegada'},
+  {day:8,type:'transicao',to:'rotina'},
+  {day:16,type:'followup'},   // no app: dispara só se a pessoa relatou algo (ex.: chorar à noite)
+  {day:31,type:'transicao',to:'personalidade'},
+  {day:61,type:'transicao',to:'vinculo'},
+  {day:90,type:'graduacao'}
+];
+var st;
+function reset(){ st={day:1,seen:{},event:EVENTS[0],firsts:{casa:1},fResp:null,grad:false}; render(); }
+function nextEventDay(){ for(var i=0;i<EVENTS.length;i++){ if(EVENTS[i].day>st.day) return EVENTS[i].day; } return null; }
+function advance(step){
+  if(st.grad) return;
+  var nd=Math.min(90, st.day+step); st.event=null; st.fResp=null;
+  // dispara o evento mais recente que a gente cruzou e ainda não viu
+  for(var i=0;i<EVENTS.length;i++){ var e=EVENTS[i]; if(e.day<=nd && !st.seen[e.day]){ st.seen[e.day]=1; st.event=e; if(e.type==='graduacao') st.grad=true; } }
+  st.day=nd; render();
+}
+function jumpTo90(){ advance(90-st.day); }
+function capture(id){ if(st.firsts[id])return; st.firsts[id]=st.day; render(); }
+function answerFollow(kind){
+  st.fResp = kind==='pior'?'Se piorou depois de semanas, não é só adaptação — vale passar no vet pra descartar dor, ansiedade de separação ou algo físico. Me conta o detalhe que eu monto o resumo pra levar.'
+    : kind==='igual'?'Persistir sem melhorar pede um ajuste no plano: saídas curtas e graduais, um ritual de sono fixo, e nada de despedida longa. Se em 1–2 semanas não ceder, vet.'
+    : 'Que alívio — era adaptação mesmo, e você conduziu bem. Isso vira uma primeira vez: a Nina aprendeu que a casa é dela.';
+  render();
+}
+
+function render(){
+  var app=document.getElementById('app'); var pk=phaseKey(st.day), ph=PHASES[pk];
+  if(st.grad){ app.innerHTML=gradHTML(); return; }
+  var done=Object.keys(st.firsts).length, h='';
+  // header afetivo
+  h+='<div style="display:flex;align-items:center;gap:11px;margin-bottom:12px">'
+    +'<div style="width:46px;height:46px;border-radius:50%;background:#cfe3d4;display:flex;align-items:center;justify-content:center;font-weight:700;color:#2f5137;font-size:19px">N</div>'
+    +'<div style="flex:1"><div style="font-family:\'Playfair Display\',serif;font-size:17px;font-weight:700;color:#2f5137;line-height:1.15">Faz '+(st.day-1)+' dia'+(st.day-1===1?'':'s')+' que a Nina tem uma casa</div>'
+    +'<div style="font-size:11.5px;color:#5a7a60;margin-top:2px">'+ph.nome+' · dia '+st.day+' de 90</div></div></div>';
+  // barra de progresso das fases (real: onde você está, não %)
+  var order=['chegada','rotina','personalidade','vinculo'], idx=order.indexOf(pk);
+  h+='<div style="display:flex;gap:5px;margin-bottom:14px">'+order.map(function(k,i){var on=i<=idx;return '<div style="flex:1;height:5px;border-radius:3px;background:'+(on?'#7a9970':'#e2ece0')+'"></div>';}).join('')+'</div>';
+  // EVENTO (só quando há motivo)
+  if(st.event){ h+=eventHTML(st.event); }
+  // o que esperar (ambiente, calmo)
+  h+='<div style="display:flex;gap:10px;align-items:flex-start;background:#f7f2ea;border-radius:12px;padding:12px 13px;margin-bottom:12px">'
+    +'<span style="font-size:17px">🧭</span><div><div style="font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:#9a7717;font-weight:700;margin-bottom:2px">Nesta fase</div>'
+    +'<div style="font-size:13px;color:#3d2c1e;line-height:1.5">'+ph.esperar+'</div></div></div>';
+  // memórias (primeiras vezes) — capturadas quando acontecem
+  h+='<div style="margin-bottom:10px"><div style="font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:#5a7a60;font-weight:700;margin:2px 2px 8px">Primeiras vezes · '+done+' de '+MARCOS.length+'</div>'
+    +'<div style="display:flex;gap:8px;overflow-x:auto;padding-bottom:4px">'
+    +MARCOS.map(function(m){var g=st.firsts[m.id];return '<button onclick="capture(\''+m.id+'\')" style="flex:0 0 auto;width:90px;background:'+(g?'#eef4e8':'#fff')+';border:1.5px solid '+(g?'#bcd3c1':'#e8ddd2')+';border-radius:12px;padding:10px 6px;text-align:center;cursor:pointer;font:inherit">'
+      +'<div style="font-size:21px;line-height:1;margin-bottom:5px'+(g?'':';opacity:.5;filter:grayscale(.4)')+'">'+m.ic+'</div><div style="font-size:11px;color:#3d2c1e;line-height:1.2">'+m.t+'</div>'
+      +'<div style="font-size:10px;color:'+(g?'#4a7c59':'#b8a894')+';margin-top:3px;font-weight:600">'+(g?('✓ dia '+g):'marcar')+'</div></button>';}).join('')
+    +'</div></div>';
+  // promessa anti-nag: "não precisa ficar checando"
+  var nx=nextEventDay();
+  if(nx) h+='<div style="font-size:11.5px;color:#7a6a58;text-align:center;padding:4px 8px;line-height:1.4">🔕 Não precisa ficar checando — eu te aviso quando tiver algo. Próximo por volta do dia '+nx+'.</div>';
+  app.innerHTML=h;
+}
+function eventHTML(e){
+  if(e.type==='chegada'){
+    return card('#cfe3d4','#2f5137','🏡','Bem-vinda ao lar','A Nina chegou. Nos primeiros dias, previsibilidade acalma mais que colo: mesmo canto pra dormir, horários de comida, e paciência. Eu apareço nos momentos que importam — não todo dia.');
+  }
+  if(e.type==='transicao'){
+    return card('#e6efe0','#2f5137','🌿','Fase nova',ENTRADA[e.to]);
+  }
+  if(e.type==='followup'){
+    var body='<div style="font-size:13.5px;color:#3d2c1e;line-height:1.55;margin-bottom:'+(st.fResp?'0':'10px')+'">Semanas atrás você me contou que a Nina <b>chorava à noite</b>. Como está agora?</div>';
+    if(!st.fResp){ body+='<div style="display:flex;gap:7px;flex-wrap:wrap">'
+      +['Melhorou|melhor','Continua igual|igual','Piorou|pior'].map(function(x){var p=x.split('|');return '<button onclick="answerFollow(\''+p[1]+'\')" style="background:#faf7f2;border:1.5px solid #e8ddd2;border-radius:10px;padding:9px 13px;font:inherit;font-size:13px;color:#3d2c1e;cursor:pointer">'+p[0]+'</button>';}).join('')+'</div>'; }
+    else { body+='<div style="font-size:13.5px;color:#3d2c1e;line-height:1.55;background:#f7f2ea;border-radius:10px;padding:11px 12px">'+st.fResp+'</div>'; }
+    return '<div style="border:1px solid #f3d9c2;background:#fff6ef;border-radius:14px;padding:13px 14px;margin-bottom:12px">'
+      +'<div style="display:flex;gap:9px;align-items:center;margin-bottom:8px"><div style="width:30px;height:30px;border-radius:50%;background:#f3ddc9;border:1px solid #f3d9c2;display:flex;align-items:center;justify-content:center;flex:none">🐾</div>'
+      +'<div style="font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:#b5722a;font-weight:700">A Nanny voltou num assunto seu</div></div>'+body+'</div>';
+  }
+  return '';
+}
+function card(bg,fg,ic,tag,txt){
+  return '<div style="background:'+bg+';border-radius:14px;padding:14px;margin-bottom:12px">'
+    +'<div style="display:flex;gap:10px;align-items:flex-start"><span style="font-size:20px">'+ic+'</span>'
+    +'<div><div style="font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:'+fg+';font-weight:700;margin-bottom:3px;opacity:.85">'+tag+'</div>'
+    +'<div style="font-family:\'Playfair Display\',serif;font-size:15.5px;font-weight:700;color:'+fg+';line-height:1.3">'+txt+'</div></div></div></div>';
+}
+function gradHTML(){
+  var got=MARCOS.filter(function(m){return st.firsts[m.id];}).sort(function(a,b){return st.firsts[a.id]-st.firsts[b.id];});
+  var h='<div style="text-align:center;margin-bottom:14px"><div style="font-size:40px">🎓</div>'
+    +'<div style="font-family:\'Playfair Display\',serif;font-weight:800;font-size:23px;color:#2f5137;margin-top:4px;line-height:1.15">A Nina se formou nos primeiros 90 dias</div>'
+    +'<div style="font-size:13px;color:#5a7a60;margin-top:5px">De hóspede tímida a moradora. Vocês construíram isso.</div></div>';
+  h+='<div style="border-left:2px solid #bcd3c1;margin-left:6px;padding-left:14px;margin-bottom:14px">'
+    +(got.length?got.map(function(m){return '<div style="position:relative;padding:6px 0"><span style="position:absolute;left:-19px;top:10px;width:9px;height:9px;border-radius:50%;background:#7a9970"></span><div style="font-size:13.5px;color:#3d2c1e">'+m.ic+' '+m.t+'</div><div style="font-size:11px;color:#7a6a58">dia '+st.firsts[m.id]+'</div></div>';}).join('')
+      :'<div style="font-size:13px;color:#7a6a58;padding:6px 0">As primeiras vezes que você marcou aparecem aqui, datadas.</div>')
+    +'</div>';
+  // A PONTE — não é fim, é entrega pro acompanhamento
+  h+='<div style="background:#eef4e8;border:1px solid #cfe3d4;border-radius:14px;padding:14px;margin-bottom:14px">'
+    +'<div style="font-size:13.5px;color:#2f5137;line-height:1.55">As vacinas, o peso e as dúvidas que você registrou nesses 90 dias <b>já estão no acompanhamento da Nina</b>. A adaptação terminou — a saúde dela continua com você e comigo daqui pra frente.</div>'
+    +'<button onclick="alert(\'No app: abre a aba Hoje / Score da Nina.\')" style="width:100%;margin-top:12px;background:#7a9970;color:#fff;border:0;border-radius:11px;padding:13px;font:inherit;font-size:15px;font-weight:600;cursor:pointer">Ver o acompanhamento da Nina →</button></div>';
+  h+='<button onclick="reset()" style="width:100%;background:#fff;border:1.5px solid #e8ddd2;border-radius:11px;padding:11px;font:inherit;font-size:12.5px;font-weight:600;color:#7a5c44;cursor:pointer">↺ Rever o protótipo</button>';
+  return h;
+}
+reset();
+</script>
+</body></html>
