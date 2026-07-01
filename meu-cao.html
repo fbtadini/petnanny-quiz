@@ -750,12 +750,14 @@ function saudePainelHTML(dog){
   }
   return h+'</div>';
 }
+function delVetObs(idx){const dog=dogObj();if(!dog||!dog.perguntas||!dog.perguntas[idx])return;dog.perguntas.splice(idx,1);saveDogs();if(window.nannySync){try{window.nannySync(true);}catch(e){}}renderDocs(dog);}
+window.delVetObs=delVetObs;
 function vetObsCardHTML(dog){
-  const obs=(dog.perguntas||[]).filter(p=>p&&p.pro_vet);
-  if(!obs.length) return '';
-  const rows=obs.slice().reverse().map(p=>`<div style="border-top:1px solid #f0e9dd;padding:10px 0"><div style="font-size:11.5px;color:var(--brown-mid)">${p.data||''}${p.nivel?` · ${p.nivel}`:''}</div><div style="font-size:13.5px;color:var(--brown);font-weight:600;margin:2px 0">${(p.texto||'').replace(/</g,'&lt;')}</div><div style="font-size:13px;color:var(--brown-mid);line-height:1.5">${(p.pro_vet||'').replace(/</g,'&lt;')}</div></div>`).join('');
+  const all=dog.perguntas||[];const items=[];all.forEach((p,idx)=>{if(p&&p.pro_vet)items.push({p,idx});});
+  if(!items.length) return '';
+  const rows=items.slice().reverse().map(it=>{const p=it.p;return `<div style="border-top:1px solid #f0e9dd;padding:10px 0"><div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px"><div style="font-size:11.5px;color:var(--brown-mid)">${p.data||''}${p.nivel?` · ${p.nivel}`:''}</div><button onclick="delVetObs(${it.idx})" aria-label="Remover observação" style="background:none;border:0;color:var(--brown-light);cursor:pointer;font-size:15px;line-height:1;padding:2px 4px">✕</button></div><div style="font-size:13.5px;color:var(--brown);font-weight:600;margin:1px 0 2px">${(p.texto||'').replace(/</g,'&lt;')}</div><div style="font-size:13px;color:var(--brown-mid);line-height:1.5">${(p.pro_vet||'').replace(/</g,'&lt;')}</div></div>`;}).join('');
   return `<div class="card" style="border-color:#dfe7d9">
-    <div style="display:flex;align-items:center;gap:8px"><span style="font-size:18px">🩺</span><div><div class="sec-label" style="margin:0">Pra levar ao vet</div><div style="font-size:11.5px;color:var(--brown-mid)">${obs.length} observaç${obs.length>1?'ões':'ão'} que a Nanny guardou das suas conversas</div></div></div>
+    <div style="display:flex;align-items:center;gap:8px"><span style="font-size:18px">🩺</span><div><div class="sec-label" style="margin:0">Pra levar ao vet</div><div style="font-size:11.5px;color:var(--brown-mid)">${items.length} observaç${items.length>1?'ões':'ão'} que a Nanny guardou das suas conversas</div></div></div>
     <p style="font-size:12.5px;color:var(--brown-mid);margin:9px 0 0;line-height:1.5">O que você contou pra Nanny, resumido em linguagem clínica pra mostrar na consulta. Fica guardado aqui e não some.</p>
     ${rows}
     <button class="chip" style="margin-top:11px" onclick="nannyVetResumo&&nannyVetResumo()">Gerar resumo completo (PDF)</button>
