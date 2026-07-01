@@ -705,9 +705,20 @@ function typeIcon(l){l=(''+(l||'')).toLowerCase();if(l.includes('categorizar'))r
 function pedigreeCardHTML(dog){const p=dog.pedigree;if(!p||!Object.keys(p).some(k=>p[k]))return '';
   const rows=[['Nome de registro',p.nome_registro],['Registro / pedigree',p.registro],['Raça',p.raca],['Cor',p.cor],['Nascimento',p.nascimento?fmtISO(p.nascimento):''],['Canil / criador',p.canil],['Pai',p.pai],['Mãe',p.mae],['Microchip',p.microchip]].filter(r=>r[1]);
   return `<div class="card"><div class="sec-label">📜 Registro / pedigree</div>${rows.map(r=>`<div class="pi-d" style="display:flex;justify-content:space-between;gap:10px;padding:5px 0;border-bottom:1px solid #f3ece1"><span style="color:var(--brown-mid)">${r[0]}</span><span style="font-weight:600;text-align:right">${r[1]}</span></div>`).join('')}<p style="font-size:11.5px;color:var(--brown-mid);opacity:.85;margin:8px 0 0">Lido do documento pela Nanny — confira e edite o cão em "Editar" se algo estiver diferente.</p></div>`;}
+function vetObsCardHTML(dog){
+  const obs=(dog.perguntas||[]).filter(p=>p&&p.pro_vet);
+  if(!obs.length) return '';
+  const rows=obs.slice().reverse().map(p=>`<div style="border-top:1px solid #f0e9dd;padding:10px 0"><div style="font-size:11.5px;color:var(--brown-mid)">${p.data||''}${p.nivel?` · ${p.nivel}`:''}</div><div style="font-size:13.5px;color:var(--brown);font-weight:600;margin:2px 0">${(p.texto||'').replace(/</g,'&lt;')}</div><div style="font-size:13px;color:var(--brown-mid);line-height:1.5">${(p.pro_vet||'').replace(/</g,'&lt;')}</div></div>`).join('');
+  return `<div class="card" style="border-color:#dfe7d9">
+    <div style="display:flex;align-items:center;gap:8px"><span style="font-size:18px">🩺</span><div><div class="sec-label" style="margin:0">Pra levar ao vet</div><div style="font-size:11.5px;color:var(--brown-mid)">${obs.length} observaç${obs.length>1?'ões':'ão'} que a Nanny guardou das suas conversas</div></div></div>
+    <p style="font-size:12.5px;color:var(--brown-mid);margin:9px 0 0;line-height:1.5">O que você contou pra Nanny, resumido em linguagem clínica pra mostrar na consulta. Fica guardado aqui e não some.</p>
+    ${rows}
+    <button class="chip" style="margin-top:11px" onclick="nannyVetResumo&&nannyVetResumo()">Gerar resumo completo (PDF)</button>
+  </div>`;
+}
 function renderDocs(dog){const files=dog.files||[];const he=dog.health||{};
   const temHist=(he.vacinas||[]).length||(he.antiparasitario||[]).length||(he.vermifugo||[]).length||(he.condicoes||[]).length||he.vet||he.microchip;
-  let h=pedigreeCardHTML(dog);
+  let h=vetObsCardHTML(dog)+pedigreeCardHTML(dog);
   if(temHist){h+=`<div class="card"><div class="sec-label">🩺 Histórico de saúde</div><p style="font-size:12.5px;color:var(--brown-mid);margin:0 0 2px">O que a Nanny leu dos documentos. Use ✎ pra corrigir ou ✕ pra remover.</p>${healthHistoryHTML(he)}</div>`;}
   h+=`<div class="card"><div class="sec-label">📁 Documentos & fotos</div>`;
   if(files.length){

@@ -92,7 +92,6 @@
         a.push(['Comportamento','Ele tem um comportamento que me preocupa, posso te contar?']);
         var day=[];
         try{ var ups=g('upcomingReminders')?window.upcomingReminders(dog):[]; var over=(ups||[]).filter(function(u){return u.status==='overdue'||u.status==='stale';})[0]; if(over){ var nm=(over.t||'cuidado').split('(')[0].trim(); day.push([nm+' atrasado',(over.t||'cuidado')+' está atrasado — como eu resolvo?']); } }catch(e){}
-        var pg=dog.perguntas||[]; if(pg.length){ var lp=pg[pg.length-1]; if(lp&&(lp.nivel==='observar'||lp.nivel==='procurar_vet')) day.push(['Como ficou?','Sobre o que te perguntei antes ('+(lp.texto||'').slice(0,28)+'): como está agora?']); }
         chips=day.concat(a).slice(0,4);
       }
     }
@@ -132,69 +131,87 @@
       +'<div style="flex:1"><div class="na-skel" style="width:40%;margin-bottom:8px"></div><div class="na-skel" style="width:90%;margin-bottom:6px"></div><div class="na-skel" style="width:75%"></div></div></div>';
   }
 
-  function enviar(mode){
+  var threads={perfil:[],home:[]};
+
+  function seedFollowup(mode){
+    if(mode!=='perfil')return;
+    var dog=g('dogObj')?window.dogObj():null; if(!dog)return;
+    if(threads.perfil.length)return;
+    var pg=dog.perguntas||[]; if(!pg.length)return;
+    var lp=pg[pg.length-1];
+    if(lp&&(lp.nivel==='observar'||lp.nivel==='procurar_vet')){
+      var t=(lp.texto||'').slice(0,40);
+      threads.perfil.push({de:'nanny',r:{nivel:'observar',followup:true,o_que_fazer_agora:'Você me falou de "'+t+'" da última vez. Como está isso agora?'}});
+    }
+  }
+  function tutorBubble(texto){
+    return '<div class="na-fade" style="display:flex;justify-content:flex-end;margin:10px 0 0"><div style="max-width:82%;background:'+CT.cream+';border:1px solid '+CT.line+';border-radius:14px 14px 4px 14px;padding:9px 12px;font-size:13.5px;color:'+CT.pri+';line-height:1.5">'+esc(texto)+'</div></div>';
+  }
+  function nannyAnswerHTML(r,dog){
+    var n=NIVEL[r.nivel]||NIVEL.observar;
+    var h='<div class="na-fade" style="border:1px solid '+n.cor+'33;background:'+n.bg+';border-radius:14px;padding:13px 14px;margin-top:8px">'
+      + '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">'+nannyFace(28)
+      + '<span style="font-weight:500;color:'+n.cor+';font-size:14px">'+(r.followup?'A Nanny quer saber':n.label)+'</span></div>';
+    if(r.o_que_fazer_agora)h+='<div style="font-size:14.5px;color:'+CT.pri+';line-height:1.55'+(r.por_que?';margin-bottom:8px':'')+'">'+esc(r.o_que_fazer_agora)+'</div>';
+    if(r.por_que)h+='<div style="font-size:13px;color:'+CT.sec+';line-height:1.5">'+esc(r.por_que)+'</div>';
+    if(r.nivel==='urgente'||r.nivel==='procurar_vet'){
+      var termo=r.nivel==='urgente'?'pronto atendimento veterinário 24h perto de mim':'veterinário perto de mim';
+      h+='<a href="https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(termo)+'" target="_blank" rel="noopener" style="display:inline-block;margin-top:9px;background:'+n.cor+';color:#fff;text-decoration:none;border-radius:10px;padding:10px 16px;font-weight:500;font-size:13.5px">Achar um vet perto</a>';
+    }
+    if(r.pro_vet)h+='<div style="font-size:12px;color:'+CT.green+';margin-top:9px"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="'+CT.green+'" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg> Guardei um resumo pra levar ao vet \u2014 está na aba Carteira.</div>';
+    if(!r.followup)h+='<div style="font-size:11.5px;color:'+CT.mut+';margin-top:9px;line-height:1.4">A Nanny não é veterinária e isto não é consulta. A decisão de saúde é sempre do seu veterinário.</div>';
+    h+='</div>';
+    return h;
+  }
+  function renderThread(mode){
+    var out=document.getElementById('na-out-'+mode); if(!out)return;
+    var dog=g('dogObj')?window.dogObj():null; var h='';
+    threads[mode].forEach(function(m){ h+= m.de==='tutor'?tutorBubble(m.texto):nannyAnswerHTML(m.r,dog); });
+    var last=threads[mode][threads[mode].length-1];
+    if(dog && last && last.de==='nanny'){
+      h+='<div style="display:flex;gap:7px;margin-top:10px"><textarea id="na-reply-'+mode+'" rows="1" placeholder="Responder à Nanny…" style="flex:1;box-sizing:border-box;border:1.5px solid '+CT.line+';border-radius:12px;padding:10px 12px;font-size:14px;font-family:inherit;color:'+CT.pri+';resize:vertical"></textarea><button type="button" id="na-reply-send-'+mode+'" style="background:'+CT.green+';color:#fff;border:0;border-radius:12px;padding:0 16px;font-weight:500;font-size:14px;cursor:pointer">Enviar</button></div>';
+    }
+    if(!dog && last && last.de==='nanny'){
+      h+='<div class="na-fade" style="margin-top:10px;background:'+CT.cream+';border:1px solid '+CT.line+';border-radius:12px;padding:12px 13px"><div style="font-size:13px;color:'+CT.pri+';line-height:1.5;margin-bottom:9px">Quer que eu guarde isso e acompanhe? Cadastra seu cão \u2014 leva 10 segundos.</div><button type="button" id="na-go-reg" style="background:'+CT.green+';color:#fff;border:0;border-radius:10px;padding:11px 18px;font-weight:500;font-size:14px;cursor:pointer">Cadastrar meu cão</button></div>';
+    }
+    out.innerHTML=h;
+    var rs=document.getElementById('na-reply-send-'+mode); if(rs)rs.onclick=function(){enviar(mode,true);};
+    var go=document.getElementById('na-go-reg'); if(go)go.onclick=function(){ if(g('startRegister'))window.startRegister(); };
+  }
+  function enviar(mode,isReply){
     var out=document.getElementById('na-out-'+mode);
-    var texto=(document.getElementById('na-text-'+mode).value||'').trim();
-    var img=pendingImg[mode];
-    if(!texto&&!img){out.innerHTML='<div style="font-size:13px;color:#b02a1f">Escreve a dúvida ou anexa uma foto.</div>';return;}
-
+    var el=document.getElementById(isReply?('na-reply-'+mode):('na-text-'+mode));
+    var texto=((el&&el.value)||'').trim();
+    var img=isReply?null:pendingImg[mode];
+    if(!texto&&!img){ if(!isReply&&out)out.innerHTML='<div style="font-size:13px;color:#b02a1f">Escreve a dúvida ou anexa uma foto.</div>'; return; }
     var ctx=contextoCao(); var dog=ctx._dog; delete ctx._dog;
-    var body={ texto:texto }; if(img) body.imagens=[img];
+    threads[mode].push({de:'tutor',texto:texto||'(foto)'});
+    var conversa=threads[mode].map(function(m){return {de:m.de,texto:m.de==='nanny'?((m.r&&m.r.o_que_fazer_agora)||''):m.texto};});
+    var body={ texto:texto, conversa:conversa }; if(img) body.imagens=[img];
     if(dog) body.contexto_cao=ctx;
-
-    var btn=document.getElementById('na-send-'+mode); btn.disabled=true; btn.textContent='…';
-    skeleton(out);
-
+    if(el)el.value='';
+    if(!isReply){ pendingImg[mode]=null; var fe=document.getElementById('na-file-'+mode); if(fe)fe.value=''; var tg=document.getElementById('na-tag-'+mode); if(tg)tg.style.display='none'; }
+    renderThread(mode);
+    if(out)out.insertAdjacentHTML('beforeend','<div style="margin-top:8px;display:flex;gap:9px;align-items:flex-start">'+nannyFace(28)+'<div style="flex:1"><div class="na-skel" style="width:40%;margin-bottom:8px"></div><div class="na-skel" style="width:90%;margin-bottom:6px"></div><div class="na-skel" style="width:70%"></div></div></div>');
     fetch(ENDPOINT,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})
       .then(function(r){return r.json();})
       .then(function(j){
-        btn.disabled=false; btn.textContent='Perguntar';
-        if(!j||!j.ok||!j.resposta){out.innerHTML='<div style="font-size:13px;color:#b02a1f">A Nanny não conseguiu responder agora. Tenta de novo em instantes.</div>';return;}
-        var r=j.resposta;
-
+        if(!j||!j.ok||!j.resposta){ threads[mode].push({de:'nanny',r:{nivel:'observar',o_que_fazer_agora:'Não consegui responder agora. Tenta de novo em instantes.'}}); renderThread(mode); return; }
+        var r=j.resposta; threads[mode].push({de:'nanny',r:r});
         if(dog){
-          var repeat=(dog.perguntas&&dog.perguntas.length>=1);
-          dog.perguntas=dog.perguntas||[];
+          var repeat=(dog.perguntas&&dog.perguntas.length>=1); dog.perguntas=dog.perguntas||[];
           dog.perguntas.push({data:new Date().toISOString().slice(0,10),texto:texto||'(foto)',nivel:r.nivel,resposta:r.o_que_fazer_agora,por_que:r.por_que||'',pro_vet:r.pro_vet||''});
           if(Array.isArray(r.novos_eventos)){dog.eventos=dog.eventos||[];r.novos_eventos.forEach(function(e){if(e&&e.tipo)dog.eventos.push({tipo:e.tipo,origem:'observacao_nanny',data:new Date().toISOString().slice(0,10),confianca:e.confianca||'media',payload:e.payload||{}});});}
-          if(g('saveDogs'))window.saveDogs(); if(g('nannySync'))window.nannySync(true); refreshSaved();
-          track('nanny_ask',{nivel:r.nivel,com_foto:!!body.imagens}); if(repeat)track('nanny_ask_repeat',{nivel:r.nivel});
+          if(g('saveDogs'))window.saveDogs(); if(g('nannySync'))window.nannySync(true);
+          if(g('renderDocs')){try{window.renderDocs(dog);}catch(e){}}
+          track('nanny_ask',{nivel:r.nivel,com_foto:!!img}); if(repeat)track('nanny_ask_repeat',{nivel:r.nivel});
         } else {
-          try{ localStorage.setItem(PEND_KEY,JSON.stringify({data:new Date().toISOString().slice(0,10),texto:texto||'(foto)',nivel:r.nivel,resposta:r.o_que_fazer_agora})); }catch(e){}
+          try{ localStorage.setItem(PEND_KEY,JSON.stringify({data:new Date().toISOString().slice(0,10),texto:texto||'(foto)',nivel:r.nivel,resposta:r.o_que_fazer_agora,pro_vet:r.pro_vet||''})); }catch(e){}
           track('nanny_ask',{nivel:r.nivel,sem_cadastro:true});
         }
-
-        render(r,out,!!dog,dog);
-        pendingImg[mode]=null; document.getElementById('na-file-'+mode).value=''; document.getElementById('na-tag-'+mode).style.display='none';
-        document.getElementById('na-text-'+mode).value='';
+        renderThread(mode);
       })
-      .catch(function(){ btn.disabled=false; btn.textContent='Perguntar'; out.innerHTML='<div style="font-size:13px;color:#b02a1f">Falha de conexão. Tenta de novo.</div>'; });
-  }
-
-  function render(r,out,temCao,dog){
-    var n=NIVEL[r.nivel]||NIVEL.observar;
-    var h='<div class="na-fade" style="border:1px solid '+n.cor+'33;background:'+n.bg+';border-radius:14px;padding:13px 14px">'
-      + '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">'+nannyFace(28)
-      + '<span style="font-weight:500;color:'+n.cor+';font-size:14px">'+n.label+'</span></div>';
-    if(r.o_que_fazer_agora)h+='<div style="font-size:14.5px;color:'+CT.pri+';line-height:1.55;margin-bottom:8px">'+esc(r.o_que_fazer_agora)+'</div>';
-    if(r.por_que)h+='<div style="font-size:13px;color:'+CT.sec+';line-height:1.5;margin-bottom:8px">'+esc(r.por_que)+'</div>';
-    if(r.nivel==='urgente'||r.nivel==='procurar_vet'){
-      var termo=r.nivel==='urgente'?'pronto atendimento veterinário 24h perto de mim':'veterinário perto de mim';
-      h+='<a href="https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(termo)+'" target="_blank" rel="noopener" style="display:inline-block;background:'+n.cor+';color:#fff;text-decoration:none;border-radius:10px;padding:10px 16px;font-weight:500;font-size:13.5px;min-height:42px;box-sizing:border-box">Achar um vet perto</a>';
-    }
-    if(r.pro_vet)h+='<details style="margin-top:10px"><summary style="cursor:pointer;font-size:13px;color:'+n.cor+';font-weight:500">Resumo pra mostrar ao veterinário</summary><div style="font-size:13px;color:'+CT.pri+';line-height:1.5;background:#fff;border:1px solid '+CT.line+';border-radius:10px;padding:11px;margin-top:7px">'+esc(r.pro_vet)+'</div></details>';
-    h+='<div style="font-size:11.5px;color:'+CT.mut+';margin-top:10px;line-height:1.4">A Nanny não é veterinária e isto não é consulta. A decisão de saúde é sempre do seu veterinário.</div>';
-    h+='</div>';
-
-    if(temCao){
-      h+='<div class="na-fade" style="display:flex;align-items:center;gap:7px;font-size:12.5px;color:'+CT.green+';margin-top:9px"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="'+CT.green+'" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>Guardado no dossiê'+(dog&&dog.nome?' d'+(/a$/.test((dog.nome||'').toLowerCase())?'a ':'e ')+esc(dog.nome):'')+'</div>';
-    } else {
-      h+='<div class="na-fade" style="margin-top:10px;background:'+CT.cream+';border:1px solid '+CT.line+';border-radius:12px;padding:12px 13px">'
-        +'<div style="font-size:13px;color:'+CT.pri+';line-height:1.5;margin-bottom:9px">Quer que eu guarde isso e acompanhe? Cadastra seu cão — leva 10 segundos, e eu já começo com essa dúvida salva.</div>'
-        +'<button type="button" id="na-go-reg" style="background:'+CT.green+';color:#fff;border:0;border-radius:10px;padding:11px 18px;font-weight:500;font-size:14px;min-height:42px;cursor:pointer">Cadastrar meu cão</button></div>';
-    }
-    out.innerHTML=h;
-    var go=document.getElementById('na-go-reg'); if(go)go.onclick=function(){ if(g('startRegister'))window.startRegister(); };
+      .catch(function(){ threads[mode].push({de:'nanny',r:{nivel:'observar',o_que_fazer_agora:'Falha de conexão. Tenta de novo.'}}); renderThread(mode); });
   }
 
   // adota a pergunta avulsa (feita sem cadastro) no 1º cão, sem editar o fluxo de cadastro
@@ -204,23 +221,7 @@
     try{ var p=JSON.parse(raw); dog.perguntas=[p]; if(g('saveDogs'))window.saveDogs(); if(g('nannySync'))window.nannySync(true); localStorage.removeItem(PEND_KEY); }catch(e){}
   }
 
-  function refreshSaved(){
-    var el=document.getElementById('na-saved'); if(!el)return;
-    var dog=g('dogObj')?window.dogObj():null; if(!dog){el.innerHTML='';return;}
-    var obs=(dog.perguntas||[]).filter(function(p){return p&&p.pro_vet;});
-    if(!obs.length){el.innerHTML='';return;}
-    var h='<details class="na-fade" style="margin-top:12px;background:#fff;border:1px solid '+CT.line+';border-radius:12px;padding:11px 13px">'
-      +'<summary style="cursor:pointer;font-size:13px;color:'+CT.sec+';font-weight:600">\ud83d\udccb Observa\u00e7\u00f5es guardadas pro vet ('+obs.length+')</summary>'
-      +'<div style="font-size:11.5px;color:'+CT.mut+';margin:7px 0 2px;line-height:1.4">Ficam salvas aqui pra voc\u00ea mostrar na consulta \u2014 n\u00e3o somem quando voc\u00ea pergunta de novo.</div>';
-    obs.slice().reverse().forEach(function(pp){
-      h+='<div style="border-top:1px solid '+CT.cream+';padding:9px 0"><div style="font-size:11.5px;color:'+CT.mut+'">'+esc(pp.data||'')+(pp.nivel?(' \u00b7 '+esc(pp.nivel)):'')+'</div>'
-        +'<div style="font-size:13px;color:'+CT.pri+';font-weight:500;margin:2px 0">'+esc(pp.texto||'')+'</div>'
-        +'<div style="font-size:12.5px;color:'+CT.sec+';line-height:1.5">'+esc(pp.pro_vet)+'</div></div>';
-    });
-    h+='</details>';
-    el.innerHTML=h;
-  }
-  function mountInto(id,mode){ var box=document.getElementById(id); if(!box)return; box.innerHTML=cardHTML(mode)+(mode==='perfil'?'<div id="na-saved"></div>':''); wire(mode); refreshSaved(); }
+  function mountInto(id,mode){ var box=document.getElementById(id); if(!box)return; box.innerHTML=cardHTML(mode); wire(mode); if(mode==='perfil'){ seedFollowup('perfil'); renderThread('perfil'); } }
   function boot(){ styleOnce(); var hasDogs=false; try{ hasDogs=(typeof dogs!=='undefined'&&dogs&&dogs.length>0); }catch(e){}
     if(document.getElementById('nanny-ask')){ adotarAvulsa(); mountInto('nanny-ask','perfil'); }
     if(document.getElementById('nanny-ask-home')&&!hasDogs) mountInto('nanny-ask-home','home'); }
