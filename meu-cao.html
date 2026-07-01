@@ -927,52 +927,62 @@ window.toggleMarco=toggleMarco;
 function dotsHTML(n){var h='<div style="display:flex;gap:5px;margin:2px 0 2px">';for(var i=0;i<MARCOS.length;i++){h+='<span class="marco-dot" style="width:8px;height:8px;border-radius:50%;background:'+(i<n?'#7a9970':'#dfe7d9')+'"></span>';}return h+'</div>';}
 function markMarco(id){var dog=dogObj();if(!dog)return;dog.marcos=dog.marcos||{};dog.marcos[id]=new Date().toISOString().slice(0,10);if(typeof saveDogs==='function')saveDogs();renderAcolher(dog);}
 window.markMarco=markMarco;
+function nannyGraduar(){var dog=dogObj();if(!dog)return;dog.acolherSeen=dog.acolherSeen||{};dog.acolherSeen.grad=1;if(typeof saveDogs==='function')saveDogs();setTab('hoje');window.scrollTo({top:0,behavior:'smooth'});renderProfile();}
+window.nannyGraduar=nannyGraduar;
 function renderAcolher(dog){
   const box=document.getElementById('p-acolher'); if(!box) return;
   if(dog.aguardando){box.style.display='block';box.innerHTML=preChegadaHTML(dog);return;}
-  const ph=adaptPhase(dog);
-  if(!ph){box.style.display='none';box.innerHTML='';return;}
-  box.style.display='block';
+  if(!dog.chegada){box.style.display='none';box.innerHTML='';return;}
   const d=Math.floor((startOfToday()-new Date(dog.chegada+'T00:00:00'))/86400000);
-  const adot=dog.origem==='adotado';
-  const nm=dog.nome||'seu cão';
+  if(isNaN(d)||d<0){box.style.display='none';box.innerHTML='';return;}
+  dog.acolherSeen=dog.acolherSeen||{};
+  // graduou (dia 90+ e já viu a ponte) => o acolhimento some e vira manutenção pura (o Score)
+  if(d>=90 && dog.acolherSeen.grad){box.style.display='none';box.innerHTML='';return;}
+  box.style.display='block';
+  const adot=dog.origem==='adotado', nm=dog.nome||'seu cão';
   const done=dog.marcos||{};
   const doneList=MARCOS.filter(m=>done[m.id]).sort((x,y)=>done[x.id]<done[y.id]?-1:1);
   const nDone=doneList.length;
-  const closing=(d>=90)||(nDone===MARCOS.length);
+  const closing=(d>=90);   // FIX: fecha SÓ por tempo (antes disparava quando todos os marcos estavam marcados — por isso "a história" aparecia no dia 30)
   const lbl=m=>(adot&&m.ta)?m.ta:m.t;
-  // identidade: foto + tempo afetivo
   const face = dog.photo
     ? `<div style="width:46px;height:46px;border-radius:50%;overflow:hidden;flex:none;border:2px solid #fff"><img src="${dog.photo}" style="width:100%;height:100%;object-fit:cover;object-position:${(dog.photoPos&&dog.photoPos.x)||50}% ${(dog.photoPos&&dog.photoPos.y)||50}%"></div>`
     : `<div style="width:46px;height:46px;border-radius:50%;flex:none;background:#cfe3d4;display:flex;align-items:center;justify-content:center;font-weight:700;color:#2f5137;font-size:19px">${(nm[0]||'🐾').toUpperCase()}</div>`;
   const timeLine = d<=0 ? ('A '+nm+' chegou hoje 🎉')
     : adot ? ('Faz '+d+' dia'+(d>1?'s':'')+' que a '+nm+' tem uma casa')
     : ('Faz '+d+' dia'+(d>1?'s':'')+' com a '+nm);
+  const idx = d<=3?0:(d<=21?1:2);
+  const bars=[0,1,2].map(i=>`<div style="flex:1;height:5px;border-radius:3px;background:${i<=idx?'#7a9970':'#dfe7d9'}"></div>`).join('');
   let h='<div class="card" style="border-color:#cfe3d4;background:var(--green-light)">'
     +`<div style="display:flex;align-items:center;gap:11px;margin-bottom:10px">${face}`
       +`<div style="flex:1"><div style="font-family:'Playfair Display',Georgia,serif;font-size:17px;font-weight:600;color:#2f5137;line-height:1.15">${timeLine}</div>`
-      +`<div style="font-size:11.5px;color:#5a7a60;margin-top:2px">Acolhimento · dia ${d+1} de 90</div></div></div>`
-    +dotsHTML(nDone);
+      +`<div style="font-size:11.5px;color:#5a7a60;margin-top:2px">${closing?'Primeiros 90 dias · completos':('Acolhimento · dia '+Math.min(d+1,90)+' de 90')}</div></div></div>`;
   if(closing){
-    h+=`<div style="font-family:'Playfair Display',Georgia,serif;font-size:17px;font-weight:600;color:#2f5137;margin:12px 0 3px">A história de vocês</div>`
-      +`<p style="margin:0 0 10px;font-size:13px;color:#3a5e44;line-height:1.5">${adot?('A '+nm+' chegou sem saber o que esperar — e olha só o que vocês construíram.'):('Os primeiros 90 dias da '+nm+', guardados.')}</p>`;
+    h+=`<div style="text-align:center;margin:2px 0"><div style="font-size:30px">🎓</div>`
+      +`<div style="font-family:'Playfair Display',Georgia,serif;font-size:18px;font-weight:700;color:#2f5137;margin:1px 0 3px">A história de vocês</div>`
+      +`<p style="margin:0 0 12px;font-size:13px;color:#3a5e44;line-height:1.5">${adot?('A '+nm+' chegou sem saber o que esperar — e olha o que vocês construíram.'):('Os primeiros 90 dias da '+nm+', guardados.')}</p></div>`;
     if(doneList.length){h+='<div style="border-left:2px solid #bcd3c1;margin-left:6px;padding-left:13px">'
       +doneList.map(m=>`<div style="position:relative;padding:5px 0"><span style="position:absolute;left:-17px;top:9px;width:8px;height:8px;border-radius:50%;background:#7a9970"></span><div style="font-size:13px;color:var(--brown)">${lbl(m)}</div><div style="font-size:11px;color:var(--brown-mid)">${fmtISO(done[m.id])}</div></div>`).join('')
       +'</div>';}
-    else{h+=`<p style="font-size:12.5px;color:var(--brown-mid)">Você não marcou nenhuma primeira vez — mas ainda dá tempo de registrar as que lembrar.</p>`;}
-    h+=`<details style="margin-top:10px"><summary style="cursor:pointer;font-size:12.5px;color:#4a7c59">Registrar ou ajustar primeiras vezes</summary><div style="margin-top:6px">${marcosHTML(dog)}</div></details>`
-      +`<div class="nanny-msg" style="margin-top:11px"><div class="nanny-av">${WESTIE}</div><div class="nanny-bubble">${adot?('Você deu um lar pra ela. Isso muda uma vida — inclusive a sua.'):('Vocês passaram da fase mais difícil juntos. Daqui é vínculo pra vida.')}</div></div>`;
+    else{h+=`<details><summary style="cursor:pointer;font-size:12.5px;color:#4a7c59">Registrar as primeiras vezes que você lembrar</summary><div style="margin-top:6px">${marcosHTML(dog)}</div></details>`;}
+    // A PONTE: gradua pro acompanhamento contínuo (não é fim — é entrega pro Score)
+    h+=`<div style="background:#fff;border:1px solid #cfe3d4;border-radius:12px;padding:13px 14px;margin-top:13px">`
+      +`<div style="font-size:13px;color:#2f5137;line-height:1.55">As vacinas, o peso e as dúvidas que você registrou nesses 90 dias <b>já estão no acompanhamento ${gDe(dog)} ${nm}</b>. A adaptação terminou — a saúde ${gPoss(dog)} continua com você e comigo daqui pra frente.</div>`
+      +`<button onclick="nannyGraduar()" style="width:100%;margin-top:11px;background:#7a9970;color:#fff;border:0;border-radius:11px;padding:12px;font-family:inherit;font-size:14.5px;font-weight:600;cursor:pointer">Ver o acompanhamento ${gDe(dog)} ${nm} →</button></div>`;
   } else {
-    h+=`<div style="font-family:'Playfair Display',Georgia,serif;font-size:16px;font-weight:600;color:#2f5137;margin:11px 0 4px">${ph.t}</div>`
+    const ph=adaptPhase(dog)||ADAPT_PHASES[ADAPT_PHASES.length-1];
+    h+=`<div style="display:flex;gap:5px;margin-bottom:11px">${bars}</div>`
+      +`<div style="font-family:'Playfair Display',Georgia,serif;font-size:16px;font-weight:600;color:#2f5137;margin:0 0 4px">${ph.t}</div>`
       +`<p style="margin:0 0 5px;font-size:13.5px"><b>O que é normal agora:</b> ${ph.normal}</p>`
       +`<p style="margin:0 0 10px;font-size:13.5px"><b>O que ajuda:</b> ${ph.faca}</p>`;
     const nextM=MARCOS.find(m=>!done[m.id]);
     if(nextM){h+=`<div style="background:#fff;border-radius:12px;padding:12px 13px;margin-bottom:9px">`
       +`<div style="font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:#5a7a60;margin-bottom:5px">Próxima primeira vez</div>`
       +`<div style="display:flex;align-items:center;gap:10px"><span style="flex:1;font-size:14.5px;color:var(--brown)">${lbl(nextM)}</span>`
-      +`<button class="chip sm" style="background:#7a9970;color:#fff;border-color:#7a9970" onclick="markMarco('${nextM.id}')">Marcar</button></div></div>`;}
-    h+=`<details style="margin-bottom:2px"><summary style="cursor:pointer;font-size:12.5px;color:#4a7c59">Ver todas as primeiras vezes (${nDone}/${MARCOS.length})</summary><div style="margin-top:6px">${marcosHTML(dog)}</div></details>`
-      +`<div class="nanny-msg" style="margin-top:11px"><div class="nanny-av">${WESTIE}</div><div class="nanny-bubble">${adot?('Adotar é dar uma segunda chance — a '+nm+' vai retribuir em dobro. '+ph.msg):ph.msg}</div></div>`;
+      +`<button class="chip sm" style="background:#7a9970;color:#fff;border-color:#7a9970" onclick="markMarco('${nextM.id}')">Aconteceu ✓</button></div></div>`;}
+    h+=`<details style="margin-bottom:2px"><summary style="cursor:pointer;font-size:12.5px;color:#4a7c59">Ver as primeiras vezes (${nDone}/${MARCOS.length})</summary><div style="margin-top:6px">${marcosHTML(dog)}</div></details>`
+      +`<div class="nanny-msg" style="margin-top:11px"><div class="nanny-av">${WESTIE}</div><div class="nanny-bubble">${adot?('Adotar é dar uma segunda chance — a '+nm+' vai retribuir em dobro. '+ph.msg):ph.msg}</div></div>`
+      +`<div style="font-size:11px;color:#7a6a58;margin-top:10px;line-height:1.4">🔕 Não precisa ficar checando — eu apareço nos momentos que importam.</div>`;
   }
   h+=`</div>`;
   box.innerHTML=h;
