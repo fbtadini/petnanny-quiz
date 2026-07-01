@@ -31,6 +31,9 @@
     var cond=(h.condicoes||[]);
     var rel=(dog.perguntas||[]).slice(-3).reverse();
     var hoje=new Date().toLocaleDateString('pt-BR');
+    var pesoTxt='—';
+    if((dog.weights||[]).length){ var w=dog.weights[dog.weights.length-1]; pesoTxt=w.kg+' kg'+(w.d?(' ('+br(w.d)+')'):''); }
+    else if(dog.pesoFaixa!=null){ pesoTxt='faixa '+esc(dog.pesoFaixa)+' (informada)'; }
 
     function sec(title,inner){ return inner?'<h2>'+title+'</h2>'+inner:''; }
     function tbl(head,body){ return '<table><thead><tr>'+head.map(function(x){return '<th>'+x+'</th>';}).join('')+'</tr></thead><tbody>'+body+'</tbody></table>'; }
@@ -38,7 +41,7 @@
     var idRows=''
       +'<tr><td class="k">Nome</td><td>'+esc(dog.nome||'—')+'</td><td class="k">Espécie</td><td>Canina</td></tr>'
       +'<tr><td class="k">Raça</td><td>'+esc(raca)+'</td><td class="k">Sexo</td><td>'+sexo+'</td></tr>'
-      +'<tr><td class="k">Idade</td><td>'+(esc(idade)||'—')+'</td><td class="k">Peso</td><td>'+(dog.pesoFaixa!=null?('faixa '+esc(dog.pesoFaixa)):'—')+'</td></tr>'
+      +'<tr><td class="k">Idade</td><td>'+(esc(idade)||'—')+'</td><td class="k">Peso</td><td>'+pesoTxt+'</td></tr>'
       +'<tr><td class="k">Microchip</td><td>'+(esc(dog.microchip||h.microchip||'')||'—')+'</td><td class="k">Nascimento</td><td>'+(br(dog.nascimento||ped.nascimento)||'—')+'</td></tr>';
 
     var body=''

@@ -25,7 +25,7 @@
   function g(fn){ return (typeof window[fn]==='function')?window[fn]:null; }
   function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
   function track(ev,p){ try{ if(window.gtag) window.gtag('event',ev,p||{});}catch(e){} }
-  function nannyFace(px){ var s=window.WESTIE||'<svg viewBox="0 0 100 100"><circle cx="50" cy="55" r="30" fill="#fff" stroke="#c9b798" stroke-width="3"/></svg>'; return '<span aria-hidden="true" style="display:inline-flex;width:'+px+'px;height:'+px+'px;border-radius:50%;background:#eef3ea;padding:4px;box-sizing:border-box">'+s+'</span>'; }
+  function nannyFace(px){ var s=window.WESTIE||'<svg viewBox="0 0 100 100"><circle cx="50" cy="55" r="30" fill="#fff" stroke="#c9b798" stroke-width="3"/></svg>'; return '<span class="na-face" aria-hidden="true" style="display:inline-flex;width:'+px+'px;height:'+px+'px;border-radius:50%;background:#eef3ea;padding:4px;box-sizing:border-box;flex-shrink:0">'+s+'</span>'; }
 
   function styleOnce(){
     if(document.getElementById('nanny-ask-css')) return;
@@ -33,7 +33,7 @@
     st.textContent='@keyframes naShimmer{0%{background-position:-200px 0}100%{background-position:200px 0}}'
       +'.na-skel{height:12px;border-radius:6px;background:#efe6da;background-image:linear-gradient(90deg,#efe6da 0px,#f6f0e6 80px,#efe6da 160px);background-size:400px 100%;animation:naShimmer 1.1s infinite linear}'
       +'.na-btn-ic{display:inline-flex;align-items:center;justify-content:center;width:42px;height:42px;border-radius:50%;border:0;cursor:pointer;background:transparent}'
-      +'.na-fade{animation:naFade .28s ease}@keyframes naFade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}';
+      +'.na-fade{animation:naFade .28s ease}@keyframes naFade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}'+'.na-face svg{width:100%;height:100%;display:block}'+'.na-chip{display:inline-block;font-size:12.5px;color:#5f5142;background:#f7f2ea;border:1px solid #e8ddd2;border-radius:20px;padding:7px 13px;margin:0 6px 6px 0;cursor:pointer}';
     document.head.appendChild(st);
   }
 
@@ -80,21 +80,24 @@
       + '<div style="display:flex;align-items:center;gap:9px;margin-bottom:9px">'+nannyFace(30)
       + '<div><div style="font-weight:500;font-size:15px;color:'+CT.pri+'">Pergunta pra Nanny</div>'
       + '<div style="font-size:12px;color:'+CT.sec+'">'+(semCao?'Uma dúvida agora? Pode perguntar — não precisa cadastrar antes.':'Descreva ou mande uma foto. Ela usa o que sabe do seu cão.')+'</div></div></div>'
-      + '<textarea id="na-text-'+mode+'" rows="2" aria-label="Sua dúvida sobre o cão" placeholder="Ex.: tá com o olho vermelho e lacrimejando desde ontem…" style="width:100%;box-sizing:border-box;border:1.5px solid '+CT.line+';border-radius:12px;padding:12px 13px;font-size:15px;font-family:inherit;color:'+CT.pri+';resize:vertical"></textarea>'
+      + '<textarea id="na-text-'+mode+'" rows="2" aria-label="Sua dúvida sobre o cão" placeholder="Pode ser qualquer coisa: saúde, comportamento, ração, banho, passeio…" style="width:100%;box-sizing:border-box;border:1.5px solid '+CT.line+';border-radius:12px;padding:12px 13px;font-size:15px;font-family:inherit;color:'+CT.pri+';resize:vertical"></textarea>'+ '<div id="na-chips-'+mode+'" style="margin-top:9px">'+ '<span class="na-chip" data-q="Que ração é a certa pra ele?">Que ração comprar?</span>'+ '<span class="na-chip" data-q="Ele late/chora quando fico fora. O que faço?">Late quando saio</span>'+ '<span class="na-chip" data-q="Posso dar osso pra ele? E o que não pode comer?">O que pode comer?</span>'+ '<span class="na-chip" data-q="Tá se coçando muito, o que pode ser?">Coçando muito</span>'+ '</div>'
       + '<div style="display:flex;align-items:center;gap:6px;margin-top:8px">'
       + '<button type="button" class="na-btn-ic" id="na-cam-'+mode+'" aria-label="Anexar foto"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="'+CT.mut+'" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="3.5"/></svg></button>'
       + '<span id="na-tag-'+mode+'" style="font-size:12px;color:'+CT.green+';display:none"><span>foto anexada</span> · <a href="#" id="na-clr-'+mode+'" style="color:#b02a1f">remover</a></span>'
       + '<button type="button" id="na-send-'+mode+'" style="margin-left:auto;min-height:42px;background:'+CT.green+';color:#fff;border:0;border-radius:12px;padding:0 20px;font-weight:500;font-size:15px;cursor:pointer">Perguntar</button>'
       + '<input id="na-file-'+mode+'" type="file" accept="image/*" style="display:none">'
       + '</div>'
-      + '<div style="font-size:12px;color:'+CT.mut+';margin-top:9px;line-height:1.4">A Nanny não é veterinária e isto não é consulta. É orientação pra te ajudar a decidir.</div>'
+      + '<div id="na-phototip-'+mode+'" style="display:none;font-size:12px;color:'+CT.sec+';margin-top:9px;line-height:1.45;background:#f7f2ea;border:1px solid '+CT.line+';border-radius:10px;padding:9px 11px"><strong>Pra foto ajudar de verdade:</strong> boa luz (perto de uma janela), aproxime bem do ponto (olho, pele, dente, orelha), segure firme e evite flash direto. Pode mandar 2 ângulos. Foto torta eu leio — nítida eu leio melhor.</div>'+ '<div style="font-size:12px;color:'+CT.mut+';margin-top:9px;line-height:1.4">A Nanny não é veterinária e isto não é consulta. É orientação pra te ajudar a decidir.</div>'
       + '<div id="na-out-'+mode+'" style="margin-top:12px"></div>'
       + '</div>';
   }
 
   function wire(mode){
     var cam=document.getElementById('na-cam-'+mode), file=document.getElementById('na-file-'+mode);
-    cam.onclick=function(){file.click();};
+    var chips=document.getElementById('na-chips-'+mode);
+    if(chips) chips.querySelectorAll('.na-chip').forEach(function(ch){ ch.onclick=function(){ var ta=document.getElementById('na-text-'+mode); ta.value=ch.getAttribute('data-q')||ch.textContent; ta.focus(); }; });
+    var tip=document.getElementById('na-phototip-'+mode);
+    cam.onclick=function(){ if(tip) tip.style.display='block'; file.click(); };
     file.onchange=function(){var f=this.files&&this.files[0];if(!f)return;var tag=document.getElementById('na-tag-'+mode);tag.style.display='inline';tag.firstChild.textContent='anexando…';fileToImg(f).then(function(img){pendingImg[mode]=img;tag.firstChild.textContent=img?'foto anexada':'não deu pra ler a foto';});};
     document.getElementById('na-clr-'+mode).onclick=function(e){e.preventDefault();pendingImg[mode]=null;file.value='';document.getElementById('na-tag-'+mode).style.display='none';};
     document.getElementById('na-send-'+mode).onclick=function(){enviar(mode);};

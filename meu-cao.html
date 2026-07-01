@@ -227,7 +227,7 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent)}
       <div><div class="dog-name" id="p-name">—</div><div class="dog-meta" id="p-meta">—</div><div class="dog-meta" id="p-chip" style="display:none;margin-top:2px"></div></div>
     </div>
     <div class="repos-hint" id="reposHint">Arraste a foto pra ajustar · toque de novo pra salvar</div>
-    <div style="display:flex;gap:8px;margin:2px 0 10px;flex-wrap:wrap"><button class="chip" onclick="editDog()">✎ Editar dados</button><button class="chip" onclick="printFicha()">🖨️ Ficha (PDF)</button><button class="chip" onclick="window.nannyVetResumo&&nannyVetResumo()">🩺 Resumo pro vet</button></div>
+    <div style="display:flex;gap:8px;margin:2px 0 10px;flex-wrap:wrap"><button class="chip" onclick="editDog()">✎ Editar dados</button><button class="chip" onclick="window.nannyVetResumo&&nannyVetResumo()">🩺 Resumo pro vet (PDF)</button></div>
     <div id="p-status" class="status-sum" style="display:none"></div>
     <div id="p-acolher" style="display:none"></div>
     <div id="nanny-ask"></div>
@@ -530,7 +530,7 @@ function behaviorHTML(dog,b){let h='';
   const cs=behaviorConcerns(dog,b);
   if(cs.length){h+=`<div class="card"><div class="sec-label">Convívio — personalizado pra ${gArt(dog)} ${dog.nome}</div><p style="font-size:12.5px;color:var(--brown-mid);margin:0 0 6px">Com base na raça e no que você marcou. Tudo isso é comum e tem solução.</p>`;
     cs.forEach(k=>{const c=BEHAVIOR_CATALOG[k];h+=`<div class="hw"><div class="hw-top"><div class="hw-ic">${c.ic}</div><div><div class="hw-t">${c.label}</div><div class="hw-i">Quando aparece: ${c.quando}.</div></div></div><div class="hw-q" style="color:#3a5e44">${c.normalize}</div><div style="margin:6px 0"><b style="font-size:12.5px">Primeiros passos:</b><ul style="margin:4px 0 0;padding-left:18px;font-size:13px;color:var(--brown)">${c.passos.map(p=>`<li style="margin:2px 0">${p}</li>`).join('')}</ul></div><div class="pi-when" style="margin-top:4px">🏥 ${c.escalar}</div></div>`;});
-    h+=`<div class="nanny-msg" style="margin-top:10px"><div class="nanny-av">${WESTIE}</div><div class="nanny-bubble">Quase todo problema de comportamento tem manejo ou ajuda profissional. Antes de achar que "não deu certo", vale falar com um adestrador ou veterinário comportamental — é exatamente o que evita um abandono.</div></div>`;
+    
     h+=`</div>`;}
   return h;}
 
