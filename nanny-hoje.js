@@ -1,6 +1,6 @@
 /* nanny-hoje.js — ABA HOJE (a superfície viva) + digest "o que a Nanny sabe" — v1
  * <script src="nanny-hoje.js"></script> no meu-cao.html (depois do nanny-ask-ui.js)
- * Expõe window.renderHoje(dog) e window.nannyKnows(dog).
+ * Expõe window.renderHoje(dog)
  *
  * Princípio: abre no que MUDA (status, pendências, o que a Nanny sabe do cão), não na
  * enciclopédia. Desenhada pro dia calmo primeiro; pendências entram como camada por cima.
@@ -153,9 +153,11 @@
     var meses = (g('ageInMonths')) ? window.ageInMonths(dog) : null;
     var h = '';
 
-    // --- ESTADO DO CÃO: veredito diário (headline da Hoje) ---
+    // --- ESTADO DO CÃO: painel de SCORE de saúde (headline da Hoje) ---
     if (dog.aguardando) {
       h += '<div style="display:flex;align-items:center;gap:8px;margin:2px 2px 16px"><span style="color:'+CT.mut+';font-size:13px">Plano de chegada — quando '+esc(nome(dog))+' chegar, avise aqui que eu começo o acompanhamento dos primeiros 90 dias.</span></div>';
+    } else if (g('renderScore')) {
+      h += window.renderScore(dog);
     } else {
       var est = window.nannyEstado(dog);
       var col = est.nivel==='tranquilo' ? CT.green : (est.nivel==='atencao' ? CT.red : ((est.nivel==='comecar'||est.nivel==='incompleto') ? CT.mut : CT.amber));
