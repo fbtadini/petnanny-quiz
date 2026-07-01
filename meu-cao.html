@@ -1078,7 +1078,7 @@ async function nannyReadDoc(input,cond){
 /* ---------- listas ---------- */
 function renderList(){const el=document.getElementById('dogList');const qc=quizCtx();
   let banner='';
-  if(qc&&qc.matchedKey&&!dogs.some(d=>d.breedKey===qc.matchedKey)){
+  if(!dogs.length&&qc&&qc.matchedKey){
     banner=`<div class="card" style="background:var(--accent-light);border-color:#f3d9c2;cursor:pointer;margin-bottom:14px" onclick="startRegisterFromQuiz()"><div style="display:flex;gap:11px;align-items:center"><div class="nanny-av">${WESTIE}</div><div style="flex:1"><div style="font-weight:700;font-size:14px">Você combinou com ${qc.matchedName} no quiz</div><div style="font-size:12.5px;color:var(--brown-mid);margin-top:2px">Cadastre seu cão que eu já começo com a raça preenchida — e uso o que aprendi de você pra personalizar.</div></div><div style="font-size:20px;color:var(--accent-deep)">→</div></div></div>`;
   }
   if(!dogs.length){el.innerHTML=banner;return}
