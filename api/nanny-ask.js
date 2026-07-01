@@ -63,7 +63,7 @@ FORMATO — devolva SOMENTE o JSON entre <json> e </json>, sem texto fora:
 module.exports = async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ ok: false, error: 'Use POST' });
   try {
-    const { contexto_cao, texto, imagens, documento } = req.body || {};
+    const { contexto_cao, texto, imagens, documento, conversa } = req.body || {};
     const temTexto = typeof texto === 'string' && texto.trim().length > 0;
     const temImg = Array.isArray(imagens) && imagens.length > 0;
     const temDoc = documento && documento.data && documento.media_type;
@@ -92,7 +92,10 @@ module.exports = async function handler(req, res) {
           ultimas_perguntas: ctx.ultimas_perguntas || []
         });
 
-    const userText = ctxTxt + '\n\n' + 'O TUTOR TROUXE' + (temTexto ? ' (texto): "' + texto.trim() + '"' : '')
+    const convTxt = (Array.isArray(conversa) && conversa.length)
+      ? '\n\nCONVERSA ATÉ AGORA (continue no mesmo fio, reconheça o que já foi dito, não repita):\n' + conversa.map(function(m){return (m.de==='nanny'?'Nanny':'Tutor')+': '+String(m.texto||'').slice(0,500);}).join('\n')
+      : '';
+    const userText = ctxTxt + convTxt + '\n\n' + 'O TUTOR TROUXE' + (temTexto ? ' (texto): "' + texto.trim() + '"' : '')
       + (temImg ? '\n(+ ' + imagens.length + ' foto(s) anexada(s) acima)' : '')
       + (temDoc ? '\n(+ um documento anexado acima)' : '')
       + '\n\nFaça a teletriagem e devolva só o JSON entre <json></json>.';
