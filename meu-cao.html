@@ -1085,6 +1085,7 @@ function docConfirmHTML(dog){const ex=pendingDoc.ex||{};let h='';
   const anyIncerto=['vacinas','antiparasitario','vermifugo','exames'].some(c=>(ex[c]||[]).some(it=>it.incerto||!it.data))||ex.confianca==='baixa';
   h+=`<div class="card" style="border-color:#e0a84f">
     <div class="nanny-msg"><div class="nanny-av">${WESTIE}</div><div class="nanny-bubble">Li o documento. <b>Confere as datas antes de eu guardar</b> \u2014 eu nao gravo nada sem voce confirmar.</div></div>`;
+  h+=(pendingDoc.thumbs||[]).length?`<div style="display:flex;gap:8px;overflow-x:auto;margin:10px 0 2px;padding-bottom:2px">${pendingDoc.thumbs.map((t,i)=>`<img src="${t.thumb}" onclick="pdZoom(${i})" style="height:92px;border-radius:8px;border:1px solid var(--line);cursor:pointer;flex:0 0 auto">`).join('')}</div><div style="font-size:11.5px;color:var(--brown-mid);margin-bottom:6px">\ud83d\udd0d Toque na foto pra ampliar e conferir cada data contra o documento.</div>`:'';
   if(anyIncerto)h+=`<div class="ai-disc" style="margin:8px 0">\u26a0\ufe0f Alguns itens estao <b>marcados em laranja</b>: nao consegui ler a data com certeza. Confira olhando o documento.</div>`;
   const vac=(ex.vacinas||[]);if(vac.length){h+=`<div class="sec-label" style="margin:10px 0 6px">Vacinas</div>`;vac.forEach((v,i)=>h+=pdRow('vacinas',i,v.nome,v.data,v.incerto));}
   const an=(ex.antiparasitario||[]);if(an.length){h+=`<div class="sec-label" style="margin:10px 0 6px">Antipulga / carrapato</div>`;an.forEach((v,i)=>h+=pdRow('antiparasitario',i,v.produto,v.data,v.incerto));}
@@ -1098,6 +1099,7 @@ function docConfirmHTML(dog){const ex=pendingDoc.ex||{};let h='';
   </div>`;
   return h;
 }
+function pdZoom(i){var t=pendingDoc&&pendingDoc.thumbs&&pendingDoc.thumbs[i];if(!t)return;var lb=document.getElementById('lightbox');lb.innerHTML='<img src="'+t.thumb+'">';lb.style.display='flex';lb.onclick=function(){lb.style.display='none';};}
 function discardDoc(){pendingDoc=null;renderProfile();}
 function confirmDoc(){const dog=dogObj();if(!dog||!pendingDoc)return;const ex=pendingDoc.ex||{};
   const val=(id)=>{const e=document.getElementById(id);return e?(''+e.value).trim():'';};

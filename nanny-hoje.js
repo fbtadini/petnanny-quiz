@@ -22,20 +22,20 @@
   window.nannyKnows = function (dog) {
     var out = [];
     var c = (typeof BREED_CARE!=='undefined' && dog.breedKey && BREED_CARE[dog.breedKey]) || {};
-    if (c.brachy) out.push('Focinho achatado — atenção ao calor e ao esforço; peitoral, nunca coleira.');
-    if (c.bloat)  out.push('Peito fundo — comer rápido aumenta o risco de torção; comedouro lento ajuda.');
-    if (c.longBack) out.push('Coluna alongada — rampa (não escada) poupa o disco; evite saltos.');
-    if (c.patella) out.push('Joelho propenso a luxação de patela — evite saltos do sofá e da cama.');
+    if (c.brachy) out.push({ic:'😮‍💨',t:'Focinho achatado — atenção ao calor e ao esforço; peitoral, nunca coleira.'});
+    if (c.bloat)  out.push({ic:'🍽️',t:'Peito fundo — comer rápido aumenta o risco de torção; comedouro lento ajuda.'});
+    if (c.longBack) out.push({ic:'🦴',t:'Coluna alongada — rampa (não escada) poupa o disco; evite saltos.'});
+    if (c.patella) out.push({ic:'🦵',t:'Joelho propenso a luxação de patela — evite saltos do sofá e da cama.'});
     var h = dog.health || {};
-    (h.condicoes||[]).forEach(function(x){ var t=(typeof x==='string')?x:(x&&x.nome); if(t) out.push('Condição registrada: '+t+'.'); });
+    (h.condicoes||[]).forEach(function(x){ var t=(typeof x==='string')?x:(x&&x.nome); if(t) out.push({ic:'📋',t:'Condição registrada: '+t+'.'}); });
     if ((dog.weights||[]).length) {
       var w = dog.weights[dog.weights.length-1], line = 'Peso mais recente: '+w.kg+' kg.';
-      if (dog.weights.length>=2) { var p=dog.weights[dog.weights.length-2], d=w.kg-p.kg; if(Math.abs(d)>=0.3) line='Peso: '+w.kg+' kg ('+(d>0?'+':'')+d.toFixed(1)+' kg desde a última pesagem).'; }
-      out.push(line);
+      if (dog.weights.length>=2) { var p=dog.weights[dog.weights.length-2], d=w.kg-p.kg; if(Math.abs(d)>=0.3) line='Peso: '+w.kg+' kg ('+(d>0?'+':'')+d.toFixed(1)+' kg desde a última).'; }
+      out.push({ic:'⚖️',t:line});
     }
     var perg = dog.perguntas || [];
-    if (perg.length) { var last=perg[perg.length-1]; out.push('Você já me perguntou '+perg.length+(perg.length>1?' vezes':' vez')+' — a última: “'+esc((last.texto||'').slice(0,48))+'”.'); }
-    if ((dog.notes||'').trim()) out.push('Você me contou: “'+esc((dog.notes||'').slice(0,90))+((dog.notes||'').length>90?'…':'')+'”');
+    if (perg.length) { var last=perg[perg.length-1]; out.push({ic:'💬',t:'Você já me perguntou '+perg.length+(perg.length>1?' vezes':' vez')+' — a última: “'+esc((last.texto||'').slice(0,42))+'”.'}); }
+    if ((dog.notes||'').trim()) out.push({ic:'📝',t:'Você me contou: “'+esc((dog.notes||'').slice(0,80))+((dog.notes||'').length>80?'…':'')+'”'});
     return out;
   };
 
@@ -90,8 +90,10 @@
     var knows = window.nannyKnows(dog);
     if (knows.length) {
       h += '<div style="font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:'+CT.mut+';margin:0 2px 8px">O que eu sei d'+art(dog)+' '+esc(nome(dog))+'</div>';
-      h += '<div style="background:#fff;border:1px solid '+CT.line+';border-radius:14px;padding:6px 14px">';
-      knows.forEach(function(k,i){ h += '<div style="display:flex;gap:9px;align-items:flex-start;padding:9px 0;'+(i?'border-top:1px solid '+CT.cream:'')+'"><span style="color:'+CT.green+';margin-top:5px;font-size:8px">●</span><span style="font-size:13px;color:'+CT.pri+';line-height:1.5">'+esc(k)+'</span></div>'; });
+      h += '<div style="background:#fff;border:1px solid '+CT.line+';border-radius:14px;padding:8px 12px">';
+      knows.forEach(function(k,i){ h += '<div style="display:flex;gap:11px;align-items:center;padding:10px 2px;'+(i?'border-top:1px solid '+CT.cream:'')+'">'
+        + '<span style="flex-shrink:0;width:34px;height:34px;border-radius:50%;background:'+CT.cream+';display:flex;align-items:center;justify-content:center;font-size:17px">'+(k.ic||'•')+'</span>'
+        + '<span style="font-size:13px;color:'+CT.pri+';line-height:1.45">'+esc(k.t||'')+'</span></div>'; });
       h += '</div>';
       h += '<div style="font-size:11.5px;color:'+CT.mut+';margin:7px 2px 14px;line-height:1.4">Quanto mais você me conta e me manda documentos, mais eu sei. Conte medos e manias na aba Raça.</div>';
     }

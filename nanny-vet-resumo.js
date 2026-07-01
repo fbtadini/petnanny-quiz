@@ -29,7 +29,6 @@
     var ex=(h.exames||[]).slice().sort(byDateDesc);
     var prox=(h.proximas_datas||[]).slice().sort(function(a,b){return String(a.data).localeCompare(String(b.data));});
     var cond=(h.condicoes||[]);
-    var rel=(dog.perguntas||[]).slice(-3).reverse();
     var hoje=new Date().toLocaleDateString('pt-BR');
     var pesoTxt='—';
     if((dog.weights||[]).length){ var w=dog.weights[dog.weights.length-1]; pesoTxt=w.kg+' kg'+(w.d?(' ('+br(w.d)+')'):''); }
