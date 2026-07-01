@@ -711,6 +711,45 @@ function typeIcon(l){l=(''+(l||'')).toLowerCase();if(l.includes('categorizar'))r
 function pedigreeCardHTML(dog){const p=dog.pedigree;if(!p||!Object.keys(p).some(k=>p[k]))return '';
   const rows=[['Nome de registro',p.nome_registro],['Registro / pedigree',p.registro],['Raça',p.raca],['Cor',p.cor],['Nascimento',p.nascimento?fmtISO(p.nascimento):''],['Canil / criador',p.canil],['Pai',p.pai],['Mãe',p.mae],['Microchip',p.microchip]].filter(r=>r[1]);
   return `<div class="card"><div class="sec-label">📜 Registro / pedigree</div>${rows.map(r=>`<div class="pi-d" style="display:flex;justify-content:space-between;gap:10px;padding:5px 0;border-bottom:1px solid #f3ece1"><span style="color:var(--brown-mid)">${r[0]}</span><span style="font-weight:600;text-align:right">${r[1]}</span></div>`).join('')}<p style="font-size:11.5px;color:var(--brown-mid);opacity:.85;margin:8px 0 0">Lido do documento pela Nanny — confira e edite o cão em "Editar" se algo estiver diferente.</p></div>`;}
+function pesoTrend(dog){var ws=dog.weights||[];if(ws.length<2)return null;var dd=ws[ws.length-1].kg-ws[ws.length-2].kg;return {delta:dd,up:dd>0.05,down:dd<-0.05};}
+function weightChartBrand(dog){
+  var ws=(dog.weights||[]);if(!ws.length)return '';
+  var W=320,H=148,pl=8,pr=8,pt=16,pb=22;
+  var kgs=ws.map(w=>w.kg);var mn=Math.min.apply(null,kgs),mx=Math.max.apply(null,kgs);if(mn===mx){mn-=1;mx+=1;}var pad=(mx-mn)*0.22;mn-=pad;mx+=pad;
+  var y=k=>pt+(1-(k-mn)/(mx-mn))*(H-pt-pb);
+  var x=i=>ws.length<=1?(W/2):pl+i*(W-pl-pr)/(ws.length-1);
+  var h='<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;height:auto;display:block">';
+  if(ws.length>=2){
+    var pts=ws.map((w,i)=>x(i).toFixed(1)+','+y(w.kg).toFixed(1));
+    var area='M'+x(0).toFixed(1)+','+(H-pb)+' L'+pts.join(' L')+' L'+x(ws.length-1).toFixed(1)+','+(H-pb)+' Z';
+    h+='<path d="'+area+'" fill="#fceade"/>';
+    h+='<polyline points="'+pts.join(' ')+'" fill="none" stroke="#e8733a" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>';
+  }
+  ws.forEach((w,i)=>{var last=i===ws.length-1;h+='<circle cx="'+x(i).toFixed(1)+'" cy="'+y(w.kg).toFixed(1)+'" r="'+(last?4.5:3)+'" fill="'+(last?'#c95a23':'#e8733a')+'"'+(last?' stroke="#fff" stroke-width="2"':'')+'/>';});
+  var lw=ws[ws.length-1];h+='<text x="'+x(ws.length-1).toFixed(1)+'" y="'+(y(lw.kg)-9).toFixed(1)+'" font-size="11" font-weight="700" fill="#3d2c1e" text-anchor="'+(ws.length>1?'end':'middle')+'">'+String(lw.kg).replace('.',',')+' kg</text>';
+  if(ws.length>=2){h+='<text x="'+x(0)+'" y="'+(H-5)+'" font-size="9" fill="#9a8b78">'+fmtShort(ws[0].d)+'</text><text x="'+x(ws.length-1)+'" y="'+(H-5)+'" font-size="9" fill="#9a8b78" text-anchor="end">'+fmtShort(ws[ws.length-1].d)+'</text>';}
+  return h+'</svg>';
+}
+function saudePainelHTML(dog){
+  var ws=dog.weights||[];var tr=pesoTrend(dog);
+  var suf=dog.nome?('d'+(/a$/.test((dog.nome||'').toLowerCase())?'a ':'e ')+dog.nome):'do cão';
+  var h='<div class="card" style="border-color:#f0e2d0">'
+    +'<div style="font-family:\'Playfair Display\',Georgia,serif;font-size:17px;font-weight:600;color:var(--brown)">Painel de saúde</div>'
+    +'<div style="font-size:11.5px;color:var(--brown-mid);margin-bottom:10px">O peso '+suf+' ao longo do tempo — e o que está em dia.</div>';
+  if(ws.length){
+    h+=weightChartBrand(dog);
+    var trTxt=tr?((tr.up?'↑ +':(tr.down?'↓ ':'· '))+String(Math.abs(tr.delta).toFixed(1)).replace('.',',')+' kg desde a última'):'estável';
+    var trCol=tr?'#b7902a':'#7a5c44';
+    var ups=(typeof upcomingReminders==='function')?upcomingReminders(dog):[];var next=ups.filter(u=>u.status==='upcoming')[0];
+    h+='<div style="display:flex;gap:8px;margin-top:10px">'
+      +'<div style="flex:1;background:var(--warm);border-radius:12px;padding:10px 11px"><div style="font-size:11px;color:var(--brown-mid)">Peso atual</div><div style="font-size:19px;font-weight:700;color:var(--brown);line-height:1.1;margin-top:2px">'+String(ws[ws.length-1].kg).replace('.',',')+'<span style="font-size:12px;font-weight:400"> kg</span></div><div style="font-size:11px;color:'+trCol+';margin-top:2px">'+trTxt+'</div></div>'
+      +'<div style="flex:1;background:var(--warm);border-radius:12px;padding:10px 11px"><div style="font-size:11px;color:var(--brown-mid)">Próximo cuidado</div>'+(next?('<div style="font-size:13.5px;font-weight:600;color:var(--brown);margin-top:3px;line-height:1.2">'+(next.t||'').split('(')[0].trim()+'</div><div style="font-size:11px;color:var(--brown-mid);margin-top:2px">'+fmt(next.when)+'</div>'):'<div style="font-size:13px;color:var(--brown-mid);margin-top:5px">nada agendado</div>')+'</div>'
+      +'</div>';
+  } else {
+    h+='<div style="background:var(--warm);border-radius:12px;padding:15px;text-align:center"><div style="font-size:13px;color:var(--brown-mid);line-height:1.5">Registre o peso '+suf+' pra eu desenhar a curva — é o primeiro sinal vital do cão.</div><button class="chip" style="margin-top:10px" onclick="setTab(\'cuidados\')">Registrar peso →</button></div>';
+  }
+  return h+'</div>';
+}
 function vetObsCardHTML(dog){
   const obs=(dog.perguntas||[]).filter(p=>p&&p.pro_vet);
   if(!obs.length) return '';
@@ -724,7 +763,7 @@ function vetObsCardHTML(dog){
 }
 function renderDocs(dog){const files=dog.files||[];const he=dog.health||{};
   const temHist=(he.vacinas||[]).length||(he.antiparasitario||[]).length||(he.vermifugo||[]).length||(he.condicoes||[]).length||he.vet||he.microchip;
-  let h=vetObsCardHTML(dog)+pedigreeCardHTML(dog);
+  let h=saudePainelHTML(dog)+vetObsCardHTML(dog)+pedigreeCardHTML(dog);
   if(temHist){h+=`<div class="card"><div class="sec-label">🩺 Histórico de saúde</div><p style="font-size:12.5px;color:var(--brown-mid);margin:0 0 2px">O que a Nanny leu dos documentos. Use ✎ pra corrigir ou ✕ pra remover.</p>${healthHistoryHTML(he)}</div>`;}
   h+=`<div class="card"><div class="sec-label">📁 Documentos & fotos</div>`;
   if(files.length){
