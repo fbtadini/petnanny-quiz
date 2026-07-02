@@ -2,11 +2,33 @@
 // Função serverless da Vercel. Lê um documento do vet (foto ou PDF) com o Claude
 // e devolve os dados estruturados em JSON. A chave fica em process.env (nunca no navegador).
 
+
+// ---- guarda: origem permitida + rate limit por IP (melhor esforço por instância) + tamanho ----
+const PN_ALLOW = /petnanny\.com\.br$|\.vercel\.app$/;
+const PN_HITS = new Map();
+function pnGuard(req, res, maxPerHour, maxBytes) {
+  try {
+    const ref = String(req.headers.origin || req.headers.referer || '');
+    let host = '';
+    try { host = new URL(ref).hostname; } catch (e) {}
+    if (!host || !PN_ALLOW.test(host)) { res.status(403).json({ ok: false, error: 'origem não permitida' }); return false; }
+    const len = parseInt(req.headers['content-length'] || '0', 10);
+    if (maxBytes && len > maxBytes) { res.status(413).json({ ok: false, error: 'arquivo/payload grande demais' }); return false; }
+    const ip = String(req.headers['x-forwarded-for'] || (req.socket && req.socket.remoteAddress) || '?').split(',')[0].trim();
+    const now = Date.now();
+    let arr = (PN_HITS.get(ip) || []).filter(t => now - t < 3600e3);
+    if (arr.length >= maxPerHour) { res.status(429).json({ ok: false, error: 'muitas requisições — tenta daqui a pouco' }); return false; }
+    arr.push(now); PN_HITS.set(ip, arr);
+    if (PN_HITS.size > 5000) PN_HITS.clear();
+    return true;
+  } catch (e) { return true; }
+}
 module.exports = async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Use POST' });
   }
 
+  if (!pnGuard(req, res, 12, 9 * 1024 * 1024)) return;
   try {
     const { data, media_type } = req.body || {};
     if (!data || !media_type) {

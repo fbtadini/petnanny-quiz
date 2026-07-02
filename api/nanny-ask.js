@@ -65,10 +65,35 @@ FORMATO — devolva SOMENTE o JSON entre <json> e </json>, sem texto fora:
 
 "novos_eventos" no máximo 2, só fatos duráveis e úteis. Nunca invente sinais que o tutor não trouxe.`;
 
+
+// ---- guarda: origem permitida + rate limit por IP (melhor esforço por instância) + tamanho ----
+const PN_ALLOW = /petnanny\.com\.br$|\.vercel\.app$/;
+const PN_HITS = new Map();
+function pnGuard(req, res, maxPerHour, maxBytes) {
+  try {
+    const ref = String(req.headers.origin || req.headers.referer || '');
+    let host = '';
+    try { host = new URL(ref).hostname; } catch (e) {}
+    if (!host || !PN_ALLOW.test(host)) { res.status(403).json({ ok: false, error: 'origem não permitida' }); return false; }
+    const len = parseInt(req.headers['content-length'] || '0', 10);
+    if (maxBytes && len > maxBytes) { res.status(413).json({ ok: false, error: 'arquivo/payload grande demais' }); return false; }
+    const ip = String(req.headers['x-forwarded-for'] || (req.socket && req.socket.remoteAddress) || '?').split(',')[0].trim();
+    const now = Date.now();
+    let arr = (PN_HITS.get(ip) || []).filter(t => now - t < 3600e3);
+    if (arr.length >= maxPerHour) { res.status(429).json({ ok: false, error: 'muitas requisições — tenta daqui a pouco' }); return false; }
+    arr.push(now); PN_HITS.set(ip, arr);
+    if (PN_HITS.size > 5000) PN_HITS.clear();
+    return true;
+  } catch (e) { return true; }
+}
 module.exports = async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ ok: false, error: 'Use POST' });
+  if (!pnGuard(req, res, 30, 9 * 1024 * 1024)) return;
   try {
     const { contexto_cao, texto, imagens, documento, conversa } = req.body || {};
+    if (typeof texto === 'string' && texto.length > 4000) return res.status(413).json({ ok: false, error: 'texto longo demais' });
+    if (Array.isArray(imagens) && imagens.length > 3) return res.status(413).json({ ok: false, error: 'no máximo 3 fotos por vez' });
+    if (Array.isArray(conversa) && conversa.length > 24) return res.status(413).json({ ok: false, error: 'conversa longa demais' });
     const temTexto = typeof texto === 'string' && texto.trim().length > 0;
     const temImg = Array.isArray(imagens) && imagens.length > 0;
     const temDoc = documento && documento.data && documento.media_type;
@@ -92,6 +117,9 @@ module.exports = async function handler(req, res) {
       ? 'CONTEXTO DO CÃO: (o tutor ainda NÃO cadastrou um cão — faça uma triagem geral e cuidadosa, sem exigir cadastro).'
       : 'CONTEXTO DO CÃO (use para personalizar, não repita cru ao tutor):\n' + JSON.stringify({
           nome: ctx.nome || '', raca: ctx.raca || '', idade: ctx.idade || '', porte: ctx.porte || '',
+          sexo: ctx.sexo || '', castrado: ctx.castrado || '',
+          origem: ctx.origem || '', dias_em_casa: (ctx.dias_em_casa != null ? ctx.dias_em_casa : ''),
+          temperamento_relatado_pelo_tutor: ctx.temperamento_relatado || [],
           caracteristicas_saude: ctx.caracteristicas_saude || [],
           dossie_saude: ctx.saude || {},              // { condicoes, vacinas_recentes, exames, peso }
           ultimas_perguntas: ctx.ultimas_perguntas || []
