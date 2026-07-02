@@ -26,6 +26,7 @@
   function g(fn){ return (typeof window[fn]==='function')?window[fn]:null; }
   function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
   function track(ev,p){ try{ if(window.gtag) window.gtag('event',ev,p||{});}catch(e){} }
+  function lISO(){var d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
   function nannyFace(px){ var s=(typeof WESTIE!=='undefined'&&WESTIE)?WESTIE:NANNY_WESTIE; return '<span class="na-face" aria-hidden="true" style="display:inline-flex;width:'+px+'px;height:'+px+'px;border-radius:50%;background:#f3ddc9;border:1px solid #f3d9c2;padding:4px;box-sizing:border-box;flex-shrink:0">'+s+'</span>'; }
 
   function styleOnce(){
@@ -44,7 +45,8 @@
     if((h.condicoes||[]).length) s.condicoes=h.condicoes.slice(-5);
     if((h.vacinas||[]).length) s.vacinas_recentes=h.vacinas.slice(-4).map(function(v){return {nome:v.nome,classe:v.classe,data:v.data};});
     if((h.exames||[]).length) s.exames=h.exames.slice(-4).map(function(e){return {tipo:e.tipo,achado:e.achado,data:e.data};});
-    if(dog.pesoFaixa!=null) s.peso_faixa='faixa '+dog.pesoFaixa+' (informada pelo tutor)';
+    if((dog.weights||[]).length) s.pesos_recentes=dog.weights.slice(-3).map(function(w){return {kg:w.kg,data:w.d};});
+    else if(dog.pesoFaixa!=null) s.peso_faixa='faixa '+dog.pesoFaixa+' (informada pelo tutor)';
     if((dog.notes||'').trim()) s.o_que_o_tutor_contou=(dog.notes||'').slice(0,300);
     return s;
   }
@@ -58,7 +60,12 @@
     if(c.bloat)carac.push('peito fundo (risco de torção)');
     if(c.longBack)carac.push('coluna alongada');
     if(c.patella)carac.push('joelho propenso a luxação de patela');
+    var temper=[]; try{ var TT=(typeof TEMPERAMENTOS!=='undefined')?TEMPERAMENTOS:[]; (dog.temperamento||[]).forEach(function(k){ var f=null; for(var i=0;i<TT.length;i++) if(TT[i].key===k){f=TT[i];break;} temper.push(f?f.label:k); }); }catch(e){}
+    var diasCasa=null; if(dog.chegada){ var ddd=Math.floor((Date.now()-new Date(dog.chegada+'T00:00:00'))/864e5); if(ddd>=0) diasCasa=ddd; }
     return { _dog:dog,
+      sexo:dog.sexo||'', castrado:dog.castrado||'',
+      origem:dog.origem||'', dias_em_casa:diasCasa,
+      temperamento_relatado:temper,
       nome:dog.nome||'', raca:(b&&b.name)||dog.customBreed||dog.raca||'',
       idade:(g('ageLabel')&&g('ageInMonths'))?window.ageLabel(window.ageInMonths(dog)):'',
       porte:(g('rangeOf')&&(window.rangeOf(dog)||{}).band)||'',
@@ -177,8 +184,8 @@
       var termo=r.nivel==='urgente'?'pronto atendimento veterinário 24h perto de mim':'veterinário perto de mim';
       h+='<a href="https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(termo)+'" target="_blank" rel="noopener" style="display:inline-block;margin-top:9px;background:'+n.cor+';color:#fff;text-decoration:none;border-radius:10px;padding:10px 16px;font-weight:500;font-size:13.5px">Achar um vet perto</a>';
     }
-    if(r.pro_vet)h+='<div style="font-size:12px;color:'+CT.green+';margin-top:9px"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="'+CT.green+'" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg> Guardei um resumo pra levar ao vet \u2014 está na aba Carteira.</div>';
-    if(!r.followup)h+='<div style="font-size:11.5px;color:'+CT.mut+';margin-top:9px;line-height:1.4">A Nanny não é veterinária e isto não é consulta. A decisão de saúde é sempre do seu veterinário.</div>';
+    if(r.pro_vet)h+='<div style="font-size:12px;color:'+CT.green+';margin-top:9px"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="'+CT.green+'" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg> Guardei um resumo pra levar ao vet \u2014 está na aba Saúde.</div>';
+    if(!r.followup&&(r.nivel==='procurar_vet'||r.nivel==='urgente'))h+='<div style="font-size:11.5px;color:'+CT.mut+';margin-top:9px;line-height:1.4">A Nanny não é veterinária e isto não é consulta. A decisão de saúde é sempre do seu veterinário.</div>';
     h+='</div>';
     return h;
   }
@@ -224,7 +231,7 @@
         if(ex){
           row+='<div style="padding:0 2px 12px 19px">'
             + (p.resposta?'<div style="font-size:13px;color:'+CT.pri+';line-height:1.55;margin-bottom:7px">'+mdLite(p.resposta)+'</div>':'')
-            + (p.pro_vet?'<div style="font-size:11.5px;color:'+CT.green+';margin-bottom:9px">\ud83e\ude7a Resumo pro vet guardado na Carteira.</div>':'')
+            + (p.pro_vet?'<div style="font-size:11.5px;color:'+CT.green+';margin-bottom:9px">\ud83e\ude7a Resumo pro vet guardado na Saúde.</div>':'')
             + '<button type="button" onclick="nannyContinuar('+realIdx+')" style="background:'+CT.green+';color:#fff;border:0;border-radius:9px;padding:8px 15px;font-weight:600;font-size:12.5px;cursor:pointer;font-family:inherit">Continuar essa conversa</button>'
             + '</div>';
         }
@@ -253,12 +260,14 @@
     if(!texto&&!img){ if(!isReply&&out)out.innerHTML='<div style="font-size:13px;color:#b02a1f">Escreve a dúvida ou anexa uma foto.</div>'; return; }
     var ctx=contextoCao(); var dog=ctx._dog; delete ctx._dog;
     threads[mode].push({de:'tutor',texto:texto||'(foto)'});
-    var conversa=threads[mode].map(function(m){return {de:m.de,texto:m.de==='nanny'?((m.r&&m.r.o_que_fazer_agora)||''):m.texto};});
+    // a mensagem atual vai só em "texto" — mandar também na conversa fazia o modelo ver tudo 2x (e inflava "recorrente")
+    var conversa=threads[mode].slice(0,-1).map(function(m){return {de:m.de,texto:m.de==='nanny'?((m.r&&m.r.o_que_fazer_agora)||''):m.texto};});
     var body={ texto:texto, conversa:conversa }; if(img) body.imagens=[img];
     if(dog) body.contexto_cao=ctx;
     if(el)el.value='';
     if(!isReply){ pendingImg[mode]=null; var fe=document.getElementById('na-file-'+mode); if(fe)fe.value=''; var tg=document.getElementById('na-tag-'+mode); if(tg)tg.style.display='none'; }
     renderThread(mode);
+    var chbox=document.getElementById('na-chips-'+mode); if(chbox)chbox.style.display='none';
     if(out)out.insertAdjacentHTML('beforeend','<div style="margin-top:8px;display:flex;gap:9px;align-items:flex-start">'+nannyFace(28)+'<div style="flex:1"><div class="na-skel" style="width:40%;margin-bottom:8px"></div><div class="na-skel" style="width:90%;margin-bottom:6px"></div><div class="na-skel" style="width:70%"></div></div></div>');
     fetch(ENDPOINT,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})
       .then(function(r){return r.json();})
@@ -267,13 +276,13 @@
         var r=j.resposta; threads[mode].push({de:'nanny',r:r});
         if(dog){
           var repeat=(dog.perguntas&&dog.perguntas.length>=1); dog.perguntas=dog.perguntas||[];
-          dog.perguntas.push({id:Date.now()+'-'+Math.random().toString(36).slice(2,7),data:new Date().toISOString().slice(0,10),texto:texto||'(foto)',entendi:r.entendi||'',nivel:r.nivel,resposta:r.o_que_fazer_agora,por_que:r.por_que||'',pro_vet:r.pro_vet||''});
-          if(Array.isArray(r.novos_eventos)){dog.eventos=dog.eventos||[];r.novos_eventos.forEach(function(e){if(e&&e.tipo)dog.eventos.push({tipo:e.tipo,origem:'observacao_nanny',data:new Date().toISOString().slice(0,10),confianca:e.confianca||'media',payload:e.payload||{}});});}
+          dog.perguntas.push({id:Date.now()+'-'+Math.random().toString(36).slice(2,7),data:lISO(),texto:texto||'(foto)',entendi:r.entendi||'',nivel:r.nivel,resposta:r.o_que_fazer_agora,por_que:r.por_que||'',pro_vet:r.pro_vet||''});
+          if(Array.isArray(r.novos_eventos)){dog.eventos=dog.eventos||[];r.novos_eventos.forEach(function(e){if(e&&e.tipo)dog.eventos.push({tipo:e.tipo,origem:'observacao_nanny',data:lISO(),confianca:e.confianca||'media',payload:e.payload||{}});});}
           if(g('saveDogs'))window.saveDogs(); if(g('nannySync'))window.nannySync(true);
           if(g('renderDocs')){try{window.renderDocs(dog);}catch(e){}}
           track('nanny_ask',{nivel:r.nivel,com_foto:!!img}); if(repeat)track('nanny_ask_repeat',{nivel:r.nivel});
         } else {
-          try{ localStorage.setItem(PEND_KEY,JSON.stringify({data:new Date().toISOString().slice(0,10),texto:texto||'(foto)',nivel:r.nivel,resposta:r.o_que_fazer_agora,pro_vet:r.pro_vet||''})); }catch(e){}
+          try{ localStorage.setItem(PEND_KEY,JSON.stringify({data:lISO(),texto:texto||'(foto)',nivel:r.nivel,resposta:r.o_que_fazer_agora,pro_vet:r.pro_vet||''})); }catch(e){}
           track('nanny_ask',{nivel:r.nivel,sem_cadastro:true});
         }
         renderThread(mode);

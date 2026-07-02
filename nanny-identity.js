@@ -15,6 +15,12 @@
   function getTutor() { try { return JSON.parse(localStorage.getItem(TUTOR_KEY) || 'null'); } catch (e) { return null; } }
   function setTutor(t) { try { localStorage.setItem(TUTOR_KEY, JSON.stringify(t)); } catch (e) {} }
   function currentDogs() { try { return JSON.parse(localStorage.getItem(LS_DOGS) || '[]'); } catch (e) { return []; } }
+  // payload de sync SEM binários: foto e thumbs estouram o limite de ~50k chars por célula do Sheets (o save falharia).
+  // Elas ficam no aparelho; no load, o merge preserva as locais.
+  function slimDog(d){ var c={}; for(var k in d){ if(k==='photo') continue; c[k]=d[k]; }
+    if(Array.isArray(d.files)) c.files=d.files.map(function(f){ return {id:f.id,type:f.type,name:f.name,at:f.at}; });
+    return c; }
+  function slimDogs(){ return currentDogs().map(slimDog); }
   function postSync(body) { return fetch(SYNC_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }).then(function (r) { return r.json(); }); }
 
   function buildProximas() {
@@ -24,12 +30,12 @@
         // cão ainda não chegou: 1 nudge de volta (~10 dias), sem datas de vacina
         var base = d.criadoEm ? new Date(d.criadoEm) : new Date();
         var when = new Date(base.getTime() + 10 * 864e5);
-        out.push({ o_que: 'Já pegou seu cão? Atualize o plano de chegada com a Nanny', nome: (d.nome && d.nome !== 'Meu futuro cão') ? d.nome : '', data: when.toISOString().slice(0, 10) });
+        out.push({ o_que: 'Já pegou seu cão? Atualize o plano de chegada com a Nanny', nome: (d.nome && d.nome !== 'Meu futuro cão') ? d.nome : '', sexo: d.sexo || '', data: when.toISOString().slice(0, 10) });
         return;
       }
       var ups = [];
       try { ups = (window.upcomingReminders ? window.upcomingReminders(d) : []) || []; } catch (e) {}
-      ups.forEach(function (u) { if (u && u.when) out.push({ o_que: u.t || 'um cuidado', nome: d.nome || '', data: new Date(u.when).toISOString().slice(0, 10) }); });
+      ups.forEach(function (u) { if (u && u.when) out.push({ o_que: u.t || 'um cuidado', nome: d.nome || '', sexo: d.sexo || '', data: new Date(u.when).toISOString().slice(0, 10) }); });
     });
     return out;
   }
@@ -42,7 +48,7 @@
     if (!currentDogs().length && !setOptin) return;   // trava: save comum nunca sobe vazio
     clearTimeout(_timer);
     _timer = setTimeout(function () {
-      var body = { action: 'save', email: t.email, dogs: currentDogs(), proximas: buildProximas() };
+      var body = { action: 'save', email: t.email, dogs: slimDogs(), proximas: buildProximas() };
       if (setOptin) body.set_optin = setOptin;
       body.send_welcome = (!t.token && setOptin === 'sim');  // email de boas-vindas só na 1ª ativação
       postSync(body).then(function (j) {
@@ -57,6 +63,19 @@
     setTutor({ email: j.email, token: token, optin: j.optin || 'sim' });
     var serverDogs = (j.dogs && j.dogs.length) ? j.dogs : null;
     if (serverDogs) {
+      // o servidor não guarda foto/thumb (payload leve) — preserva as deste aparelho por id
+      try {
+        var loc = currentDogs(), byId = {};
+        loc.forEach(function (d) { if (d && d.id) byId[d.id] = d; });
+        serverDogs.forEach(function (d) {
+          var l = d && byId[d.id]; if (!l) return;
+          if (l.photo && !d.photo) { d.photo = l.photo; d.photoPos = l.photoPos || d.photoPos; }
+          if (Array.isArray(l.files) && l.files.length) {
+            var st = {}; (d.files || []).forEach(function (f) { if (f && f.id) st[f.id] = f; });
+            l.files.forEach(function (f) { if (f && f.thumb) { if (st[f.id]) st[f.id].thumb = f.thumb; else { d.files = d.files || []; d.files.push(f); } } });
+          }
+        });
+      } catch (e) {}
       try { localStorage.setItem(LS_DOGS, JSON.stringify(serverDogs)); if (window.loadDogs) window.loadDogs(); if (window.renderList) window.renderList(); } catch (e) {}
     } else {
       if (currentDogs().length) nannySync(true);   // servidor vazio + local com cão => sobe (não apaga)
@@ -111,9 +130,10 @@
   window.nannyBoot = function () {
     var box = document.getElementById('nanny-optin');
     if (box) box.innerHTML = '<div style="font-size:13px;color:#7a6a58">Carregando seu perfil…</div>';
+    var sTok = null; try { sTok = sessionStorage.getItem('petnanny_urltok'); if (sTok) sessionStorage.removeItem('petnanny_urltok'); } catch (e) {}
     var m = location.search.match(/[?&]t=([^&]+)/);
-    var urlTok = m ? decodeURIComponent(m[1]) : null;
-    if (urlTok) { try { history.replaceState(null, '', location.pathname); } catch (e) {} }
+    var urlTok = sTok ? decodeURIComponent(sTok) : (m ? decodeURIComponent(m[1]) : null);
+    if (m) { try { history.replaceState(null, '', location.pathname); } catch (e) {} }
     var t = getTutor();
     var token = urlTok || (t && t.token);
     if (token) {

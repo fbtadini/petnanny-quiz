@@ -19,7 +19,16 @@
   window.GEAR_LOJA = LOJA;
 
   function porteTxt(b) { return (b && b.siz <= 2) ? 'porte pequeno' : ((b && b.siz >= 4) ? 'porte grande' : 'porte medio'); }
-  function urlDe(q) { return LOJA.base + encodeURIComponent(q); }
+  // URLs canônicas de categoria (estáveis) > busca: em teste de 02/jul, /busca?q= redirecionou pra home fora do navegador.
+  // Quando não há categoria mapeada, cai na busca normalmente.
+  var CAT = {
+    racao: '/cachorro/racao',
+    comedouro: '/cachorro/acessorios-de-alimentacao/comedouros',
+    cama: '/cachorro/camas-e-cobertores/camas',
+    peitoral: '/cachorro/coleiras-guias-e-peitorais',
+    tapete: '/cachorro/tapetes-fraldas-e-banheiros/tapetes-higienicos'
+  };
+  function urlDe(q, id) { if (id && CAT[id]) return 'https://www.petz.com.br' + CAT[id]; return LOJA.base + encodeURIComponent(q); }
 
   function gearListFor(dog, b, c) {
     c = c || {}; b = b || {};
@@ -27,7 +36,7 @@
     var grande = b.siz >= 4, mini = b.siz <= 2;
     var frio = (b.ctl != null && b.ctl <= 2), calor = (b.htl != null && b.htl <= 2);
     var L = [];
-    var mk = function (id, ic, nome, oque, q) { L.push({ id: id, ic: ic, nome: nome, oque: oque, url: urlDe(q) }); };
+    var mk = function (id, ic, nome, oque, q) { L.push({ id: id, ic: ic, nome: nome, oque: oque, url: urlDe(q, id) }); };
 
     // RAÇÃO — porte/fase ficam no CARD; a query só ancora em "ração cachorro" (+ fase)
     mk('racao', '🍖', 'Ração (' + pt.replace('medio', 'médio') + (filhote ? ', filhote' : '') + ')',

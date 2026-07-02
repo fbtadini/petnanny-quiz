@@ -36,8 +36,13 @@
     if(/v8|v10|v6|polivalente|nobivac|vanguard|óctupla|déctupla|dhppi|canine|canino/.test(n) && !/\bkc\b|b oral|bronchi/.test(n)) return 'multi';
     return 'outra';
   }
-  function antiInterval(produto){ var p=(''+(produto||'')).toLowerCase();
-    if(/bravecto/.test(p)) return 90; if(/simparic|nexgard|capstar/.test(p)) return 30; return 30; }
+  // fonte ÚNICA de intervalo: o antiInterval do hub (meu-cao). Fallback local só se o hub não carregou — ALINHADO com ele.
+  function antiInterval(produto){
+    try{ if(typeof window.antiInterval==='function'){ var r=window.antiInterval(produto); if(r&&r.dias) return r.dias; } }catch(e){}
+    var p=(''+(produto||'')).toLowerCase();
+    if(/bravecto/.test(p)) return 84;
+    if(/seresto|coleira/.test(p)) return 240;
+    return 30; }
 
   // --- componente 0..100 a partir de "há quantos dias foi" vs "intervalo esperado" ---
   // known:false quando não há registro (não penaliza como 0; entra provisório e derruba confiança)
@@ -98,7 +103,7 @@
       if(days>=0 && days<=150){
         var t=String(next.t||''), isProt=/vacin|antip|verm|polivalente|r[áa]bic/i.test(t) || next.tipo==='Vacina';
         var nome=t.split(/\s[—-]\s|\s\(/)[0].trim().toLowerCase();   // "Antirrábica — anual" -> "antirrábica"
-        return { ic:'📅', t:(isProt?'Sua Proteção começa a cair em ':'Próximo cuidado em ')+'~'+days+' dia'+(days!==1?'s':'')+' — '+nome+' vence em '+fmtDate(next.when)+'.' };
+        return { ic:'📅', t:(isProt?'Sua proteção começa a cair em ':'Próximo cuidado em ')+'~'+days+' dia'+(days!==1?'s':'')+' — '+nome+' vence em '+fmtDate(next.when)+'.' };
       }
     }
     if(care.brachy && hot) return { ic:'🌡️', t:'Estação quente chegando: focinho achatado sofre mais no calor — planeje passeios cedo/tarde e evite esforço no sol.' };
@@ -121,11 +126,31 @@
     var lastRabies = mostRecent(vac.filter(function(v){return vacClass(v)==='rabies';}));
     var lastAnti  = mostRecent(he.antiparasitario);
     var lastVerm  = mostRecent(he.vermifugo);
-    var antiInt = antiInterval((he.antiparasitario&&he.antiparasitario.length)?he.antiparasitario[he.antiparasitario.length-1].produto:'');
+    var antiProd = (he.antiparasitario&&he.antiparasitario.length)?he.antiparasitario[he.antiparasitario.length-1].produto:((dog.done&&dog.done.antiProduto&&dog.done.antiProduto!=='outro')?dog.done.antiProduto:'');
+    var antiInt = antiInterval(antiProd);
     var vermInt = filhote ? 30 : 120;
 
+    // REGISTROS RÁPIDOS (done.*) também contam: quem marca sem mandar documento não pode ficar com "lacuna" eterna.
+    // Classifica pelo NOME do item do plano (fonte única) — sem chaves hardcoded.
+    try{
+      if(typeof window.carePlan==='function'){
+        window.carePlan(dog).forEach(function(it){
+          var dd=(dog.done&&it&&dog.done[it.key])?parseD(dog.done[it.key]):null; if(!dd) return;
+          var lo=((it.grupo||'')+' '+(it.nome||'')).toLowerCase();
+          if(it.key==='anti'){ if(!lastAnti||dd>lastAnti) lastAnti=dd; }
+          else if(it.key==='verm'){ if(!lastVerm||dd>lastVerm) lastVerm=dd; }
+          else if(/r[áa]bica|antirr/.test(lo)){ if(!lastRabies||dd>lastRabies) lastRabies=dd; }
+          else if(/v8|v10|polivalente|m[úu]ltipla/.test(lo)){ if(!lastMulti||dd>lastMulti) lastMulti=dd; }
+        });
+      }
+    }catch(e){}
     var cMulti  = windowScore(lastMulti, 395, today);   // ~13 meses
     var cRabies = windowScore(lastRabies, 395, today);
+    // idade importa: antirrábica só é esperada a partir de ~16 semanas (~112 dias) — antes disso não é lacuna nem buraco.
+    // Em DIAS: ageInMonths de calendário arredonda e errava por 1 mês na borda (105d virava "4 meses").
+    var idadeDias=null; try{ if(dog.nascimento){ idadeDias=Math.floor((today - new Date(dog.nascimento+'T00:00:00'))/864e5); } }catch(e){}
+    var rabiesExpected = !((idadeDias!=null && idadeDias<115) || (idadeDias==null && meses!=null && meses<4));
+    if(!rabiesExpected && !cRabies.known) cRabies = { pct:100, known:true, notYet:true };
     var cAnti   = windowScore(lastAnti, antiInt, today);
     var cVerm   = windowScore(lastVerm, vermInt, today);
     var comps = [cMulti, cRabies, cAnti, cVerm];
@@ -136,9 +161,18 @@
     var protecao = Math.round(coreScore*0.65 + parasiteScore*0.35);
     var protKnown = comps.filter(function(c){return c.known;}).length;
     if(!cMulti.known)  lacunas.push('vacina polivalente');
-    if(!cRabies.known) lacunas.push('antirrábica');
+    if(rabiesExpected && !cRabies.known) lacunas.push('antirrábica');
     if(!cAnti.known)   lacunas.push('antipulga');
     if(!cVerm.known)   lacunas.push('vermífugo');
+    // FILHOTE EM PROTOCOLO: dose sugerida já passada e não registrada é o maior risco da vida do cão.
+    // Usa o plano do hub (mesma fonte, sem duplicar cronograma).
+    var puppyPend = [];
+    try{
+      if(meses!=null && meses<12 && typeof window.carePlan==='function' && typeof window.itemStatus==='function'){
+        window.carePlan(dog).forEach(function(it){ if(!it.recorrente){ var st=window.itemStatus(dog,it); if(st&&st.st==='overdue') puppyPend.push(it); } });
+      }
+    }catch(e){}
+    if(puppyPend.length){ protecao = Math.min(protecao, 55); }
 
     // ---------------- ANEL 2 — PESO (estável e saudável; recência do registro) ----------------
     // NUNCA "quanto menor melhor". Recompensa estabilidade + registro recente; penaliza oscilação
@@ -151,8 +185,11 @@
       var recencia = rec<=95 ? 100 : (rec<=190 ? 70 : (rec<=380 ? 45 : 25));
       var estab = 100, delta=null;
       if(ws.length>=2){ delta = last.kg - ws[ws.length-2].kg; var pct=Math.abs(delta)/Math.max(1,ws[ws.length-2].kg);
-        estab = pct<=0.03 ? 100 : (pct<=0.07 ? 75 : (pct<=0.12 ? 50 : 25));
-        if(delta>0 && (care.patella||care.longBack)) estab = Math.max(0, estab-15);   // ganho pesa na articulação
+        if(filhote && delta>0){ estab = 100; }   // filhote crescendo = saúde, não oscilação
+        else {
+          estab = pct<=0.03 ? 100 : (pct<=0.07 ? 75 : (pct<=0.12 ? 50 : 25));
+          if(delta>0 && (care.patella||care.longBack)) estab = Math.max(0, estab-15);   // ganho pesa na articulação
+        }
       }
       pesoPct = Math.round(recencia*0.45 + estab*0.55);
       pesoDetail = String(last.kg).replace('.',',')+' kg' + (delta!=null?(' ('+(delta>0?'+':'')+delta.toFixed(1).replace('.',',')+' kg)'):'') + (rec>190?' · pesagem antiga':'');
@@ -198,12 +235,15 @@
       { key:'peso',     label:'Peso',     pct:pesoPct,  state:state(pesoPct,pesoKnown),     known:pesoKnown, detail:pesoDetail },
       { key:'rotina',   label:'Rotina',   pct:rotina,   state:state(rotina,true),           known:true }
     ];
-    var topAction = pickAction(rings, lacunas, atrasados, senior, temExameRecente, dog, ws, today);
+    if(!rabiesExpected){ lacunas = lacunas.filter(function(l){ return !/r[áa]bica/.test(l); }); }  // <16 semanas: rábica não é lacuna, venha de onde vier
+    var topAction = pickAction(rings, lacunas, atrasados, senior, temExameRecente, dog, ws, today, puppyPend);
 
     // tendência: histórico de peso real (prova de conceito do gráfico longitudinal)
     var trend = ws.slice(-8).map(function(w){ return { d:w.d, kg:w.kg }; });
 
-    return { score:score, verdito:verdito(score,conf), conf:conf, rings:rings, flags:flags,
+    var verditoTxt = verdito(score, conf);
+    if(atrasados>0 && /muito bom/i.test(verditoTxt)) verditoTxt='Bom';   // coerência: com atraso na tela, o rótulo não fecha em "Muito bom"
+    return { score:score, verdito:verditoTxt, conf:conf, rings:rings, flags:flags,
              lacunas:lacunas, topAction:topAction, trend:trend, senior:senior };
   };
 
@@ -212,7 +252,10 @@
     return base;
   }
 
-  function pickAction(rings, lacunas, atrasados, senior, temExameRecente, dog, ws, today){
+  function pickAction(rings, lacunas, atrasados, senior, temExameRecente, dog, ws, today, puppyPend){
+    // prioridade nova: dose de filhote pendente acima de tudo — confirmar/registrar antes de alarmar
+    if(puppyPend && puppyPend.length){ var itp=puppyPend[0];
+      return { t:'A '+itp.nome+' era pra ~'+(itp.sugerido?fmtDate(itp.sugerido):'estas semanas')+'. Se já foi dada, registra em 10 segundos; se não, agenda com o vet — nessa fase é a proteção que mais importa.', cta:'saude', ic:'💉', topic:'vacina' }; }
     // prioridade: proteção com lacuna > atrasados > peso sem/antigo > sênior sem exame > manter
     if(lacunas.indexOf('vacina polivalente')>=0 || lacunas.indexOf('antirrábica')>=0)
       return { t:'Suba a carteira de vacinação — é o que mais pesa no score e eu monto o histórico sozinha.', cta:'carteira', ic:'💉', topic:'vacina' };
@@ -278,6 +321,7 @@
 
     // acumula histórico do score (1x por dia) — o switching cost longitudinal
     try {
+      if(s.conf==='baixa') throw 0;  // 48 provisório não é linha de base, é ruído
       dog.scoreHistory = dog.scoreHistory || [];
       var iso = today0.toISOString().slice(0,10);
       var lastH = dog.scoreHistory[dog.scoreHistory.length-1];
@@ -286,7 +330,8 @@
     } catch(e){}
     var sparkVals = (dog.scoreHistory||[]).map(function(hh){ return hh.s; });
 
-    var col = scoreColor(s.score);
+    var isSetup = (s.conf==='baixa');
+    var col = isSetup ? CT.mut : scoreColor(s.score);
     var confTxt = s.conf==='alta' ? '' : (s.conf==='media' ? 'confiança média · faltam alguns dados' : 'confiança baixa · faltam dados-chave');
     var deltaChip = '';
     if(delta!=null && Math.abs(delta)>=1){
@@ -302,17 +347,17 @@
     h += '<div style="display:flex;align-items:center;gap:16px">';
     h += '<div style="position:relative;flex:0 0 96px;width:96px;height:96px">'+ring(s.score,96,9,col)
       + '<div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center">'
-      + '<div style="font-family:\'Playfair Display\',Georgia,serif;font-weight:800;font-size:28px;color:'+col+';line-height:1">'+s.score+'</div>'
-      + '<div style="font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;color:'+CT.mut+'">de 100</div></div></div>';
+      + '<div style="font-family:\'Playfair Display\',Georgia,serif;font-weight:800;font-size:28px;color:'+col+';line-height:1">'+(isSetup?'—':s.score)+'</div>'
+      + '<div style="font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;color:'+CT.mut+'">'+(isSetup?'score':'de 100')+'</div></div></div>';
     h += '<div style="flex:1;min-width:0">'
       + '<div style="font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:'+CT.mut+'">Score de saúde d'+((dog.sexo==='femea')?'a ':'o ')+esc(dog.nome||'seu cão')+'</div>'
-      + '<div style="font-family:\'Playfair Display\',Georgia,serif;font-weight:800;font-size:21px;color:'+col+';line-height:1.1;margin-top:2px">'+esc(s.verdito)+'</div>'
-      + deltaChip
+      + '<div style="font-family:\'Playfair Display\',Georgia,serif;font-weight:800;font-size:21px;color:'+col+';line-height:1.1;margin-top:2px">'+(isSetup?'Ainda sem score':esc(s.verdito))+'</div>'
+      + (isSetup?('<div style="font-size:12px;color:'+CT.mut+';margin-top:4px;line-height:1.4">Destrava com a carteira de vacinação + 1 pesagem — eu leio e monto sozinha.</div>'):deltaChip)
       + (confTxt?('<div style="font-size:11.5px;color:'+CT.amber+';margin-top:3px">'+confTxt+'</div>'):'')
       + '</div></div>';
 
     // tendência do score (longitudinal) — aparece quando há histórico de alguns dias
-    if(sparkVals.length>=3){
+    if(!isSetup && sparkVals.length>=3){
       h += '<div style="display:flex;align-items:center;gap:11px;margin-top:12px;padding:9px 11px;background:'+CT.cream+';border-radius:12px">'
         + '<div style="flex:0 0 auto">'+sparklineVals(sparkVals, col, 148)+'</div>'
         + '<div style="flex:1;font-size:11px;color:'+CT.mut+';line-height:1.35">Tendência do score · últimos '+sparkVals.length+' registros. Quanto mais você acompanha, mais fina fica a leitura.</div></div>';
