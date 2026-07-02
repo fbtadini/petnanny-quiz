@@ -153,6 +153,24 @@
   }
   function tutorFromPergunta(p){ return { de:'tutor', texto:(p.texto||'(foto)') }; }
   function bubbleFromPergunta(p){ return { de:'nanny', r:{ nivel:p.nivel||'observar', o_que_fazer_agora:p.resposta||'', por_que:p.por_que||'', pro_vet:p.pro_vet||'' } }; }
+  // corta o tema em limite de PALAVRA (o slice por caractere gerava "…depois de nossa conve")
+  function temaDe(t){ t=String(t||'').trim(); if(t.length<=48) return t; var c=t.slice(0,48), i=c.lastIndexOf(' '); return (i>24?c.slice(0,i):c)+'…'; }
+  // desfecho estruturado: 1 toque grava outcome na pergunta + evento — é o dado que transforma log em previsão
+  window.nannyOutcome=function(ref,val){
+    var dog=g('dogObj')?window.dogObj():null; if(!dog)return;
+    var p=(dog.perguntas||[]).filter(function(x){return x&&x.id===ref;})[0];
+    if(p){ p.outcome=val; p.outcome_data=lISO(); }
+    dog.eventos=dog.eventos||[]; dog.eventos.push({tipo:'desfecho',origem:'followup',ref:ref,valor:val,data:lISO()});
+    if(g('saveDogs'))window.saveDogs(); if(g('nannySync'))window.nannySync(true);
+    var fem=(dog.sexo==='femea');
+    var ack= val==='melhorou' ? {nivel:'tranquilo',o_que_fazer_agora:'Boa 🎉 Marquei como resolvido no histórico. Se voltar, me chama.'}
+           : val==='igual'    ? {nivel:'observar', o_que_fazer_agora:'Anotado — sem mudança. Segue de olho; se piorar ou aparecer um sinal novo, vale conversar com o vet.'}
+           :                    {nivel:'observar', o_que_fazer_agora:'Anotado. Piorar pede atenção: me conta aqui embaixo o que mudou — e se '+(fem?'ela':'ele')+' estiver abatid'+(fem?'a':'o')+', não espera: vet.'};
+    for(var i=threads.perfil.length-1;i>=0;i--){ var m=threads.perfil[i]; if(m&&m.de==='nanny'&&m.r&&m.r.followup){ m.r=ack; break; } }
+    renderThread('perfil');
+    if(val==='piorou'){ var inp=document.getElementById('na-in-perfil'); if(inp){ try{inp.focus();}catch(e){} } }
+    track('nanny_followup_outcome',{valor:val});
+  };
 
   // restaura a ÚLTIMA conversa no fio (você vê sua pergunta + a resposta, e continua abaixo).
   // Se a última ficou em aberto (observar/vet), acrescenta um follow-up gentil.
@@ -164,9 +182,8 @@
     var last=pg[pg.length-1];
     threads.perfil.push(tutorFromPergunta(last));
     threads.perfil.push(bubbleFromPergunta(last));
-    if(last.nivel==='observar'||last.nivel==='procurar_vet'){
-      var t=(last.entendi||last.texto||'').slice(0,44);
-      threads.perfil.push({de:'nanny',r:{nivel:'observar',followup:true,o_que_fazer_agora:'Sobre "'+t+'" — como está agora? Pode me atualizar aqui.'}});
+    if((last.nivel==='observar'||last.nivel==='procurar_vet') && !last.outcome){
+      threads.perfil.push({de:'nanny',r:{nivel:'observar',followup:true,followup_ref:(last.id||''),o_que_fazer_agora:'Sobre "'+temaDe(last.entendi||last.texto)+'": como está agora?'}});
     }
   }
   function mdLite(x){var t=esc(x==null?'':x);t=t.replace(/\*\*(.+?)\*\*/g,'<b>$1</b>');t=t.replace(/(^|<br>|\s)(\d+)\.\s/g,'$1<br>$2. ');t=t.replace(/\n/g,'<br>');t=t.replace(/^(<br>)+/,'');return t;}
@@ -179,6 +196,10 @@
       + '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">'+nannyFace(28)
       + '<span style="font-weight:500;color:'+n.cor+';font-size:14px">'+(r.followup?'A Nanny quer saber':n.label)+'</span></div>';
     if(r.o_que_fazer_agora)h+='<div style="font-size:14.5px;color:'+CT.pri+';line-height:1.6'+(r.por_que?';margin-bottom:8px':'')+'">'+mdLite(r.o_que_fazer_agora)+'</div>';
+    if(r.followup&&r.followup_ref){
+      var _ob=function(v,ic,lab){return '<button class="na-chip" style="border:1px solid '+CT.line+';background:#fff;cursor:pointer;font-family:inherit" onclick="window.nannyOutcome&&nannyOutcome(\''+r.followup_ref+'\',\''+v+'\')">'+ic+' '+lab+'</button>';};
+      h+='<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">'+_ob('melhorou','👍','Melhorou')+_ob('igual','😐','Igual')+_ob('piorou','👎','Piorou')+'</div>';
+    }
     if(r.por_que)h+='<div style="font-size:13px;color:'+CT.sec+';line-height:1.55">'+mdLite(r.por_que)+'</div>';
     if(r.nivel==='urgente'||r.nivel==='procurar_vet'){
       var termo=r.nivel==='urgente'?'pronto atendimento veterinário 24h perto de mim':'veterinário perto de mim';
