@@ -81,7 +81,7 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent)}
 .markrow input[type=date]{padding:6px 8px;font-size:12.5px;width:auto;border-radius:9px}
 .chip.sm2{padding:6px 11px;font-size:12px}
 .mini{background:none;border:none;color:var(--brown-light);font-size:12px;font-weight:600;cursor:pointer;text-decoration:underline;padding:2px 4px}
-.hw{border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:11px;background:#fff}
+.hw{border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:11px;background:var(--card)}
 .hw-top{display:flex;gap:10px}.hw-ic{font-size:21px}.hw-t{font-weight:700;font-size:14.5px}.hw-i{font-size:13px;color:var(--brown-mid);margin-top:2px}
 .hw-q{font-size:13.5px;margin:11px 0 9px;font-weight:600}
 .hw-actions{display:flex;gap:8px;flex-wrap:wrap}
@@ -96,14 +96,14 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent)}
 .status-sum.warn{background:#f7e6d8;color:#b5602a}
 .status-sum:not(.ok):not(.warn){background:var(--warm,#f3ece1);color:var(--brown-mid)}
 .doc-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:10px}
-.doc-tile{border:1px solid #eee2d4;border-radius:12px;overflow:hidden;background:#fff}
+.doc-tile{border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--card)}
 .doc-tile>img{width:100%;height:90px;object-fit:cover;cursor:pointer;display:block}
 .dt-meta{display:flex;align-items:center;gap:6px;padding:7px 9px;font-size:12.5px}
 .dt-ic{font-size:15px}
 .dt-lbl{color:var(--brown);font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .dt-rm{display:block;width:100%;border-top:1px solid #f0e6da!important;padding:6px;font-size:11px;border-radius:0}
 .empty-doc{text-align:center;padding:20px 12px;background:var(--warm,#f3ece1);border-radius:12px}
-.hist-sec{border:1px solid var(--line);border-radius:12px;margin-bottom:8px;overflow:hidden;background:#fff}
+.hist-sec{border:1px solid var(--line);border-radius:12px;margin-bottom:8px;overflow:hidden;background:var(--card)}
 .hist-sec>summary{list-style:none;cursor:pointer;padding:11px 14px;display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:13.5px;font-weight:600;color:var(--brown)}
 .hist-sec>summary::-webkit-details-marker{display:none}
 .hist-sec>summary::after{content:'›';color:var(--brown-light);font-size:18px;transition:transform .2s;line-height:1}
@@ -123,7 +123,7 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent)}
 .wlog .wd{color:var(--brown-mid);font-size:12.5px}
 #ficha{display:none}
 @media print{body *{visibility:hidden}#ficha,#ficha *{visibility:visible}#ficha{display:block!important;position:absolute;left:0;top:0;width:100%;padding:24px;color:#222;font-size:13px}.fh1{font-size:22px;font-weight:800;margin:0 0 2px}.fmeta{color:#666;margin-bottom:14px}.fsec{font-weight:700;margin:16px 0 6px;border-bottom:1px solid #ccc;padding-bottom:3px}.frow{padding:3px 0}}
-.chip{font-family:'DM Sans';font-size:12.5px;font-weight:600;padding:8px 12px;border-radius:10px;border:1.5px solid var(--line);background:#fff;color:var(--brown-mid);cursor:pointer;display:inline-flex;align-items:center;gap:6px}
+.chip{font-family:'DM Sans';font-size:12.5px;font-weight:600;padding:8px 12px;border-radius:10px;border:1.5px solid var(--line);background:var(--card);color:var(--brown-mid);cursor:pointer;display:inline-flex;align-items:center;gap:6px}
 .chip.up{border-color:var(--accent);color:var(--accent-deep);background:var(--accent-light)}
 .chip input[type=file]{display:none}
 .watch{display:none;background:var(--warm);border-radius:10px;padding:10px 12px;margin-top:10px;font-size:13px;color:#5a4632}
@@ -134,7 +134,7 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent)}
 .nanny-av svg{width:27px;height:27px}
 .nanny-bubble{background:var(--green-light);color:#2f5238;border-radius:3px 14px 14px 14px;padding:11px 14px;font-size:13.5px;line-height:1.55;flex:1}
 .nanny-bubble b{color:var(--green)}
-.dog-list-item{display:flex;align-items:center;gap:13px;background:#fff;border:1px solid var(--line);border-radius:15px;padding:14px;margin-bottom:10px;cursor:pointer;box-shadow:var(--shadow)}
+.dog-list-item{display:flex;align-items:center;gap:13px;background:var(--card);border:1px solid var(--line);border-radius:15px;padding:14px;margin-bottom:10px;cursor:pointer;box-shadow:var(--shadow)}
 .dll-em{width:46px;height:46px;flex:0 0 46px;border-radius:50%;background:var(--accent-light);display:flex;align-items:center;justify-content:center;font-size:24px;overflow:hidden}.dll-em svg{width:34px;height:34px}.dll-em img{width:100%;height:100%;object-fit:cover}
 .empty{text-align:center;color:var(--brown-light);padding:24px 0}
 .tabs{display:flex;gap:7px;margin:18px 0 14px;position:sticky;top:55px;background:var(--cream);padding:6px 0;z-index:10}
@@ -147,6 +147,21 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent)}
  .tab.on{background:var(--accent);border-color:var(--accent);color:#fff}
  [style*="background:#fff"]{background-color:var(--card)!important}
  .btn{box-shadow:0 4px 16px rgba(232,115,58,.22)}
+ .nanny-bubble{color:#bcd9c2}
+ .note-soft{color:#a7c9ae}
+ .ai-note.ok{color:#a7c9ae}
+ .aviso{background:#33241a;border-color:#4a3423}.aviso p{color:#e0b98f}
+ .status-sum.warn{background:#3a2a1c;color:#e8a86f}
+ .ai-note.warn{background:#33241a;color:#e0b98f}
+ [style*="color:#3a5e44"]{color:#a7c9ae!important}
+ [style*="color:#2f5238"]{color:#bcd9c2!important}
+ [style*="color:#6a4a30"],[style*="color:#8a5a2a"]{color:#e0b98f!important}
+ [style*="color:#b5602a"]{color:#e8935c!important}
+ [style*="background:#fff6ef"],[style*="background:#fdf6ea"]{background-color:#33241a!important}
+ [style*="background:#f7e6d8"],[style*="background:#f3ddc9"]{background-color:#38281a!important}
+ [style*="background:#f7f2ea"]{background-color:var(--ct-cream)!important}
+ [style*="background:#fceade"]{background-color:var(--accent-light)!important}
+ [style*="background:#eef3ea"]{background-color:var(--chip-up)!important}
 }
 /* ===== skeleton loading ===== */
 .pnsk{border-radius:16px;background:linear-gradient(90deg,var(--warm) 25%,var(--line) 40%,var(--warm) 60%);background-size:300% 100%;animation:pnsk 1.15s ease-in-out infinite}
@@ -160,7 +175,7 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent)}
 .del{color:#b5483a;font-size:13px;font-weight:600;background:none;border:1.5px solid #eccfca;border-radius:10px;cursor:pointer;padding:10px;display:block;margin:8px auto 0;width:100%}
 .del.confirm{background:#b5483a;color:#fff;border-color:#b5483a}
 .foot{text-align:center;color:var(--brown-light);font-size:11.5px;margin-top:26px}
-.remind{display:flex;align-items:center;gap:12px;padding:12px;border:1px solid var(--line);border-radius:13px;margin-bottom:9px;background:#fff}
+.remind{display:flex;align-items:center;gap:12px;padding:12px;border:1px solid var(--line);border-radius:13px;margin-bottom:9px;background:var(--card)}
 .r-date{flex:0 0 56px;text-align:center;background:var(--accent-light);border-radius:10px;padding:6px 0}
 .r-date .d{font-family:'Playfair Display',serif;font-weight:800;font-size:19px;color:var(--accent-deep);line-height:1}.r-date .mo{font-size:10px;text-transform:uppercase;color:var(--accent-deep);margin-top:2px}
 .r-t{font-weight:600;font-size:14px}.r-sub{font-size:12px;color:var(--brown-mid)}
@@ -171,7 +186,7 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent)}
 
 <div class="topbar"><div class="inner">
   <div class="logo" onclick="goHome()">
-    <svg width="30" height="30" viewBox="0 0 100 100"><path d="M24 42 L20 10 L42 24 Z" fill="#fff" stroke="#c9b798" stroke-width="4.5" stroke-linejoin="round"/><path d="M76 42 L80 10 L58 24 Z" fill="#fff" stroke="#c9b798" stroke-width="4.5" stroke-linejoin="round"/><path d="M20 55 Q20 28 50 28 Q80 28 80 55 Q80 78 72 83 Q64 89 54 88 Q50 92 46 88 Q36 89 28 83 Q20 78 20 55 Z" fill="#fff" stroke="#c9b798" stroke-width="4.5" stroke-linejoin="round"/><ellipse cx="38" cy="53" rx="4.5" ry="5.2" fill="#3d2c1e"/><ellipse cx="62" cy="53" rx="4.5" ry="5.2" fill="#3d2c1e"/><ellipse cx="50" cy="66" rx="5.5" ry="4.5" fill="#3d2c1e"/><path d="M50 70.5 L50 75" fill="none" stroke="#3d2c1e" stroke-width="3.4" stroke-linecap="round"/><path d="M42.5 77 Q50 82.5 57.5 77" fill="none" stroke="#3d2c1e" stroke-width="3.4" stroke-linecap="round"/></svg>
+    <svg width="30" height="30" viewBox="0 0 100 100"><path d="M24 42 L20 10 L42 24 Z" fill="#fff" stroke="#c9b798" stroke-width="4.5" stroke-linejoin="round"/><path d="M76 42 L80 10 L58 24 Z" fill="#fff" stroke="#c9b798" stroke-width="4.5" stroke-linejoin="round"/><path d="M20 55 Q20 28 50 28 Q80 28 80 55 Q80 78 72 83 Q64 89 54 88 Q50 92 46 88 Q36 89 28 83 Q20 78 20 55 Z" fill="#fff" stroke="#c9b798" stroke-width="4.5" stroke-linejoin="round"/><ellipse cx="38" cy="53" rx="4.5" ry="5.2" fill="var(--ct-pri)"/><ellipse cx="62" cy="53" rx="4.5" ry="5.2" fill="var(--ct-pri)"/><ellipse cx="50" cy="66" rx="5.5" ry="4.5" fill="var(--ct-pri)"/><path d="M50 70.5 L50 75" fill="none" stroke="#3d2c1e" stroke-width="3.4" stroke-linecap="round"/><path d="M42.5 77 Q50 82.5 57.5 77" fill="none" stroke="#3d2c1e" stroke-width="3.4" stroke-linecap="round"/></svg>
     <span>Pet<span class="nn">Nanny</span></span>
   </div>
   <button class="back" id="backBtn" onclick="goHome()" style="visibility:hidden">‹ Meus cães</button>
@@ -278,7 +293,7 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent)}
 <script src="breeds.js"></script>
 <script src="gear.js"></script>
   <script>
-const WESTIE='<svg viewBox="0 0 100 100"><path d="M24 42 L20 10 L42 24 Z" fill="#fff" stroke="#c9b798" stroke-width="4.5" stroke-linejoin="round"/><path d="M76 42 L80 10 L58 24 Z" fill="#fff" stroke="#c9b798" stroke-width="4.5" stroke-linejoin="round"/><path d="M20 55 Q20 28 50 28 Q80 28 80 55 Q80 78 72 83 Q64 89 54 88 Q50 92 46 88 Q36 89 28 83 Q20 78 20 55 Z" fill="#fff" stroke="#c9b798" stroke-width="4.5" stroke-linejoin="round"/><ellipse cx="38" cy="53" rx="4.5" ry="5.2" fill="#3d2c1e"/><ellipse cx="62" cy="53" rx="4.5" ry="5.2" fill="#3d2c1e"/><ellipse cx="50" cy="66" rx="5.5" ry="4.5" fill="#3d2c1e"/><path d="M50 70.5 L50 75" fill="none" stroke="#3d2c1e" stroke-width="3.4" stroke-linecap="round"/><path d="M42.5 77 Q50 82.5 57.5 77" fill="none" stroke="#3d2c1e" stroke-width="3.4" stroke-linecap="round"/></svg>';
+const WESTIE='<svg viewBox="0 0 100 100"><path d="M24 42 L20 10 L42 24 Z" fill="#fff" stroke="#c9b798" stroke-width="4.5" stroke-linejoin="round"/><path d="M76 42 L80 10 L58 24 Z" fill="#fff" stroke="#c9b798" stroke-width="4.5" stroke-linejoin="round"/><path d="M20 55 Q20 28 50 28 Q80 28 80 55 Q80 78 72 83 Q64 89 54 88 Q50 92 46 88 Q36 89 28 83 Q20 78 20 55 Z" fill="#fff" stroke="#c9b798" stroke-width="4.5" stroke-linejoin="round"/><ellipse cx="38" cy="53" rx="4.5" ry="5.2" fill="var(--ct-pri)"/><ellipse cx="62" cy="53" rx="4.5" ry="5.2" fill="var(--ct-pri)"/><ellipse cx="50" cy="66" rx="5.5" ry="4.5" fill="var(--ct-pri)"/><path d="M50 70.5 L50 75" fill="none" stroke="#3d2c1e" stroke-width="3.4" stroke-linecap="round"/><path d="M42.5 77 Q50 82.5 57.5 77" fill="none" stroke="#3d2c1e" stroke-width="3.4" stroke-linecap="round"/></svg>';
 
 const CAM_SVG='<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="3.5"/></svg>';
 const LS_KEY='petnanny_dogs_v1';
@@ -772,7 +787,7 @@ function weightChartSVG(ws){if(ws.length<2)return '';
   const y=k=>pt+(1-(k-mn)/(mx-mn))*(H-pt-pb);
   const pts=ws.map((w,i)=>xs[i].toFixed(1)+','+y(w.kg).toFixed(1)).join(' ');
   const dots=ws.map((w,i)=>`<circle cx="${xs[i].toFixed(1)}" cy="${y(w.kg).toFixed(1)}" r="3" fill="var(--accent)"/>`).join('');
-  return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;margin:8px 0 2px"><polyline points="${pts}" fill="none" stroke="var(--accent)" stroke-width="2"/>${dots}<text x="${xs[0]}" y="${H-4}" font-size="9" fill="#9a8b78">${fmtShort(ws[0].d)}</text><text x="${xs[xs.length-1]}" y="${H-4}" font-size="9" fill="#9a8b78" text-anchor="end">${fmtShort(ws[ws.length-1].d)}</text></svg>`;
+  return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;margin:8px 0 2px"><polyline points="${pts}" fill="none" stroke="var(--accent)" stroke-width="2"/>${dots}<text x="${xs[0]}" y="${H-4}" font-size="9" fill="var(--ct-mut)">${fmtShort(ws[0].d)}</text><text x="${xs[xs.length-1]}" y="${H-4}" font-size="9" fill="var(--ct-mut)" text-anchor="end">${fmtShort(ws[ws.length-1].d)}</text></svg>`;
 }
 function typeIcon(l){l=(''+(l||'')).toLowerCase();if(l.includes('categorizar'))return '❓';if(l.includes('caderneta'))return '💉';if(l.includes('microchip'))return '🔖';if(l.includes('pedigree'))return '📜';if(l.includes('atestado'))return '🩺';if(l.includes('exame'))return '🔬';if(l.includes('contrato')||l.includes('adoç')||l.includes('adoc'))return '📝';if(l.includes('receita'))return '💊';return '📄';}
 function pedigreeCardHTML(dog){const p=dog.pedigree;if(!p||!Object.keys(p).some(k=>p[k]))return '';
@@ -795,17 +810,17 @@ function weightChartBrand(dog){
     bandSVG='<rect x="0" y="'+zy1.toFixed(1)+'" width="'+W+'" height="'+Math.max(0,(zy2-zy1)).toFixed(1)+'" fill="#6b8e6f" opacity="0.12"/>'
       +'<line x1="0" x2="'+W+'" y1="'+zy1.toFixed(1)+'" y2="'+zy1.toFixed(1)+'" stroke="#6b8e6f" stroke-width="1" stroke-dasharray="3,3" opacity="0.55"/>'
       +'<line x1="0" x2="'+W+'" y1="'+zy2.toFixed(1)+'" y2="'+zy2.toFixed(1)+'" stroke="#6b8e6f" stroke-width="1" stroke-dasharray="3,3" opacity="0.55"/>'
-      +'<text x="'+(W-4)+'" y="'+(zy1+11).toFixed(1)+'" font-size="9" fill="#4d6a51" text-anchor="end">'+zlab+' \u00b7 '+String(zc[0]).replace('.',',')+'\u2013'+String(zc[1]).replace('.',',')+' kg</text>'; }
+      +'<text x="'+(W-4)+'" y="'+(zy1+11).toFixed(1)+'" font-size="9" fill="var(--ct-green)" text-anchor="end">'+zlab+' \u00b7 '+String(zc[0]).replace('.',',')+'\u2013'+String(zc[1]).replace('.',',')+' kg</text>'; }
   if(ws.length<2) h+=bandSVG;
   if(ws.length>=2){
     var pts=ws.map((w,i)=>x(i).toFixed(1)+','+y(w.kg).toFixed(1));
     var area='M'+x(0).toFixed(1)+','+(H-pb)+' L'+pts.join(' L')+' L'+x(ws.length-1).toFixed(1)+','+(H-pb)+' Z';
-    h+='<path d="'+area+'" fill="#fceade"/>'+bandSVG;
+    h+='<path d="'+area+'" fill="var(--accent-light)"/>'+bandSVG;
     h+='<polyline points="'+pts.join(' ')+'" fill="none" stroke="#e8733a" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>';
   }
   ws.forEach((w,i)=>{var last=i===ws.length-1;h+='<circle cx="'+x(i).toFixed(1)+'" cy="'+y(w.kg).toFixed(1)+'" r="'+(last?4.5:3)+'" fill="'+(last?'#c95a23':'#e8733a')+'"'+(last?' stroke="#fff" stroke-width="2"':'')+'/>';});
-  var lw=ws[ws.length-1];h+='<text x="'+x(ws.length-1).toFixed(1)+'" y="'+(y(lw.kg)-9).toFixed(1)+'" font-size="11" font-weight="700" fill="#3d2c1e" text-anchor="'+(ws.length>1?'end':'middle')+'">'+String(lw.kg).replace('.',',')+' kg</text>';
-  if(ws.length>=2){h+='<text x="'+x(0)+'" y="'+(H-5)+'" font-size="9" fill="#9a8b78">'+fmtShort(ws[0].d)+'</text><text x="'+x(ws.length-1)+'" y="'+(H-5)+'" font-size="9" fill="#9a8b78" text-anchor="end">'+fmtShort(ws[ws.length-1].d)+'</text>';}
+  var lw=ws[ws.length-1];h+='<text x="'+x(ws.length-1).toFixed(1)+'" y="'+(y(lw.kg)-9).toFixed(1)+'" font-size="11" font-weight="700" fill="var(--ct-pri)" text-anchor="'+(ws.length>1?'end':'middle')+'">'+String(lw.kg).replace('.',',')+' kg</text>';
+  if(ws.length>=2){h+='<text x="'+x(0)+'" y="'+(H-5)+'" font-size="9" fill="var(--ct-mut)">'+fmtShort(ws[0].d)+'</text><text x="'+x(ws.length-1)+'" y="'+(H-5)+'" font-size="9" fill="var(--ct-mut)" text-anchor="end">'+fmtShort(ws[ws.length-1].d)+'</text>';}
   return h+'</svg>';
 }
 function saudePainelHTML(dog){
