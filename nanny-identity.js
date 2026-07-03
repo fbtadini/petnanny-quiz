@@ -19,6 +19,15 @@
   // Elas ficam no aparelho; no load, o merge preserva as locais.
   function slimDog(d){ var c={}; for(var k in d){ if(k==='photo') continue; c[k]=d[k]; }
     if(Array.isArray(d.files)) c.files=d.files.map(function(f){ return {id:f.id,type:f.type,name:f.name,at:f.at}; });
+    // célula do Sheets estoura em ~50k chars: acima de 20 conversas, as ANTIGAS viajam compactadas
+    // (fica o que alimenta o diário e a previsão: tema, nível, desfecho, datas — cai o texto longo)
+    if(Array.isArray(d.perguntas)&&d.perguntas.length>20){
+      var cut=d.perguntas.length-20;
+      c.perguntas=d.perguntas.map(function(p,i){ if(i>=cut||!p) return p;
+        return { id:p.id, data:p.data, entendi:String(p.entendi||p.texto||'').slice(0,90), nivel:p.nivel,
+                 outcome:p.outcome||'', outcome_data:p.outcome_data||'', pro_vet:p.pro_vet?String(p.pro_vet).slice(0,140):'' }; });
+    }
+    if(Array.isArray(d.eventos)&&d.eventos.length>150) c.eventos=d.eventos.slice(-150);
     return c; }
   function slimDogs(){ return currentDogs().map(slimDog); }
   function postSync(body) { return fetch(SYNC_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }).then(function (r) { return r.json(); }); }

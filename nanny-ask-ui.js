@@ -140,7 +140,7 @@
   }
 
   var threads={perfil:[],home:[]};
-  var expandedHist=-1;
+  var expandedHist=-1, histMais={};
 
   function relTime(iso){
     if(!iso) return '';
@@ -161,6 +161,7 @@
     var p=(dog.perguntas||[]).filter(function(x){return x&&x.id===ref;})[0];
     if(p){ p.outcome=val; p.outcome_data=lISO(); }
     dog.eventos=dog.eventos||[]; dog.eventos.push({tipo:'desfecho',origem:'followup',ref:ref,valor:val,data:lISO()});
+    if(dog.eventos.length>200)dog.eventos=dog.eventos.slice(-200);
     if(g('saveDogs'))window.saveDogs(); if(g('nannySync'))window.nannySync(true);
     var fem=(dog.sexo==='femea');
     var ack= val==='melhorou' ? {nivel:'tranquilo',o_que_fazer_agora:'Boa 🎉 Marquei como resolvido no histórico. Se voltar, me chama.'}
@@ -269,6 +270,7 @@
             + (p.resposta?'<div style="font-size:13px;color:'+CT.pri+';line-height:1.55;margin-bottom:7px">'+mdLite(p.resposta)+'</div>':'')
             + (p.pro_vet?'<div style="font-size:11.5px;color:'+CT.green+';margin-bottom:9px">\ud83e\ude7a Resumo pro vet guardado na Sa\u00fade.</div>':'')
             + '<button type="button" onclick="nannyContinuar('+realIdx+')" style="background:'+CT.green+';color:#fff;border:0;border-radius:9px;padding:8px 15px;font-weight:600;font-size:12.5px;cursor:pointer;font-family:inherit">Continuar essa conversa</button>'
+            + '<button type="button" onclick="nannyDelPergunta('+realIdx+')" style="background:none;border:0;color:'+CT.mut+';font-size:12px;cursor:pointer;font-family:inherit;text-decoration:underline;margin-left:10px">apagar</button>'
             + '</div>';
         }
         return row+'</div>';
@@ -277,8 +279,10 @@
       older.slice().reverse().forEach(function(p){ var t=temaClin(p), k=t[0]+' '+t[1]; if(!grupos[k]){grupos[k]=[];ordem.push(k);} grupos[k].push(p); });
       h+='<div>'+ordem.map(function(k){
         var abertos=grupos[k].filter(function(p){return !p.outcome&&(p.nivel==='observar'||p.nivel==='procurar_vet'||p.nivel==='urgente');}).length;
+        var lista=histMais[k]?grupos[k]:grupos[k].slice(0,5);
         return '<div style="font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:'+CT.sec+';padding:12px 2px 2px">'+k+' <span style="font-weight:500;color:'+CT.mut+'">('+grupos[k].length+(abertos?(' \u00b7 '+abertos+' em aberto'):'')+')</span></div>'
-          + grupos[k].map(rowDe).join('');
+          + lista.map(rowDe).join('')
+          + (grupos[k].length>lista.length?('<button type="button" onclick="nannyHistMais(\''+k.replace(/'/g,'')+'\')" style="background:none;border:0;color:'+CT.sec+';font-size:12px;cursor:pointer;font-family:inherit;padding:8px 2px;text-decoration:underline">ver mais '+(grupos[k].length-lista.length)+' \u2193</button>'):'');
       }).join('')+'</div>';
     }
     box.innerHTML=h;
@@ -286,6 +290,15 @@
     if(tg) tg.onclick=function(){ box.setAttribute('data-open', open?'0':'1'); renderHistory('perfil'); };
   }
   window.nannyHistToggle=function(idx){ expandedHist=(expandedHist===idx)?-1:idx; renderHistory('perfil'); };
+  window.nannyHistMais=function(k){ histMais[k]=1; renderHistory('perfil'); };
+  window.nannyDelPergunta=function(idx){
+    var dog=g('dogObj')?window.dogObj():null; if(!dog||!dog.perguntas||!dog.perguntas[idx])return;
+    if(!confirm('Apagar essa conversa do diário? Não dá pra desfazer.'))return;
+    dog.perguntas.splice(idx,1); expandedHist=-1;
+    if(g('saveDogs'))window.saveDogs(); if(g('nannySync'))window.nannySync(true);
+    renderHistory('perfil'); if(g('renderDocs')){try{window.renderDocs(dog);}catch(e){}}
+    track('nanny_diario_apagar',{});
+  };
   window.nannyContinuar=function(idx){
     var dog=g('dogObj')?window.dogObj():null; if(!dog)return;
     var p=(dog.perguntas||[])[idx]; if(!p)return;
@@ -320,7 +333,7 @@
         if(dog){
           var repeat=(dog.perguntas&&dog.perguntas.length>=1); dog.perguntas=dog.perguntas||[];
           dog.perguntas.push({id:Date.now()+'-'+Math.random().toString(36).slice(2,7),data:lISO(),texto:texto||'(foto)',entendi:r.entendi||'',nivel:r.nivel,resposta:r.o_que_fazer_agora,por_que:r.por_que||'',pro_vet:r.pro_vet||''});
-          if(Array.isArray(r.novos_eventos)){dog.eventos=dog.eventos||[];r.novos_eventos.forEach(function(e){if(e&&e.tipo)dog.eventos.push({tipo:e.tipo,origem:'observacao_nanny',data:lISO(),confianca:e.confianca||'media',payload:e.payload||{}});});}
+          if(Array.isArray(r.novos_eventos)){dog.eventos=dog.eventos||[];r.novos_eventos.forEach(function(e){if(e&&e.tipo)dog.eventos.push({tipo:e.tipo,origem:'observacao_nanny',data:lISO(),confianca:e.confianca||'media',payload:e.payload||{}});});if(dog.eventos.length>200)dog.eventos=dog.eventos.slice(-200);}
           if(g('saveDogs'))window.saveDogs(); if(g('nannySync'))window.nannySync(true);
           if(g('renderDocs')){try{window.renderDocs(dog);}catch(e){}}
           track('nanny_ask',{nivel:r.nivel,com_foto:!!img}); if(repeat)track('nanny_ask_repeat',{nivel:r.nivel});

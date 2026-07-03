@@ -409,6 +409,7 @@ const MES=['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','de
 function fmt(dt){return dt.getDate()+' '+MES[dt.getMonth()]+' '+dt.getFullYear()}
 function localISO(d){d=d||new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}
 function emDias(d){if(!d)return '';const t0=new Date();t0.setHours(0,0,0,0);const n=Math.round((d-t0)/864e5);if(n===0)return 'hoje';if(n===1)return 'amanhã';if(n===-1)return 'ontem';return n>0?('em '+n+' dias'):('há '+(-n)+' dias')}
+function escH(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 function bravecto(kg){if(kg<2)return null;if(kg<=4.5)return{f:'2–4,5 kg',d:'112,5 mg'};if(kg<=10)return{f:'4,5–10 kg',d:'250 mg'};if(kg<=20)return{f:'10–20 kg',d:'500 mg'};if(kg<=40)return{f:'20–40 kg',d:'1000 mg'};return{f:'40–56 kg',d:'1400 mg'}}
 
 function startOfToday(){const d=new Date();d.setHours(0,0,0,0);return d}
@@ -642,7 +643,7 @@ function healthInsights(dog,he){const out=[],today=startOfToday();
   if(!(he.antiparasitario||[]).length)out.push('❓ Não vi antipulga/carrapato — quando foi a última vez? Marca no plano.');
   if(!(he.vermifugo||[]).length)out.push('❓ Não vi vermífugo no documento — quando foi a última dose?');
   if(!dog.microchip)out.push('🔖 Tem microchip? Registre o número em "Editar" — é o que garante reencontrar ele se sumir.');
-  (he.exames||[]).slice(-2).forEach(e=>{if(e&&e.achado)out.push(`🔬 Exame (${e.tipo||'laudo'}${e.data?', '+fmtISO(e.data):''}): ${e.achado}. Vale acompanhar com o vet.`);});
+  (he.exames||[]).slice(-2).forEach(e=>{if(e&&e.achado)out.push(`🔬 Exame (${escH(e.tipo)||'laudo'}${e.data?', '+fmtISO(e.data):''}): ${escH(e.achado)}. Vale acompanhar com o vet.`);});
   const hw=healthWatch(dog);if(hw.length)out.push(`🩺 Por ser ${getBreed(dog).name}, vale ficar de olho em: ${hw.map(r=>r.cond.toLowerCase()).join(', ')}.`);
   return out;}
 function insightsHTML(dog,he){const ins=healthInsights(dog,he);if(!ins.length)return '';
@@ -653,7 +654,7 @@ function healthRow(ic,name,dateISO,cat,i,withDate,incerto){
   }
   let sub='';
   if(withDate){if(!dateISO)sub=`<div class="pi-when warn">⚠ sem data — confira</div>`;else if(incerto)sub=`<div class="pi-when warn">⚠ ${fmtISO(dateISO)} — confira</div>`;else sub=`<div class="pi-when">${fmtISO(dateISO)}</div>`;}
-  return `<div class="plan-item"><div class="pi-ic">${ic}</div><div style="flex:1"><div class="pi-t">${name}</div>${sub}</div><button class="rm" title="corrigir" onclick="editHealthItem('${cat}',${i})">✎</button><button class="rm" title="remover (leu errado)" onclick="removeHealthItem('${cat}',${i})">✕</button></div>`;
+  return `<div class="plan-item"><div class="pi-ic">${ic}</div><div style="flex:1"><div class="pi-t">${escH(name)}</div>${sub}</div><button class="rm" title="corrigir" onclick="editHealthItem('${cat}',${i})">✎</button><button class="rm" title="remover (leu errado)" onclick="removeHealthItem('${cat}',${i})">✕</button></div>`;
 }
 function latestDate(arr){const d=(arr||[]).filter(x=>x&&x.data).map(x=>x.data).sort();return d.length?d[d.length-1]:null;}
 function histSection(ic,label,arr,cat){if(!(arr||[]).length)return '';
@@ -664,8 +665,8 @@ function healthHistoryHTML(he){let h='<div style="margin-top:12px">';
   h+=histSection('💉','Vacinas',he.vacinas,'vacinas');
   h+=histSection('🛡️','Antipulga / carrapato',he.antiparasitario,'antiparasitario');
   h+=histSection('💊','Vermífugo',he.vermifugo,'vermifugo');
-  if((he.exames||[]).length){h+=`<div class="sec-label" style="margin:10px 0 6px">Exames e laudos</div>`+he.exames.map(e=>`<div class="pi-d" style="padding:6px 0;border-bottom:1px solid #f3ece1"><b>🔬 ${e.tipo||'Exame'}</b>${e.data?` · ${fmtISO(e.data)}`:''}${e.achado?`<div style="color:var(--brown-mid);margin-top:2px">Do laudo: ${e.achado}${e.incerto?' <span style="color:#c87f2a">(confira)</span>':''}</div>`:''}</div>`).join('');}
-  if((he.condicoes||[]).length){h+=`<div class="sec-label" style="margin:10px 0 6px">Observações de saúde</div>`+he.condicoes.map((c,i)=>healthRow('📝',typeof c==='string'?c:(c.nome||JSON.stringify(c)),null,'condicoes',i,false)).join('');}
+  if((he.exames||[]).length){h+=`<div class="sec-label" style="margin:10px 0 6px">Exames e laudos</div>`+he.exames.map(e=>`<div class="pi-d" style="padding:6px 0;border-bottom:1px solid #f3ece1"><b>🔬 ${escH(e.tipo)||'Exame'}</b>${e.data?` · ${fmtISO(e.data)}`:''}${e.achado?`<div style="color:var(--brown-mid);margin-top:2px">Do laudo: ${escH(e.achado)}${e.incerto?' <span style="color:#c87f2a">(confira)</span>':''}</div>`:''}</div>`).join('');}
+  if((he.condicoes||[]).length){h+=`<div class="sec-label" style="margin:10px 0 6px">Observações de saúde</div>`+he.condicoes.map((c,i)=>healthRow('📝',escH(typeof c==='string'?c:(c.nome||JSON.stringify(c))),null,'condicoes',i,false)).join('');}
   if(he.vet)h+=`<div class="pi-d" style="margin-top:8px">🩺 Vet: ${he.vet}</div>`;
   if(he.microchip)h+=`<div class="pi-d" style="margin-top:4px">🔖 Microchip lido: ${he.microchip}</div>`;
   return h+'</div>';}
@@ -755,7 +756,7 @@ function saudePainelHTML(dog){
     var ups=(typeof upcomingReminders==='function')?upcomingReminders(dog):[];var next=ups.filter(u=>u.status==='upcoming')[0];
     h+='<div style="display:flex;gap:8px;margin-top:10px">'
       +'<div style="flex:1;background:var(--warm);border-radius:12px;padding:10px 11px"><div style="font-size:11px;color:var(--brown-mid)">Peso atual</div><div style="font-size:19px;font-weight:700;color:var(--brown);line-height:1.1;margin-top:2px">'+String(ws[ws.length-1].kg).replace('.',',')+'<span style="font-size:12px;font-weight:400"> kg</span></div><div style="font-size:11px;color:'+trCol+';margin-top:2px">'+trTxt+'</div></div>'
-      +'<div style="flex:1;background:var(--warm);border-radius:12px;padding:10px 11px"><div style="font-size:11px;color:var(--brown-mid)">Próximo cuidado</div>'+(next?('<div style="font-size:13.5px;font-weight:600;color:var(--brown);margin-top:3px;line-height:1.2">'+(next.t||'').split('(')[0].trim()+'</div><div style="font-size:11px;color:var(--brown-mid);margin-top:2px"><b>'+emDias(next.when)+'</b> · '+fmt(next.when)+'</div>'):'<div style="font-size:13px;color:var(--brown-mid);margin-top:5px">nada agendado</div>')+'</div>'
+      +'<div style="flex:1;background:var(--warm);border-radius:12px;padding:10px 11px"><div style="font-size:11px;color:var(--brown-mid)">Próximo cuidado</div>'+(next?('<div style="font-size:13.5px;font-weight:600;color:var(--brown);margin-top:3px;line-height:1.2">'+escH((next.t||'').split('(')[0].trim())+'</div><div style="font-size:11px;color:var(--brown-mid);margin-top:2px"><b>'+emDias(next.when)+'</b> · '+fmt(next.when)+'</div>'):'<div style="font-size:13px;color:var(--brown-mid);margin-top:5px">nada agendado</div>')+'</div>'
       +'</div>';
   } else {
     h+='<div style="background:var(--warm);border-radius:12px;padding:15px;text-align:center"><div style="font-size:13px;color:var(--brown-mid);line-height:1.5">Registre o peso '+suf+' pra eu desenhar a curva — é o primeiro sinal vital do cão.</div><button class="chip" style="margin-top:10px" onclick="setTab(\'cuidados\')">Registrar peso →</button></div>';
@@ -856,7 +857,7 @@ function buildFicha(dog){const b=getBreed(dog);const raca=b._synthetic?dog.custo
 function printFicha(){const dog=dogObj();if(!dog)return;document.getElementById('ficha').innerHTML=buildFicha(dog);window.print();}
 function renderPlan(dog){const items=carePlan(dog),hw=healthWatch(dog),b=getBreed(dog);
   const proxVet=(((dog.health||{}).proximas_datas)||[]).filter(p=>p&&p.data&&new Date(p.data+'T00:00:00')>=startOfToday()).sort((a,b)=>String(a.data).localeCompare(String(b.data)));
-  const proxVetHTML=proxVet.length?`<div style="margin-top:8px;border-top:1px dashed var(--line);padding-top:8px">${proxVet.map(p=>`<div class="pi-d" style="padding:3px 0">📅 <b>Anotado pelo vet:</b> ${p.o_que||'próxima dose'} — ${emDias(new Date(p.data+'T00:00:00'))} (${fmtISO(p.data)})</div>`).join('')}<div class="pi-when muted" style="margin-top:2px">Lidas da carteira — confirme com o vet.</div></div>`:'';
+  const proxVetHTML=proxVet.length?`<div style="margin-top:8px;border-top:1px dashed var(--line);padding-top:8px">${proxVet.map(p=>`<div class="pi-d" style="padding:3px 0">📅 <b>Anotado pelo vet:</b> ${escH(p.o_que)||'próxima dose'} — ${emDias(new Date(p.data+'T00:00:00'))} (${fmtISO(p.data)})</div>`).join('')}<div class="pi-when muted" style="margin-top:2px">Lidas da carteira — confirme com o vet.</div></div>`:'';
   const fotoCTA=`<div style="margin-top:10px"><label class="chip sm2" style="display:inline-flex;align-items:center;gap:6px;cursor:pointer">📷 Foto da etiqueta ou da carteira — eu leio e registro sozinha<input type="file" accept="image/*,.pdf" multiple style="display:none" onchange="nannyReadDoc(this,'doc')"></label></div>`;
   let h=`<div class="disc">🩺 <div>Marque o que já foi feito — o plano recalcula sozinho. As datas são guias; <b>confirme com seu veterinário</b>.</div></div>`;
   // (cabeçalho de status removido — o Score no Hoje já dá o veredito e os insights)
