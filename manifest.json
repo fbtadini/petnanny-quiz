@@ -1,0 +1,17 @@
+{
+  "name": "PetNanny — Meu Cão",
+  "short_name": "PetNanny",
+  "description": "A babá digital do seu cão: score de cuidado, vacinas, antiparasitário e a Nanny sempre à mão.",
+  "start_url": "/meu-cao.html",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#faf7f2",
+  "theme_color": "#faf7f2",
+  "lang": "pt-BR",
+  "icons": [
+    { "src": "/favicon-96.png", "sizes": "96x96", "type": "image/png" },
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}

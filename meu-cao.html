@@ -16,9 +16,12 @@
 </script>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='24' fill='%23f7f0e3'/%3E%3Cpath d='M25 43 L21 12 L43 26 Z' fill='%23fff' stroke='%23c9b798' stroke-width='4.5' stroke-linejoin='round'/%3E%3Cpath d='M75 43 L79 12 L57 26 Z' fill='%23fff' stroke='%23c9b798' stroke-width='4.5' stroke-linejoin='round'/%3E%3Cpath d='M21 56 Q21 29 50 29 Q79 29 79 56 Q79 78 71 83 Q63 89 54 88 Q50 92 46 88 Q37 89 29 83 Q21 78 21 56 Z' fill='%23fff' stroke='%23c9b798' stroke-width='4.5' stroke-linejoin='round'/%3E%3Cellipse cx='38' cy='53' rx='4.5' ry='5.2' fill='%233d2c1e'/%3E%3Cellipse cx='62' cy='53' rx='4.5' ry='5.2' fill='%233d2c1e'/%3E%3Cellipse cx='50' cy='66' rx='5.5' ry='4.5' fill='%233d2c1e'/%3E%3Cpath d='M50 70.5 L50 75' fill='none' stroke='%233d2c1e' stroke-width='3.4' stroke-linecap='round'/%3E%3Cpath d='M42.5 77 Q50 82.5 57.5 77' fill='none' stroke='%233d2c1e' stroke-width='3.4' stroke-linecap='round'/%3E%3C/svg%3E">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#faf7f2" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#16110d" media="(prefers-color-scheme: dark)">
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <style>
-:root{--cream:#faf7f2;--warm:#f5efe6;--brown:#3d2c1e;--brown-mid:#7a5c44;--brown-light:#c4a882;--accent:#e8733a;--accent-deep:#c95a23;--accent-light:#fceade;--green:#4a7c59;--green-light:#e8f2eb;--line:#ece1d2;--shadow:0 4px 18px rgba(61,44,30,.08)}
+:root{--cream:#faf7f2;--warm:#f5efe6;--brown:#3d2c1e;--brown-mid:#7a5c44;--brown-light:#c4a882;--accent:#e8733a;--accent-deep:#c95a23;--accent-light:#fceade;--green:#4a7c59;--green-light:#e8f2eb;--line:#ece1d2;--shadow:0 4px 18px rgba(61,44,30,.08);--card:#fff;--field:#fff;--ct-pri:#3d2c1e;--ct-sec:#5f5142;--ct-mut:#7a6a58;--ct-line:#e8ddd2;--ct-green:#4a7c59;--ct-greensoft:#7a9970;--ct-cream:#f7f2ea;--ct-peach:#f3ddc9;--ct-amber:#b7902a;--ct-red:#c0562e;--ct-track:#efe6da;--chip-up:#eef3ea;--chip-down:#f7ece0}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--brown);margin:0;min-height:100vh;line-height:1.55;font-size:15px}
 .wrap{max-width:560px;margin:0 auto;padding:0 18px 60px}
@@ -37,17 +40,17 @@ h1{font-family:'Playfair Display',serif;font-weight:800;font-size:30px;line-heig
 .btn:hover{transform:translateY(-1px)}.btn:active{transform:translateY(0)}
 label{display:block;font-weight:600;font-size:14px;margin:16px 0 6px}
 label .opt{color:var(--brown-light);font-weight:400}
-input,select,textarea{width:100%;padding:13px 14px;border:1.5px solid var(--line);border-radius:12px;font-family:'DM Sans';font-size:15px;background:#fff;color:var(--brown)}
+input,select,textarea{width:100%;padding:13px 14px;border:1.5px solid var(--line);border-radius:12px;font-family:'DM Sans';font-size:15px;background:var(--field);color:var(--brown)}
 textarea{min-height:96px;resize:vertical;line-height:1.5}
 input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent)}
 .row{display:flex;gap:12px}.row>*{flex:1}
 .seg{display:flex;gap:8px}
-.seg button{flex:1;padding:12px 6px;border:1.5px solid var(--line);background:#fff;border-radius:11px;font-weight:600;font-size:14px;color:var(--brown-mid);cursor:pointer;font-family:'DM Sans'}
+.seg button{flex:1;padding:12px 6px;border:1.5px solid var(--line);background:var(--field);border-radius:11px;font-weight:600;font-size:14px;color:var(--brown-mid);cursor:pointer;font-family:'DM Sans'}
 .seg.small button{font-size:12.5px;padding:11px 3px}
 .seg button.on{border-color:var(--accent);background:var(--accent-light);color:var(--accent-deep)}
 .hint{font-size:12.5px;color:var(--brown-light);margin-top:5px}
 .err{color:#b5483a;font-size:13.5px;font-weight:600;margin-top:10px;display:none}
-.card{background:#fff;border:1px solid var(--line);border-radius:16px;padding:18px;margin-bottom:14px;box-shadow:var(--shadow)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px;margin-bottom:14px;box-shadow:var(--shadow)}
 .dog-head{display:flex;align-items:center;gap:14px;background:linear-gradient(135deg,#fff,var(--warm));border:1px solid var(--line);border-radius:18px;padding:18px;margin:18px 0 14px;box-shadow:var(--shadow)}
 .avatar-wrap{position:relative;width:70px;height:70px;flex:0 0 70px;cursor:pointer}
 .avatar{width:70px;height:70px;border-radius:50%;background:var(--accent-light);display:flex;align-items:center;justify-content:center;font-size:34px;overflow:hidden;cursor:pointer}
@@ -135,7 +138,24 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent)}
 .dll-em{width:46px;height:46px;flex:0 0 46px;border-radius:50%;background:var(--accent-light);display:flex;align-items:center;justify-content:center;font-size:24px;overflow:hidden}.dll-em svg{width:34px;height:34px}.dll-em img{width:100%;height:100%;object-fit:cover}
 .empty{text-align:center;color:var(--brown-light);padding:24px 0}
 .tabs{display:flex;gap:7px;margin:18px 0 14px;position:sticky;top:55px;background:var(--cream);padding:6px 0;z-index:10}
-.tab{flex:1;padding:10px 4px;text-align:center;font-weight:600;font-size:13px;color:var(--brown-mid);background:#fff;border:1px solid var(--line);border-radius:11px;cursor:pointer}.tab.on{background:var(--brown);color:#fff;border-color:var(--brown)}
+.tab{flex:1;padding:10px 4px;text-align:center;font-weight:600;font-size:13px;color:var(--brown-mid);background:var(--card);border:1px solid var(--line);border-radius:11px;cursor:pointer}.tab.on{background:var(--brown);color:#fff;border-color:var(--brown)}
+/* ===== dark mode v1 — remapeia os tokens, mantém a identidade warm ===== */
+@media (prefers-color-scheme:dark){
+ :root{--cream:#16110d;--warm:#241c15;--brown:#efe6da;--brown-mid:#b6a48d;--brown-light:#84735c;--accent:#e8733a;--accent-deep:#f0925e;--accent-light:#3a2313;--green:#7fae8c;--green-light:#22301f;--line:#372c21;--shadow:0 4px 18px rgba(0,0,0,.45);--card:#211a13;--field:#2a2118;--ct-pri:#efe6da;--ct-sec:#cfc0ad;--ct-mut:#a4917a;--ct-line:#372c21;--ct-green:#7fae8c;--ct-greensoft:#8fb397;--ct-cream:#2a2118;--ct-peach:#38281a;--ct-amber:#d4a83a;--ct-red:#e07a52;--ct-track:#372c21;--chip-up:#253522;--chip-down:#3a2a1c}
+ .topbar{background:rgba(22,17,13,.92)}
+ .dog-head{background:linear-gradient(135deg,var(--card),var(--warm))}
+ .tab.on{background:var(--accent);border-color:var(--accent);color:#fff}
+ [style*="background:#fff"]{background-color:var(--card)!important}
+ .btn{box-shadow:0 4px 16px rgba(232,115,58,.22)}
+}
+/* ===== skeleton loading ===== */
+.pnsk{border-radius:16px;background:linear-gradient(90deg,var(--warm) 25%,var(--line) 40%,var(--warm) 60%);background-size:300% 100%;animation:pnsk 1.15s ease-in-out infinite}
+@keyframes pnsk{0%{background-position:100% 0}100%{background-position:-60% 0}}
+/* ===== bottom tab bar no mobile (thumb zone) ===== */
+@media (max-width:640px){
+ .tabs{position:fixed;left:0;right:0;bottom:0;top:auto;margin:0;padding:8px 14px calc(9px + env(safe-area-inset-bottom));border-top:1px solid var(--line);box-shadow:0 -6px 20px rgba(61,44,30,.07);z-index:30}
+ body{padding-bottom:96px}
+}
 .var{font-size:13px;color:var(--brown-mid);padding:7px 0;border-bottom:1px dashed var(--line)}.var:last-child{border:none}
 .del{color:#b5483a;font-size:13px;font-weight:600;background:none;border:1.5px solid #eccfca;border-radius:10px;cursor:pointer;padding:10px;display:block;margin:8px auto 0;width:100%}
 .del.confirm{background:#b5483a;color:#fff;border-color:#b5483a}
@@ -238,7 +258,7 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent)}
       <div class="tab" data-tab="saude" onclick="setTab('saude')">Saúde</div>
       <div class="tab" data-tab="raca" onclick="setTab('raca')">Perfil</div>
     </div>
-    <div id="tab-hoje"></div>
+    <div id="tab-hoje"><div class="pnsk" style="height:150px;margin:14px 0 12px"></div><div class="pnsk" style="height:92px;margin-bottom:12px"></div><div class="pnsk" style="height:92px"></div></div>
     <div id="tab-raca" style="display:none"></div>
     <div id="tab-cuidados" style="display:none"></div>
     <div id="tab-carteira-docs" style="display:none"></div>
@@ -459,7 +479,7 @@ function itemStatus(dog,it){const done=(dog.done||{})[it.key];
   if(it.sugerido&&it.sugerido<startOfToday())return {st:'overdue'};
   return {st:'upcoming'};
 }
-function markDone(key,date){const dog=dogObj();dog.done=dog.done||{};dog.done[key]=date;saveDogs();renderPlan(dog);if(window.renderHoje)renderHoje(dog)}
+function markDone(key,date){try{navigator.vibrate&&navigator.vibrate(12)}catch(e){}const dog=dogObj();dog.done=dog.done||{};dog.done[key]=date;saveDogs();renderPlan(dog);if(window.renderHoje)renderHoje(dog)}
 function undoDone(key){const dog=dogObj();if(dog.done)delete dog.done[key];saveDogs();renderPlan(dog);if(window.renderHoje)renderHoje(dog)}
 function toggleMark(key,def){const w=document.getElementById('mk-'+key);if(!w)return;const open=w.style.display==='flex';w.style.display=open?'none':'flex';const dt=document.getElementById('dt-'+key);if(!open&&dt&&!dt.value)dt.value=def||localISO()}
 function nannyLembrarExtra(nome,base){const dog=dogObj();if(!dog)return;dog.health=dog.health||{};dog.health.proximas_datas=dog.health.proximas_datas||[];
@@ -467,7 +487,7 @@ function nannyLembrarExtra(nome,base){const dog=dogObj();if(!dog)return;dog.heal
   do{ b.setFullYear(b.getFullYear()+1); }while(b<hj);
   dog.health.proximas_datas.push({o_que:'Reforço '+nome+' (lembrete seu — confirme com o vet)',data:localISO(b)});
   saveDogs();renderPlan(dog);if(window.renderHoje)renderHoje(dog);if(window.nannySync)nannySync(true);}
-function confirmMark(key){const dt=document.getElementById('dt-'+key);const ps=document.getElementById('prod-'+key);const mi=document.getElementById('marca-'+key);const iv=document.getElementById('intv-'+key);const dog=dogObj();if(dog){dog.done=dog.done||{};if(ps&&ps.value)dog.done.antiProduto=ps.value;if(mi&&mi.value.trim())dog.done[key+'_marca']=mi.value.trim().slice(0,40);if(iv){if(iv.value)dog.done.antiIntervalo=+iv.value;else delete dog.done.antiIntervalo;}const vv=document.getElementById('vintv-'+key);if(vv){if(vv.value)dog.done.vermIntervalo=+vv.value;else delete dog.done.vermIntervalo;}}if(dt&&dt.value)markDone(key,dt.value)}
+function confirmMark(key){const dt=document.getElementById('dt-'+key);const ps=document.getElementById('prod-'+key);const mi=document.getElementById('marca-'+key);const iv=document.getElementById('intv-'+key);const dog=dogObj();if(dog){dog.done=dog.done||{};if(ps&&ps.value)dog.done.antiProduto=ps.value;if(mi&&mi.value.trim())dog.done[key+'_marca']=mi.value.trim().slice(0,40);if(iv){if(iv.value)dog.done.antiIntervalo=+iv.value;else delete dog.done.antiIntervalo;}const vv=document.getElementById('vintv-'+key);if(vv){if(vv.value)dog.done.vermIntervalo=+vv.value;else delete dog.done.vermIntervalo;}}if(dt&&dt.value){markDone(key,dt.value);try{window.nannyRegistroCard&&nannyRegistroCard(key)}catch(e){}}}
 function upcomingReminders(dog){const out=[],today=startOfToday();
   carePlan(dog).forEach(it=>{const s=itemStatus(dog,it);const tp=it.grupo==='Vacinas'?'Vacina':'Cuidado';
     if(it.recorrente&&s.st==='rec-done'){
@@ -1345,6 +1365,8 @@ try{if(sessionStorage.getItem('petnanny_from')==='quiz'){sessionStorage.removeIt
 <script src="nanny-hoje.js"></script>
 <script src="nanny-score.js"></script>
 <script src="nanny-vet-resumo.js"></script>
+<script src="nanny-extras.js"></script>
+<script>if('serviceWorker' in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('/sw.js').catch(function(){});});}</script>
 <script>document.addEventListener('DOMContentLoaded',function(){window.nannyBoot&&window.nannyBoot();});</script>
 </body>
 </html>

@@ -18,9 +18,9 @@
  * nannyInsights, saveDogs, setTab, WESTIE.
  */
 (function () {
-  var CT = { pri:'#3d2c1e', sec:'#5f5142', mut:'#7a6a58', line:'#e8ddd2', green:'#4a7c59',
-             greenSoft:'#7a9970', cream:'#f7f2ea', peach:'#f3ddc9', amber:'#b7902a', red:'#c0562e',
-             track:'#efe6da' };
+  var CT = { pri:'var(--ct-pri)', sec:'var(--ct-sec)', mut:'var(--ct-mut)', line:'var(--ct-line)', green:'var(--ct-green)',
+             greenSoft:'var(--ct-greensoft)', cream:'var(--ct-cream)', peach:'var(--ct-peach)', amber:'var(--ct-amber)', red:'var(--ct-red)',
+             track:'var(--ct-track)' };
   function g(fn){ return (typeof window[fn]==='function') ? window[fn] : null; }
   function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
   function clamp(x){ return Math.max(0, Math.min(100, x)); }
@@ -354,7 +354,7 @@
     var deltaChip = '';
     if(delta!=null && Math.abs(delta)>=1){
       var up = delta>0, dc = up?CT.greenSoft:CT.red;
-      deltaChip = '<div><span style="display:inline-flex;align-items:center;gap:3px;font-size:11.5px;font-weight:600;color:'+dc+';background:'+(up?'#eef3ea':'#f7ece0')+';border-radius:20px;padding:2px 9px;margin-top:5px">'+(up?'▲':'▼')+' '+(up?'+':'')+delta+' esta semana</span></div>';
+      deltaChip = '<div><span style="display:inline-flex;align-items:center;gap:3px;font-size:11.5px;font-weight:600;color:'+dc+';background:'+(up?'var(--chip-up)':'var(--chip-down)')+';border-radius:20px;padding:2px 9px;margin-top:5px">'+(up?'▲':'▼')+' '+(up?'+':'')+delta+' esta semana</span></div>';
     } else if(delta!=null){
       deltaChip = '<div style="font-size:11.5px;color:'+CT.mut+';margin-top:5px">→ estável esta semana</div>';
     }
@@ -365,7 +365,7 @@
     h += '<div style="display:flex;align-items:center;gap:16px">';
     h += '<div style="position:relative;flex:0 0 96px;width:96px;height:96px">'+ring(s.score,96,9,col)
       + '<div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center">'
-      + '<div style="font-family:\'Playfair Display\',Georgia,serif;font-weight:800;font-size:28px;color:'+col+';line-height:1">'+(isSetup?'—':s.score)+'</div>'
+      + '<div id="pn-scnum" style="font-family:\'Playfair Display\',Georgia,serif;font-weight:800;font-size:28px;color:'+col+';line-height:1">'+(isSetup?'—':s.score)+'</div>'
       + '<div style="font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;color:'+CT.mut+'">'+(isSetup?'score':'de 100')+'</div></div></div>';
     h += '<div style="flex:1;min-width:0">'
       + '<div style="font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:'+CT.mut+'">Score de saúde d'+((dog.sexo==='femea')?'a ':'o ')+esc(dog.nome||'seu cão')+'</div>'
@@ -452,6 +452,7 @@
         + '<span style="color:'+(Math.abs(tot)<0.3?CT.mut:(tot>0?CT.amber:CT.greenSoft))+'">('+(tot>0?'+':'')+tot.toFixed(1).replace('.',',')+' kg)</span></div></div>';
     }
 
+    if(!isSetup){ h += '<div style="margin-top:12px"><button onclick="window.nannyShareCard&&nannyShareCard()" style="background:none;border:1.5px solid '+CT.line+';border-radius:20px;padding:6px 13px;font-size:12px;font-weight:600;color:'+CT.sec+';cursor:pointer;font-family:inherit">\ud83d\udce4 compartilhar o score</button></div>'; }
     h += '<div style="font-size:10.5px;color:'+CT.mut+';margin-top:12px;line-height:1.4;opacity:.9">O score é um índice de cuidado e prevenção — não é diagnóstico. A decisão de saúde é sempre do veterinário.</div>';
     h += '</div>';
     return h;
