@@ -107,7 +107,7 @@
   function cardHTML(mode){
     var semCao=(mode==='home');
     return '<div class="na-fade" style="background:#fff;border:1px solid '+CT.line+';border-radius:16px;padding:15px 15px 14px">'
-      + '<div style="display:flex;align-items:center;gap:9px;margin-bottom:9px">'+nannyFace(30)
+      + '<div style="display:flex;align-items:center;gap:9px;margin-bottom:9px">'+nannyFace(32)
       + '<div><div style="font-weight:500;font-size:15px;color:'+CT.pri+'">Pergunta pra Nanny</div>'
       + '<div style="font-size:12px;color:'+CT.sec+'">'+(semCao?'Uma dúvida agora? Pode perguntar — não precisa cadastrar antes.':'Descreva ou mande uma foto. Ela usa o que sabe do seu cão.')+'</div></div></div>'
       + '<textarea id="na-text-'+mode+'" rows="2" aria-label="Sua dúvida sobre o cão" placeholder="Pode ser qualquer coisa: saúde, comportamento, ração, banho, passeio…" style="width:100%;box-sizing:border-box;border:1.5px solid '+CT.line+';border-radius:12px;padding:12px 13px;font-size:15px;font-family:inherit;color:'+CT.pri+';resize:vertical"></textarea>'+ chipsHTML(mode)
@@ -135,7 +135,7 @@
   }
 
   function skeleton(out){
-    out.innerHTML='<div style="display:flex;gap:9px;align-items:flex-start">'+nannyFace(30)
+    out.innerHTML='<div style="display:flex;gap:9px;align-items:flex-start">'+nannyFace(32)
       +'<div style="flex:1"><div class="na-skel" style="width:40%;margin-bottom:8px"></div><div class="na-skel" style="width:90%;margin-bottom:6px"></div><div class="na-skel" style="width:75%"></div></div></div>';
   }
 
@@ -217,7 +217,7 @@
     threads[mode].forEach(function(m){ h+= m.de==='tutor'?tutorBubble(m.texto):nannyAnswerHTML(m.r,dog); });
     var last=threads[mode][threads[mode].length-1];
     if(dog && last && last.de==='nanny'){
-      h+='<div style="font-size:12px;color:'+CT.mut+';margin-top:10px;text-align:center">↑ Pode continuar a conversa na caixa acima.</div>';
+      h+='<div style="margin-top:12px;text-align:center"><button type="button" onclick="var t=document.getElementById(\'na-text-'+mode+'\');if(t){t.scrollIntoView({behavior:\'smooth\',block:\'center\'});t.focus();}" style="background:none;border:1px solid '+CT.line+';border-radius:20px;color:'+CT.sec+';font-size:12.5px;padding:8px 16px;cursor:pointer;font-family:inherit">✍️ Continuar a conversa</button></div>';
     }
     if(!dog && last && last.de==='nanny'){
       h+='<div class="na-fade" style="margin-top:10px;background:'+CT.cream+';border:1px solid '+CT.line+';border-radius:12px;padding:12px 13px"><div style="font-size:13px;color:'+CT.pri+';line-height:1.5;margin-bottom:9px">Quer que eu guarde isso e acompanhe? Cadastra seu cão \u2014 leva 10 segundos.</div><button type="button" id="na-go-reg" style="background:'+CT.green+';color:#fff;border:0;border-radius:10px;padding:11px 18px;font-weight:500;font-size:14px;cursor:pointer">Cadastrar meu cão</button></div>';

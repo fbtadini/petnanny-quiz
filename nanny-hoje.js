@@ -63,6 +63,16 @@
           out.unshift({ic:'⚖️',t:ArtU(dog)+' '+n+' mudou de faixa de peso (agora '+_BND[fB]+') — dose de antiparasitário e vermífugo acompanha o peso; confere o rótulo na próxima compra.'});
       }
     }catch(e){}
+    // CRUZAMENTO: peso atual × faixa da raça — fora da faixa sobe pra Hoje
+    try{
+      var wsY=dog.weights||[];
+      if(wsY.length && typeof window.bandFor==='function' && typeof window.pesoStatus==='function'){
+        var bdY=window.bandFor(dog, wsY[wsY.length-1].kg);
+        if(bdY&&bdY.breed){ var stY=window.pesoStatus(wsY[wsY.length-1].kg,bdY.b);
+          if(stY&&/^(acima|abaixo)/.test(stY.t)) out.unshift({ic:'⚖️',t:ArtU(dog)+' '+n+' está '+stY.t+'.'});
+        }
+      }
+    }catch(e){}
     return out.slice(0, 3);
   };
 

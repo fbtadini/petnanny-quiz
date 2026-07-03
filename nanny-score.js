@@ -111,10 +111,11 @@
     var mo = today.getMonth(), hot = (mo>=8 || mo<=2);   // verão BR ~ set–mar
     if(next){
       var days = Math.ceil((next.when - today)/864e5);
-      if(days>=0 && days<=150){
+      var lim = Math.max(7, Math.min(21, Math.round(((next.intervalo)||365)*0.2)));   // 30d->7 · 84d->17 · anual->21
+      if(days>=0 && days<=lim){
         var t=String(next.t||''), isProt=/vacin|antip|verm|polivalente|r[áa]bic/i.test(t) || next.tipo==='Vacina';
         var nome=t.split(/\s[—-]\s|\s\(/)[0].trim().toLowerCase();   // "Antirrábica — anual" -> "antirrábica"
-        return { ic:'📅', t:(isProt?'Sua proteção começa a cair em ':'Próximo cuidado em ')+'~'+days+' dia'+(days!==1?'s':'')+' — '+nome+' vence em '+fmtDate(next.when)+'.' };
+        return { ic:'⏳', t:nome.charAt(0).toUpperCase()+nome.slice(1)+' vence em '+days+' dia'+(days!==1?'s':'')+' ('+fmtDate(next.when)+')'+(isProt?' — bom já programar a próxima.':'.') };
       }
     }
     if(care.brachy && hot) return { ic:'🌡️', t:'Estação quente chegando: focinho achatado sofre mais no calor — planeje passeios cedo/tarde e evite esforço no sol.' };
@@ -230,7 +231,7 @@
     score = clamp(score);
 
     // confiança: alta se sabemos proteção + peso; baixa se muita lacuna
-    var conf = (protKnown>=3 && pesoKnown) ? 'alta' : ((protKnown>=2) ? 'media' : 'baixa');
+    var conf = (protKnown>=3 && pesoKnown) ? 'alta' : ((protKnown>=2 || (protKnown>=1 && pesoKnown)) ? 'media' : 'baixa');
 
     // flags de raça (gerenciar, não punir o cão)
     var flags = [];
@@ -268,8 +269,13 @@
     if(puppyPend && puppyPend.length){ var itp=puppyPend[0];
       return { t:'A '+itp.nome+' era pra ~'+(itp.sugerido?fmtDate(itp.sugerido):'estas semanas')+'. Se já foi dada, registra em 10 segundos; se não, agenda com o vet — nessa fase é a proteção que mais importa.', cta:'saude', ic:'💉', topic:'vacina' }; }
     // prioridade: proteção com lacuna > atrasados > peso sem/antigo > sênior sem exame > manter
-    if(lacunas.indexOf('vacina polivalente')>=0 || lacunas.indexOf('antirrábica')>=0)
-      return { t:'Suba a carteira de vacinação — é o que mais pesa no score e eu monto o histórico sozinha.', cta:'carteira', ic:'💉', topic:'vacina' };
+    if(lacunas.indexOf('vacina polivalente')>=0 || lacunas.indexOf('antirrábica')>=0){
+      var jaLeu = (typeof window.hasHealthData==='function') && window.hasHealthData(dog);
+      var faltaV = (lacunas.indexOf('vacina polivalente')>=0?'a polivalente (V8/V10)':'a antirrábica');
+      return jaLeu
+        ? { t:'Na carteira que li não achei '+faltaV+'. Se já foi dada, registra no plano em 10 segundos; se não, agenda com o vet.', cta:'saude', ic:'💉', topic:'vacina' }
+        : { t:'Suba a carteira de vacinação — é o que mais pesa no score e eu monto o histórico sozinha.', cta:'carteira', ic:'💉', topic:'vacina' };
+    }
     if(atrasados>0)
       return { t:'Tem '+atrasados+(atrasados>1?' cuidados atrasados':' cuidado atrasado')+' — registrar (ou renovar) sobe o anel de Rotina.', cta:'carteira', ic:'⏰', topic:'rotina' };
     if(lacunas.indexOf('antipulga')>=0 || lacunas.indexOf('vermífugo')>=0)
