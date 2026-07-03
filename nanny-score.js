@@ -139,7 +139,8 @@
     var lastAnti  = mostRecent(he.antiparasitario);
     var lastVerm  = mostRecent(he.vermifugo);
     var antiProd = (he.antiparasitario&&he.antiparasitario.length)?he.antiparasitario[he.antiparasitario.length-1].produto:((dog.done&&dog.done.antiProduto&&dog.done.antiProduto!=='outro')?dog.done.antiProduto:'');
-    var antiInt = antiInterval(antiProd);
+    var antiOv=(dog.done&&+dog.done.antiIntervalo)||0;
+    var antiInt = antiOv || antiInterval(antiProd);
     var vermInt = filhote ? 30 : 120;
 
     // REGISTROS RÁPIDOS (done.*) também contam: quem marca sem mandar documento não pode ficar com "lacuna" eterna.

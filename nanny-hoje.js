@@ -73,10 +73,87 @@
         }
       }
     }catch(e){}
+    // PERFIL VIVO: personalidade envelhece — a cada ~4 meses, um convite gentil pra revisar
+    try{
+      if((dog.temperamento&&dog.temperamento.length)||dog.notes){
+        if(!dog.tempAt){ dog.tempAt=(typeof window.localISO==='function')?window.localISO():''; if(dog.tempAt&&typeof window.saveDogs==='function')window.saveDogs(); }
+        else{
+          var dTp=Math.floor((Date.now()-new Date(dog.tempAt+'T00:00:00'))/864e5);
+          if(dTp>=120 && !out.length) out.push({ic:'\ud83d\udcdd',t:'Faz uns '+Math.round(dTp/30)+' meses que voc\u00ea me contou como '+art(dog)+' '+n+' \u00e9. Continua igual? D\u00e1 uma revisada na aba Perfil \u2014 personalidade muda, e eu acompanho.'});
+        }
+      }
+    }catch(e){}
     return out.slice(0, 3);
   };
 
   // (blocos pré-merge removidos daqui — o veredito único agora é o Score)
+  // ---------- 🛒 Reposição: o consumível certo, na hora certa (anti/vermífugo pelo plano + ração estimada) ----------
+  window.nannySalvarRacao = function(){
+    var dog=(typeof window.dogObj==='function')?window.dogObj():null; if(!dog) return;
+    var kg=parseFloat(((document.getElementById('repo-kg')||{}).value||'').replace(',','.'));
+    var ab=(document.getElementById('repo-data')||{}).value||'';
+    var mk=((document.getElementById('repo-marca')||{}).value||'').trim().slice(0,40);
+    if(!kg||!ab){ alert('Preenche o tamanho do pacote (kg) e a data que abriu 🙂'); return; }
+    dog.racao={kg:kg,aberto:ab,marca:mk};
+    if(typeof window.saveDogs==='function')window.saveDogs(); if(window.nannySync)window.nannySync(true);
+    if(window.renderHoje)window.renderHoje(dog);
+    try{ if(window.gtag)window.gtag('event','racao_anotada',{}); }catch(e){}
+  };
+  function nannyReposicao(dog){
+    try{
+      var hoje=new Date(); hoje.setHours(0,0,0,0);
+      var rows=[], notaEst=false;
+      var BRAND={bravecto:'/bravecto',seresto:'/seresto',simparic:'/simparic',nexgard:'/nexgard',frontline:'/frontline',drontal:'/drontal'};
+      var base=(window.GEAR_LOJA&&window.GEAR_LOJA.base)||'https://www.petz.com.br/busca?q=';
+      var linkDe=function(prod,q){ var k=String(prod||'').toLowerCase().split(' ')[0]; return BRAND[k]?('https://www.petz.com.br'+BRAND[k]):(base+encodeURIComponent(q||prod||'')); };
+      var addRow=function(dias,label,prod,q){
+        var tone=dias<0?'#b5483a':(dias<=7?'#b7902a':CT.sec);
+        var when=dias<0?('venceu há '+(-dias)+' d'):(dias===0?'vence hoje':('vence em '+dias+' d'));
+        rows.push('<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-top:1px solid '+CT.cream+'">'
+          +'<span style="flex:1;font-size:13px;color:'+CT.pri+';line-height:1.4">'+esc(label)+(prod?(' \u00b7 <b>'+esc(prod)+'</b>'):'')+' <span style="color:'+tone+'">\u2014 '+when+'</span></span>'
+          +'<a href="'+linkDe(prod,q)+'" target="_blank" rel="noopener" onclick="try{window.gtag&&gtag(\'event\',\'reposicao_click\',{})}catch(e){}" style="flex:0 0 auto;font-size:12px;color:#fff;background:'+CT.green+';border-radius:9px;padding:6px 12px;text-decoration:none;font-weight:600">Comprar</a></div>');
+      };
+      // anti + vermífugo: a MESMA fonte do plano (carePlan/itemStatus), nada de relógio paralelo
+      if(typeof window.carePlan==='function' && typeof window.itemStatus==='function'){
+        window.carePlan(dog).forEach(function(it){
+          if(!it.recorrente || (it.key!=='anti'&&it.key!=='verm')) return;
+          var s=window.itemStatus(dog,it); if(!s||!s.next) return;
+          var dias=Math.round((s.next-hoje)/864e5); if(dias>21) return;
+          var prod= it.key==='anti' ? ((dog.done&&dog.done.antiProduto&&dog.done.antiProduto!=='outro')?dog.done.antiProduto:'') : ((dog.done&&dog.done[it.key+'_marca'])||'');
+          addRow(dias, it.key==='anti'?'Antipulga/carrapato':'Verm\u00edfugo', prod, it.key==='anti'?'antipulgas cachorro':'vermifugo cachorro');
+        });
+      }
+      // ração: estimativa de consumo (só com peso + pacote anotado)
+      var infoR='';
+      var r=dog.racao;
+      if(r&&r.aberto&&r.kg){
+        var kgDog=(dog.weights&&dog.weights.length)?dog.weights[dog.weights.length-1].kg:null;
+        if(kgDog){
+          var gDia=kgDog<=10?kgDog*25:(kgDog<=25?kgDog*18:kgDog*14);
+          var dur=Math.max(3,Math.round((r.kg*1000)/gDia));
+          var resta=Math.round((new Date(r.aberto+'T00:00:00')-hoje)/864e5)+dur;
+          if(resta<=14){ addRow(resta,'Ra\u00e7\u00e3o (estimativa)',(r.marca||''),'racao cachorro'); notaEst=true; }
+          else infoR='<div style="font-size:12px;color:'+CT.mut+';padding:8px 0 2px;border-top:1px solid '+CT.cream+'">\ud83c\udf5a Ra\u00e7\u00e3o'+(r.marca?(' ('+esc(r.marca)+')'):'')+': d\u00e1 pra ~'+resta+' dias (estimativa).</div>';
+        }
+      } else {
+        infoR='<div style="padding:9px 0 2px;border-top:1px solid '+CT.cream+'">'
+          +'<div style="font-size:12.5px;color:'+CT.sec+';margin-bottom:7px">\ud83c\udf5a Ra\u00e7\u00e3o: me conta o pacote que eu aviso antes de acabar.</div>'
+          +'<div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">'
+          +'<input id="repo-kg" type="number" step="0.5" min="0.5" placeholder="kg do pacote" style="width:110px;padding:7px 9px;border:1px solid '+CT.line+';border-radius:9px;font-family:inherit;font-size:12.5px">'
+          +'<input id="repo-data" type="date" style="padding:7px 9px;border:1px solid '+CT.line+';border-radius:9px;font-family:inherit;font-size:12.5px">'
+          +'<input id="repo-marca" placeholder="marca (opcional)" style="width:130px;padding:7px 9px;border:1px solid '+CT.line+';border-radius:9px;font-family:inherit;font-size:12.5px">'
+          +'<button onclick="nannySalvarRacao()" style="background:'+CT.green+';color:#fff;border:0;border-radius:9px;padding:8px 13px;font-weight:600;font-size:12.5px;cursor:pointer;font-family:inherit">Anotar</button>'
+          +'</div></div>';
+      }
+      if(!rows.length && !infoR) return '';
+      return '<div style="background:#fff;border:1px solid '+CT.line+';border-radius:16px;padding:13px 15px;margin-bottom:16px">'
+        +'<div style="font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:'+CT.mut+';font-weight:700;margin-bottom:3px">\ud83d\uded2 Reposi\u00e7\u00e3o</div>'
+        +rows.join('')+infoR
+        +(notaEst?'<div style="font-size:10.5px;color:'+CT.mut+';margin-top:6px">Consumo de ra\u00e7\u00e3o \u00e9 estimativa \u2014 quantidades, com o vet.</div>':'')
+        +'</div>';
+    }catch(e){ return ''; }
+  }
+
   window.renderHoje = function (dog) {
     var el = document.getElementById('tab-hoje'); if (!el || !dog) return;
     var ups = g('upcomingReminders') ? (window.upcomingReminders(dog) || []) : [];
@@ -94,6 +171,8 @@
       // fallback raro (nanny-score.js não carregou): sem segundo motor de veredito pra manter em sincronia
       h += '<div style="background:#fff;border:1px solid '+CT.line+';border-radius:16px;padding:14px 15px;margin-bottom:16px;font-size:13px;color:'+CT.sec+'">Carregando o painel de '+esc(nome(dog))+'… se não aparecer, recarrega a página.</div>';
     }
+
+    h += nannyReposicao(dog);
 
     // --- pergunta pra Nanny (montada pelo módulo) ---
     h += '<div id="nanny-ask" style="margin-bottom:16px"></div>';

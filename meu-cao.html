@@ -236,7 +236,7 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent)}
     <div class="tabs">
       <div class="tab on" data-tab="hoje" onclick="setTab('hoje')">Hoje</div>
       <div class="tab" data-tab="saude" onclick="setTab('saude')">Saúde</div>
-      <div class="tab" data-tab="raca" onclick="setTab('raca')">Raça</div>
+      <div class="tab" data-tab="raca" onclick="setTab('raca')">Perfil</div>
     </div>
     <div id="tab-hoje"></div>
     <div id="tab-raca" style="display:none"></div>
@@ -447,8 +447,9 @@ function carePlan(dog){
   const antiArr=(dog.health&&dog.health.antiparasitario)||[];
   const lastAnti=antiArr.filter(a=>a&&a.data).sort((a,b)=>a.data<b.data?1:-1)[0]||null;
   const prodPref=(lastAnti&&lastAnti.produto)||((dog.done&&dog.done.antiProduto&&dog.done.antiProduto!=='outro')?dog.done.antiProduto:'');
-  const ai=antiInterval(prodPref);
-  items.push({key:'anti',nome:'Antiparasitário (pulga/carrapato)',grupo:'Antiparasitário e vermífugo',ic:'🛡️',sugerido:null,recorrente:true,intervalo:ai.dias,det:prodPref?`Último: ${prodPref} · ${ai.label}.`:'Pulga e carrapato — o intervalo depende do produto (ex.: NexGard mensal, Bravecto ~12 semanas, Seresto ~8 meses). Registrando com o produto, eu acerto o relógio sozinha.',nota:ai.label});
+  const aiOv=(dog.done&&+dog.done.antiIntervalo)||0;
+  const ai= aiOv ? {dias:aiOv,label:'a cada '+aiOv+' dias (definido por você — confira a caixa)'} : antiInterval(prodPref);
+  items.push({key:'anti',nome:'Antiparasitário (pulga/carrapato)',grupo:'Antiparasitário e vermífugo',ic:'🛡️',sugerido:null,recorrente:true,intervalo:ai.dias,det:prodPref?`Último: ${prodPref} · ${ai.label}.`:'Pulga e carrapato — o intervalo depende do produto (ex.: NexGard mensal, Bravecto em geral 12 semanas — há versão mensal, confira a caixa —, Seresto ~8 meses). Registrando com o produto, eu acerto o relógio sozinha.',nota:ai.label});
   items.push({key:'verm',nome:'Vermífugo',grupo:'Antiparasitário e vermífugo',ic:'💊',sugerido:null,recorrente:true,intervalo:(m!=null&&m<6)?30:120,det:(m!=null&&m<6)?'Filhote: ~a cada 30 dias até 6 meses.':'Adulto: em geral a cada 3–4 meses — varia com produto e rotina (ex.: Drontal, Endogard). Confirme com o vet.',nota:(m!=null&&m<6)?'a cada 30 dias':'a cada 3–4 meses (varia)'});
   return items;
 }
@@ -461,7 +462,7 @@ function itemStatus(dog,it){const done=(dog.done||{})[it.key];
 function markDone(key,date){const dog=dogObj();dog.done=dog.done||{};dog.done[key]=date;saveDogs();renderPlan(dog);if(window.renderHoje)renderHoje(dog)}
 function undoDone(key){const dog=dogObj();if(dog.done)delete dog.done[key];saveDogs();renderPlan(dog);if(window.renderHoje)renderHoje(dog)}
 function toggleMark(key,def){const w=document.getElementById('mk-'+key);if(!w)return;const open=w.style.display==='flex';w.style.display=open?'none':'flex';const dt=document.getElementById('dt-'+key);if(!open&&dt&&!dt.value)dt.value=def||localISO()}
-function confirmMark(key){const dt=document.getElementById('dt-'+key);const ps=document.getElementById('prod-'+key);const mi=document.getElementById('marca-'+key);const dog=dogObj();if(dog){dog.done=dog.done||{};if(ps&&ps.value)dog.done.antiProduto=ps.value;if(mi&&mi.value.trim())dog.done[key+'_marca']=mi.value.trim().slice(0,40);}if(dt&&dt.value)markDone(key,dt.value)}
+function confirmMark(key){const dt=document.getElementById('dt-'+key);const ps=document.getElementById('prod-'+key);const mi=document.getElementById('marca-'+key);const iv=document.getElementById('intv-'+key);const dog=dogObj();if(dog){dog.done=dog.done||{};if(ps&&ps.value)dog.done.antiProduto=ps.value;if(mi&&mi.value.trim())dog.done[key+'_marca']=mi.value.trim().slice(0,40);if(iv){if(iv.value)dog.done.antiIntervalo=+iv.value;else delete dog.done.antiIntervalo;}}if(dt&&dt.value)markDone(key,dt.value)}
 function upcomingReminders(dog){const out=[],today=startOfToday();
   carePlan(dog).forEach(it=>{const s=itemStatus(dog,it);const tp=it.grupo==='Vacinas'?'Vacina':'Cuidado';
     if(it.recorrente&&s.st==='rec-done'){
@@ -534,7 +535,7 @@ function behaviorConcerns(dog,b){const out=[];const add=k=>{if(k&&BEHAVIOR_CATAL
     if(b.dificuldade==='avancado'||/teimos|cabe[çc]a-?dura|ignora comando/.test(av))add('teimosia');
   }
   return out.slice(0,5);}
-function toggleTemperamento(k){const dog=dogObj();if(!dog)return;dog.temperamento=dog.temperamento||[];const i=dog.temperamento.indexOf(k);if(i>=0)dog.temperamento.splice(i,1);else dog.temperamento.push(k);saveDogs();renderProfile();}
+function toggleTemperamento(k){const dog=dogObj();if(!dog)return;dog.temperamento=dog.temperamento||[];const i=dog.temperamento.indexOf(k);if(i>=0)dog.temperamento.splice(i,1);else dog.temperamento.push(k);dog.tempAt=localISO();saveDogs();renderProfile();}
 function behaviorHTML(dog,b){let h='';
   if(dog.quiz&&dog.quiz.matchedName&&b&&!b._synthetic){const q=dog.quiz;const notes=[];
     if(b.nrg>=4&&(q.atividade==='sedentario'||q.atividade==='moderado'))notes.push(`${b.name} tem energia alta e no quiz você se descreveu mais ${q.atividade==='sedentario'?'caseiro(a)':'moderado(a)'} — reserve exercício e estímulo diários; é o que evita destruição e latido por tédio.`);
@@ -572,11 +573,13 @@ function planItemHTML(dog,it){const s=itemStatus(dog,it),today=localISO();
   const PRODS=['Bravecto','Simparic','NexGard','Seresto (coleira)','Frontline','Advantage','Credelio'];
   const cur=(dog.done&&dog.done.antiProduto)||'';
   const prodSel=isAnti?`<select id="prod-${it.key}" class="he-in" style="margin:0;max-width:170px"><option value="">qual produto?</option>${PRODS.map(p=>`<option${cur===p?' selected':''}>${p}</option>`).join('')}<option value="outro"${cur==='outro'?' selected':''}>Outro / não sei</option></select>`:'';
+  const curIv=(dog.done&&+dog.done.antiIntervalo)||0;
+  const intvSel=isAnti?`<select id="intv-${it.key}" class="he-in" style="margin:0;max-width:170px"><option value="">intervalo: pelo produto</option><option value="30"${curIv===30?' selected':''}>a cada 30 dias (caixa mensal)</option><option value="84"${curIv===84?' selected':''}>a cada 12 semanas</option><option value="240"${curIv===240?' selected':''}>a cada 8 meses (coleira)</option></select>`:'';
   const isVac=it.grupo==='Vacinas';
   const marcaIn=isVac?`<input type="text" id="marca-${it.key}" placeholder="marca (ex.: Vanguard)" class="he-in" style="margin:0;max-width:160px" value="${escH((dog.done&&dog.done[it.key+'_marca'])||'')}">`:'';
   // one-tap: "Registrei hoje" grava na hora; "outro dia" revela o seletor de data. Anti pede o produto (o intervalo depende dele).
   const markToday=(label)=>(isAnti||isVac)
-    ?`<button class="chip up sm2" onclick="toggleMark('${it.key}','${today}')">${label}</button><span class="markrow" id="mk-${it.key}">${isAnti?prodSel:marcaIn}<input type="date" id="dt-${it.key}" max="${today}" value="${today}"><button class="chip up sm2" onclick="confirmMark('${it.key}')">Salvar</button></span>`
+    ?`<button class="chip up sm2" onclick="toggleMark('${it.key}','${today}')">${label}</button><span class="markrow" id="mk-${it.key}">${isAnti?prodSel+intvSel:marcaIn}<input type="date" id="dt-${it.key}" max="${today}" value="${today}"><button class="chip up sm2" onclick="confirmMark('${it.key}')">Salvar</button></span>`
     :`<button class="chip up sm2" onclick="markDone('${it.key}','${today}')">${label}</button> <button class="chip sm2" onclick="toggleMark('${it.key}','${today}')">outro dia</button><span class="markrow" id="mk-${it.key}"><input type="date" id="dt-${it.key}" max="${today}"><button class="chip up sm2" onclick="confirmMark('${it.key}')">Salvar</button></span>`;
   // doses passadas (protocolo de filhote): a data importa, então abre o seletor.
   const markPast=(label,def)=>`<button class="chip sm2" onclick="toggleMark('${it.key}','${def||today}')">${label}</button><span class="markrow" id="mk-${it.key}">${marcaIn}<input type="date" id="dt-${it.key}" max="${today}"${def?` value="${def}"`:''}><button class="chip up sm2" onclick="confirmMark('${it.key}')">Salvar</button></span>`;
@@ -896,8 +899,9 @@ function renderPlan(dog){const items=carePlan(dog),hw=healthWatch(dog),b=getBree
   const proxVet=(((dog.health||{}).proximas_datas)||[]).filter(p=>p&&p.data&&new Date(p.data+'T00:00:00')>=startOfToday()).sort((a,b)=>String(a.data).localeCompare(String(b.data)));
   const proxVetHTML=proxVet.length?`<div style="margin-top:8px;border-top:1px dashed var(--line);padding-top:8px">${proxVet.map(p=>`<div class="pi-d" style="padding:3px 0">📅 <b>Anotado pelo vet:</b> ${escH(p.o_que)||'próxima dose'} — ${emDias(new Date(p.data+'T00:00:00'))} (${fmtISO(p.data)})</div>`).join('')}<div class="pi-when muted" style="margin-top:2px">Lidas da carteira — confirme com o vet.</div></div>`:'';
   const fotoCTA=`<div style="margin-top:10px"><label class="chip sm2" style="display:inline-flex;align-items:center;gap:6px;cursor:pointer">📷 Foto da etiqueta ou da carteira — eu leio e registro sozinha<input type="file" accept="image/*,.pdf" multiple style="display:none" onchange="nannyReadDoc(this,'doc')"></label></div>`;
-  const extrasNomes=[...new Set(((dog.health||{}).vacinas||[]).map(v=>(v&&v.nome)||'').filter(n=>n&&!/v8|v10|polival|m[úu]ltipla|r[áa]bica|revacina/i.test(n)).map(n=>n.replace(/^vacina\s*/i,'')))].slice(0,4);
-  const extrasVac=extrasNomes.length?`<div class="pi-when muted" style="margin-top:8px">💉 Também na carteira: ${extrasNomes.map(escH).join(', ')} — datas completas na seção Documentos.</div>`:'';
+  const extrasMap={};(((dog.health||{}).vacinas)||[]).forEach(v=>{const n0=(v&&v.nome)||'';if(!n0||/v8|v10|polival|m[úu]ltipla|r[áa]bica|revacina/i.test(n0))return;const n1=n0.replace(/^vacina\s*/i,'');if(!(n1 in extrasMap)||String(v.data||'')>String(extrasMap[n1]||''))extrasMap[n1]=v.data||'';});
+  const extrasArr=Object.keys(extrasMap).slice(0,4);
+  const extrasVac=extrasArr.length?`<div class="pi-when muted" style="margin-top:8px">💉 <b>Também na carteira:</b> ${extrasArr.map(n=>escH(n)+(extrasMap[n]?(' — últ. '+fmtISO(extrasMap[n])):'')).join(' · ')}. <span style="color:#9a7717">Sem relógio automático — pergunta ao vet se mantém o reforço.</span></div>`:'';
   let h=`<div class="disc">🩺 <div>Marque o que já foi feito — o plano recalcula sozinho. As datas são guias; <b>confirme com seu veterinário</b>.</div></div>`;
   // (cabeçalho de status removido — o Score no Hoje já dá o veredito e os insights)
   h+=docCardHTML(dog);
@@ -1184,7 +1188,7 @@ function onPhoto(input){const f=input.files&&input.files[0];if(!f)return;const r
 })();
 
 /* ---------- notas ---------- */
-function saveNotes(){const dog=dogObj();dog.notes=document.getElementById('dogNotes').value;saveDogs();renderGuide(dog);const n=document.getElementById('notesAi');if(n){n.className='ai-note ok';n.style.display='block';n.textContent='✓ Salvo — a Nanny vai lembrar disso.';}}
+function saveNotes(){const dog=dogObj();dog.notes=document.getElementById('dogNotes').value;dog.tempAt=localISO();saveDogs();renderGuide(dog);const n=document.getElementById('notesAi');if(n){n.className='ai-note ok';n.style.display='block';n.textContent='✓ Salvo — a Nanny vai lembrar disso.';}}
 
 /* ---------- IA: Nanny lê ---------- */
 /* (removido no merge: nannyReadNotes/callClaude — a IA de texto livre vive no "Pergunta pra Nanny") */
