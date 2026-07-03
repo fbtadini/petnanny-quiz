@@ -10,7 +10,7 @@
  * BREED_CARE, setTab, fmt, WESTIE, nannyAskMount.
  */
 (function () {
-  var NANNY_WESTIE='<svg viewBox="0 0 100 100"><path d="M24 42 L20 10 L42 24 Z" fill="#fff" stroke="#c9b798" stroke-width="3" stroke-linejoin="round"/><path d="M76 42 L80 10 L58 24 Z" fill="#fff" stroke="#c9b798" stroke-width="3" stroke-linejoin="round"/><path d="M20 55 Q20 28 50 28 Q80 28 80 55 Q80 78 72 83 Q64 89 54 88 Q50 92 46 88 Q36 89 28 83 Q20 78 20 55 Z" fill="#fff" stroke="#c9b798" stroke-width="3" stroke-linejoin="round"/><ellipse cx="38" cy="53" rx="3.5" ry="4.2" fill="#3d2c1e"/><ellipse cx="62" cy="53" rx="3.5" ry="4.2" fill="#3d2c1e"/><circle cx="39" cy="51.5" r="1" fill="#fff"/><circle cx="63" cy="51.5" r="1" fill="#fff"/><ellipse cx="50" cy="67" rx="5" ry="4" fill="#3d2c1e"/><circle cx="48.5" cy="65.5" r="1.2" fill="#6b5240"/><path d="M50 71.5 L50 76" stroke="#3d2c1e" stroke-width="2" stroke-linecap="round"/><path d="M43 78 Q50 82 57 78" stroke="#3d2c1e" stroke-width="2" stroke-linecap="round" fill="none"/></svg>';
+  var NANNY_WESTIE='<svg viewBox="0 0 100 100"><path d="M24 42 L20 10 L42 24 Z" fill="#fff" stroke="#c9b798" stroke-width="4.5" stroke-linejoin="round"/><path d="M76 42 L80 10 L58 24 Z" fill="#fff" stroke="#c9b798" stroke-width="4.5" stroke-linejoin="round"/><path d="M20 55 Q20 28 50 28 Q80 28 80 55 Q80 78 72 83 Q64 89 54 88 Q50 92 46 88 Q36 89 28 83 Q20 78 20 55 Z" fill="#fff" stroke="#c9b798" stroke-width="4.5" stroke-linejoin="round"/><ellipse cx="38" cy="53" rx="4.5" ry="5.2" fill="#3d2c1e"/><ellipse cx="62" cy="53" rx="4.5" ry="5.2" fill="#3d2c1e"/><ellipse cx="50" cy="66" rx="5.5" ry="4.5" fill="#3d2c1e"/><path d="M50 70.5 L50 75" fill="none" stroke="#3d2c1e" stroke-width="3.4" stroke-linecap="round"/><path d="M42.5 77 Q50 82.5 57.5 77" fill="none" stroke="#3d2c1e" stroke-width="3.4" stroke-linecap="round"/></svg>';
   var CT = { pri:'#3d2c1e', sec:'#5f5142', mut:'#7a6a58', line:'#e8ddd2', green:'#7a9970', cream:'#f7f2ea', peach:'#f3ddc9', amber:'#b7902a', red:'#c0562e' };
   function g(fn){ return (typeof window[fn]==='function')?window[fn]:null; }
   function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
@@ -46,6 +46,13 @@
     if (b.nrg >= 4 && meses != null && meses < 36 && !adot && !out.some(function(o){return o.ic==='⚡';})) out.push({ic:'⚡',t:(b.name||(dog.sexo==='femea'?'Ela':'Ele'))+' é de energia alta e ainda jovem: sem gasto físico e mental diário, sobra pra bagunça e latido. Brinquedo de enriquecimento e passeio resolvem a maior parte.'});
     if (b.nrg >= 4 && meses != null && meses < 36 && adot && (dog.temperamento||[]).length && !out.some(function(o){return o.ic==='⚡';})) out.push({ic:'⚡',t:'Pelo que você contou, '+art(dog)+' '+n+' tem bastante energia — sem gasto físico e mental diário, sobra pra bagunça. Brinquedo de enriquecimento e passeio ajudam muito.'});
 
+    // CRUZAMENTO: o que o tutor escreveu × predisposição da raça (ex.: "senta torto" em raça com patela)
+    try{
+      var careX=(window.BREED_CARE&&window.BREED_CARE[dog.breedKey])||{};
+      var ntX=String(dog.notes||'').toLowerCase();
+      if(careX.patella && /senta|patinha|perninha|manc|pulinh|salt|apoia/.test(ntX) && !out.some(function(o){return o.ic==='\ud83e\uddb5';}))
+        out.unshift({ic:'\ud83e\uddb5',t:'Voc\u00ea contou que '+art(dog)+' '+n+' senta/apoia diferente \u2014 em ra\u00e7a com tend\u00eancia a patela, vale filmar o movimento e mostrar ao vet na pr\u00f3xima consulta.'});
+    }catch(e){}
     return out.slice(0, 3);
   };
 

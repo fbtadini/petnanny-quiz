@@ -14,11 +14,11 @@
  * downscaleImage, nannySync, BREED_CARE, WESTIE, gtag, startRegister.
  */
 (function () {
-  var NANNY_WESTIE='<svg viewBox="0 0 100 100"><path d="M24 42 L20 10 L42 24 Z" fill="#fff" stroke="#c9b798" stroke-width="3" stroke-linejoin="round"/><path d="M76 42 L80 10 L58 24 Z" fill="#fff" stroke="#c9b798" stroke-width="3" stroke-linejoin="round"/><path d="M20 55 Q20 28 50 28 Q80 28 80 55 Q80 78 72 83 Q64 89 54 88 Q50 92 46 88 Q36 89 28 83 Q20 78 20 55 Z" fill="#fff" stroke="#c9b798" stroke-width="3" stroke-linejoin="round"/><ellipse cx="38" cy="53" rx="3.5" ry="4.2" fill="#3d2c1e"/><ellipse cx="62" cy="53" rx="3.5" ry="4.2" fill="#3d2c1e"/><circle cx="39" cy="51.5" r="1" fill="#fff"/><circle cx="63" cy="51.5" r="1" fill="#fff"/><ellipse cx="50" cy="67" rx="5" ry="4" fill="#3d2c1e"/><circle cx="48.5" cy="65.5" r="1.2" fill="#6b5240"/><path d="M50 71.5 L50 76" stroke="#3d2c1e" stroke-width="2" stroke-linecap="round"/><path d="M43 78 Q50 82 57 78" stroke="#3d2c1e" stroke-width="2" stroke-linecap="round" fill="none"/></svg>';
+  var NANNY_WESTIE='<svg viewBox="0 0 100 100"><path d="M24 42 L20 10 L42 24 Z" fill="#fff" stroke="#c9b798" stroke-width="4.5" stroke-linejoin="round"/><path d="M76 42 L80 10 L58 24 Z" fill="#fff" stroke="#c9b798" stroke-width="4.5" stroke-linejoin="round"/><path d="M20 55 Q20 28 50 28 Q80 28 80 55 Q80 78 72 83 Q64 89 54 88 Q50 92 46 88 Q36 89 28 83 Q20 78 20 55 Z" fill="#fff" stroke="#c9b798" stroke-width="4.5" stroke-linejoin="round"/><ellipse cx="38" cy="53" rx="4.5" ry="5.2" fill="#3d2c1e"/><ellipse cx="62" cy="53" rx="4.5" ry="5.2" fill="#3d2c1e"/><ellipse cx="50" cy="66" rx="5.5" ry="4.5" fill="#3d2c1e"/><path d="M50 70.5 L50 75" fill="none" stroke="#3d2c1e" stroke-width="3.4" stroke-linecap="round"/><path d="M42.5 77 Q50 82.5 57.5 77" fill="none" stroke="#3d2c1e" stroke-width="3.4" stroke-linecap="round"/></svg>';
   var ENDPOINT = '/api/nanny-ask', PEND_KEY = 'petnanny_pergunta_avulsa';
   var CT = { pri:'#3d2c1e', sec:'#5f5142', mut:'#7a6a58', line:'#e8ddd2', green:'#7a9970', cream:'#f7f2ea' };
   var NIVEL = {
-    leve:        { cor:'#5c7a52', bg:'#eef3ea', label:'Tranquilo' },
+    leve:        { cor:'#5c7a52', bg:'#eef3ea', label:'Nanny' },
     observar:    { cor:'#9a7717', bg:'#f6efdb', label:'Vale observar' },
     procurar_vet:{ cor:'#c0722e', bg:'#f7ece0', label:'Procure um vet' },
     urgente:     { cor:'#b02a1f', bg:'#f7e4e1', label:'Urgente' }
@@ -201,7 +201,7 @@
       var _ob=function(v,ic,lab){return '<button class="na-chip" style="border:1px solid '+CT.line+';background:#fff;cursor:pointer;font-family:inherit" onclick="window.nannyOutcome&&nannyOutcome(\''+r.followup_ref+'\',\''+v+'\')">'+ic+' '+lab+'</button>';};
       h+='<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">'+_ob('melhorou','👍','Melhorou')+_ob('igual','😐','Igual')+_ob('piorou','👎','Piorou')+'</div>';
     }
-    if(r.por_que)h+='<details style="margin-top:2px"><summary style="font-size:12px;color:'+CT.sec+';cursor:pointer;user-select:none;-webkit-user-select:none">por que esse nível \u203a</summary><div style="font-size:13px;color:'+CT.sec+';line-height:1.55;margin-top:6px">'+mdLite(r.por_que)+'</div></details>';
+    if(r.por_que)h+='<details style="margin-top:2px"><summary style="font-size:12px;color:'+CT.sec+';cursor:pointer;user-select:none;-webkit-user-select:none">por quê? \u203a</summary><div style="font-size:13px;color:'+CT.sec+';line-height:1.55;margin-top:6px">'+mdLite(r.por_que)+'</div></details>';
     if(r.nivel==='urgente'||r.nivel==='procurar_vet'){
       var termo=r.nivel==='urgente'?'pronto atendimento veterinário 24h perto de mim':'veterinário perto de mim';
       h+='<a href="https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(termo)+'" target="_blank" rel="noopener" style="display:inline-block;margin-top:9px;background:'+n.cor+';color:#fff;text-decoration:none;border-radius:10px;padding:10px 16px;font-weight:500;font-size:13.5px">Achar um vet perto</a>';
@@ -246,7 +246,7 @@
         ['\ud83c\udf7d\ufe0f','Digestivo',/coc[o\u00f4]|fezes|diarr|v[o\u00f4]mit|apetite|comend|n[a\u00e3]o come|barriga|intestin/i],
         ['\ud83e\uddf4','Pele & pelo',/pelo|pele|coceira|co[\u00e7c]a|lamb|queda|caindo|alerg|orelha/i],
         ['\ud83e\uddb4','Locomo\u00e7\u00e3o',/manca|pata|quadril|articula|escada/i],
-        ['\ud83d\udc89','Sa\u00fade geral',/vacin|verm[i\u00ed]fug|pulga|carrapat|castra|\bcio\b|rem[e\u00e9]dio/i]
+        ['\ud83d\udc89','Sa\u00fade geral',/vacin|verm[i\u00ed]fug|pulga|carrapat|castra|\bcio\b|rem[e\u00e9]dio|veterin[a\u00e1]ri/i]
       ];
       var temaClin=function(p){ var t=(p.entendi||p.texto||''); for(var i=0;i<TEMAS.length;i++){ if(TEMAS[i][2].test(t)) return TEMAS[i]; } return ['\ud83d\udccc','Outros',null]; };
       var statusDe=function(p){
