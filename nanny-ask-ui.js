@@ -200,7 +200,7 @@
       var _ob=function(v,ic,lab){return '<button class="na-chip" style="border:1px solid '+CT.line+';background:#fff;cursor:pointer;font-family:inherit" onclick="window.nannyOutcome&&nannyOutcome(\''+r.followup_ref+'\',\''+v+'\')">'+ic+' '+lab+'</button>';};
       h+='<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">'+_ob('melhorou','👍','Melhorou')+_ob('igual','😐','Igual')+_ob('piorou','👎','Piorou')+'</div>';
     }
-    if(r.por_que)h+='<div style="font-size:13px;color:'+CT.sec+';line-height:1.55">'+mdLite(r.por_que)+'</div>';
+    if(r.por_que)h+='<details style="margin-top:2px"><summary style="font-size:12px;color:'+CT.sec+';cursor:pointer;user-select:none;-webkit-user-select:none">por que esse nível \u203a</summary><div style="font-size:13px;color:'+CT.sec+';line-height:1.55;margin-top:6px">'+mdLite(r.por_que)+'</div></details>';
     if(r.nivel==='urgente'||r.nivel==='procurar_vet'){
       var termo=r.nivel==='urgente'?'pronto atendimento veterinário 24h perto de mim':'veterinário perto de mim';
       h+='<a href="https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(termo)+'" target="_blank" rel="noopener" style="display:inline-block;margin-top:9px;background:'+n.cor+';color:#fff;text-decoration:none;border-radius:10px;padding:10px 16px;font-weight:500;font-size:13.5px">Achar um vet perto</a>';

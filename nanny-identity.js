@@ -52,7 +52,13 @@
       if (setOptin) body.set_optin = setOptin;
       body.send_welcome = (!t.token && setOptin === 'sim');  // email de boas-vindas só na 1ª ativação
       postSync(body).then(function (j) {
-        if (j && j.ok) { t.token = j.token || t.token; if (j.optin) t.optin = j.optin; setTutor(t); renderOptIn(); }
+        if (j && j.ok) {
+          t.token = j.token || t.token; if (j.optin) t.optin = j.optin; setTutor(t); renderOptIn();
+          // ativação: busca o que já existe no servidor e aplica na hora (multi-aparelho sem reload)
+          if (setOptin === 'sim' && t.token) {
+            postSync({ action: 'load', token: t.token }).then(function (jj) { applyLoad(jj, t.token); renderOptIn(); }).catch(function () {});
+          }
+        }
       }).catch(function () {});
     }, force ? 0 : 1200);
   }
@@ -96,7 +102,7 @@
       return;
     }
     if (t && t.email) {   // ativo
-      box.innerHTML = '<div style="font-size:13px;color:#7a9970">🔔 Lembretes ativos em <strong>' + t.email + '</strong> · '
+      box.innerHTML = '<div style="font-size:13px;color:#7a9970">🔔 Perfil sincronizado + lembretes em <strong>' + t.email + '</strong> · '
         + '<a href="#" id="nanny-pause" style="color:#9a8b78">pausar</a></div>';
       document.getElementById('nanny-pause').onclick = function (ev) { ev.preventDefault(); var tt = getTutor(); if (tt) { tt.optin = 'nao'; setTutor(tt); } renderOptIn(); nannySync(true, 'nao'); };
       return;
@@ -104,14 +110,15 @@
     // sem tutor: formulário
     box.innerHTML =
       '<div style="background:#f7f2ea;border:1px solid #e8ddd2;border-radius:14px;padding:16px;margin:12px 0">'
-      + '<div style="font-weight:600;margin-bottom:4px">Quer que a Nanny te avise das próximas datas?</div>'
-      + '<div style="font-size:13px;color:#7a6a58;margin-bottom:10px">Vacina, antiparasitário e vermífugo chegando — um email, sem spam. Opcional.</div>'
+      + '<div style="font-weight:600;margin-bottom:4px">Teu perfil em qualquer aparelho + lembretes</div>'
+      + '<div style="font-size:13px;color:#7a6a58;margin-bottom:10px">A Nanny te avisa das próximas datas (vacina, antiparasitário, vermífugo) — e teu perfil passa a abrir em qualquer celular ou computador com esse email. Sem senha, sem spam.</div>'
       + '<input id="nanny-email" type="email" placeholder="seu@email.com" style="width:100%;box-sizing:border-box;border:1.5px solid #e8ddd2;border-radius:10px;padding:11px 13px;font-size:14px;margin-bottom:8px">'
       + '<label style="display:flex;gap:8px;align-items:flex-start;font-size:12px;color:#7a6a58;margin-bottom:10px">'
       + '<input id="nanny-consent" type="checkbox" style="margin-top:2px">'
       + '<span>Aceito receber lembretes por email. Posso sair quando quiser.</span></label>'
-      + '<button id="nanny-optin-btn" style="background:#7a9970;color:#fff;border:0;border-radius:10px;padding:11px 18px;font-weight:600;cursor:pointer">Ativar lembretes</button>'
+      + '<button id="nanny-optin-btn" style="background:#7a9970;color:#fff;border:0;border-radius:10px;padding:11px 18px;font-weight:600;cursor:pointer">Ativar perfil e lembretes</button>'
       + '<div id="nanny-optin-msg" style="font-size:12px;margin-top:8px"></div>'
+      + '<div style="font-size:11.5px;color:#9a8b78;margin-top:8px">Já ativou em outro aparelho? Usa o <b>mesmo email</b> — teu perfil aparece aqui na hora.</div>'
       + '</div>';
     document.getElementById('nanny-optin-btn').onclick = function () {
       var email = (document.getElementById('nanny-email').value || '').trim();
@@ -119,10 +126,11 @@
       var msg = document.getElementById('nanny-optin-msg');
       if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { msg.style.color = '#c0392b'; msg.textContent = 'Confere o email.'; return; }
       if (!ok) { msg.style.color = '#c0392b'; msg.textContent = 'Marque o consentimento.'; return; }
-      if (!currentDogs().length) { msg.style.color = '#c0392b'; msg.textContent = 'Cadastre seu cão primeiro — aí dá pra ativar os lembretes.'; return; }
+      // sem cão local = provável recuperação de perfil de outro aparelho; a trava do servidor
+      // garante que um save vazio nunca apaga o que já está guardado.
       setTutor({ email: email, token: null, optin: 'sim' });
       nannySync(true, 'sim');
-      msg.style.color = '#7a9970'; msg.textContent = 'Pronto! Email de confirmação a caminho.';
+      msg.style.color = '#7a9970'; msg.textContent = currentDogs().length ? 'Pronto! Sincronizando…' : 'Pronto! Buscando teu perfil…';
     };
   }
   window.nannyRenderOptIn = renderOptIn;
