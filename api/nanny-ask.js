@@ -54,7 +54,7 @@ FORMATO — devolva SOMENTE o JSON entre <json> e </json>, sem texto fora:
 <json>{
   "entendi": "resumo em 1 frase do que o tutor trouxe",
   "nivel": "leve | observar | procurar_vet | urgente",
-  "o_que_fazer_agora": "orientação prática, pt-BR acolhedor. Nunca prescreva. Se nível for procurar_vet ou urgente, deixe claro que não substitui o veterinário.",
+  "o_que_fazer_agora": "COMECE com 1 frase curta de veredito direto sobre ESTE caso. Depois, se precisar, no máximo 3 passos práticos curtos (numere '1. ', '2. '). Máx ~70 palavras no total. Nunca prescreva. Se nível for procurar_vet ou urgente, deixe claro que não substitui o veterinário.",
   "por_que": "por que esse nível, contextualizado a ESTE cão (cite raça/idade/condição se pesou)",
   "pro_vet": "VAZIO ('') para dúvida de rotina/produto/adestramento sem sintoma. Só preencha quando houver sinal clínico: resumo objetivo em linguagem clínica pro veterinário (sinais, duração, contexto). Sem diagnóstico.",
   "novos_eventos": [
@@ -126,7 +126,7 @@ module.exports = async function handler(req, res) {
         });
 
     const convTxt = (Array.isArray(conversa) && conversa.length)
-      ? '\n\nCONVERSA ATÉ AGORA (continue no mesmo fio, reconheça o que já foi dito, não repita):\n' + conversa.map(function(m){return (m.de==='nanny'?'Nanny':'Tutor')+': '+String(m.texto||'').slice(0,500);}).join('\n')
+      ? '\n\nCONVERSA ATÉ AGORA (continue no mesmo fio). Em follow-up, responda à MUDANÇA relatada — NÃO repita orientações nem checklists já dados. Se melhorou: diga o que isso indica + o único sinal que ainda pede atenção. Se piorou: o que a piora muda na leitura.\n' + conversa.map(function(m){return (m.de==='nanny'?'Nanny':'Tutor')+': '+String(m.texto||'').slice(0,500);}).join('\n')
       : '';
     const userText = ctxTxt + convTxt + '\n\n' + 'O TUTOR TROUXE' + (temTexto ? ' (texto): "' + texto.trim() + '"' : '')
       + (temImg ? '\n(+ ' + imagens.length + ' foto(s) anexada(s) acima)' : '')
