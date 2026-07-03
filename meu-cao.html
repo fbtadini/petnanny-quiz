@@ -696,8 +696,14 @@ function healthRow(ic,name,dateISO,cat,i,withDate,incerto){
 function latestDate(arr){const d=(arr||[]).filter(x=>x&&x.data).map(x=>x.data).sort();return d.length?d[d.length-1]:null;}
 function histSection(ic,label,arr,cat){if(!(arr||[]).length)return '';
   const ld=latestDate(arr),open=healthEdit&&healthEdit.cat===cat;
-  const rows=arr.map((v,i)=>healthRow(ic,(cat==='vacinas'?v.nome:v.produto)||label,v.data,cat,i,true,v.incerto)).join('');
-  return `<details class="hist-sec"${open?' open':''}><summary><span>${ic} ${label}</span><span class="hist-count">${arr.length}${ld?(' · última '+fmtISO(ld)):''}</span></summary><div class="hist-body">${rows}</div></details>`;}
+  // ativas (últimos ~15 meses) na frente; o resto vira "antigas" colapsado — histórico não some, sai da frente
+  const lim=(d=>{d.setDate(d.getDate()-457);return localISO(d);})(new Date());
+  const idx=arr.map((v,i)=>({v,i}));
+  const atv=idx.filter(x=>x.v&&x.v.data&&x.v.data>=lim), ant=idx.filter(x=>!(x.v&&x.v.data&&x.v.data>=lim));
+  const row=(x)=>healthRow(ic,(cat==='vacinas'?x.v.nome:x.v.produto)||label,x.v.data,cat,x.i,true,x.v.incerto);
+  const rows=atv.map(row).join('')
+    +(ant.length?`<details style="margin-top:6px;border-top:1px dashed var(--line);padding-top:4px"><summary style="cursor:pointer;font-size:12px;color:var(--brown-mid);list-style:none;padding:4px 0">📦 antigas (${ant.length}) ›</summary>${ant.map(row).join('')}</details>`:'');
+  return `<details class="hist-sec"${open?' open':''}><summary><span>${ic} ${label}</span><span class="hist-count">${atv.length} ativa${atv.length===1?'':'s'}${ant.length?(' + '+ant.length+' antigas'):''}${ld?(' · última '+fmtISO(ld)):''}</span></summary><div class="hist-body">${rows}</div></details>`;}
 function healthHistoryHTML(he){let h='<div style="margin-top:12px">';
   h+=histSection('💉','Vacinas',he.vacinas,'vacinas');
   h+=histSection('🛡️','Antipulga / carrapato',he.antiparasitario,'antiparasitario');
@@ -842,13 +848,13 @@ function renderDocs(dog){const files=dog.files||[];const he=dog.health||{};
     const tile=f=>{
       if(fileEdit===f.id)return `<div class="doc-tile" style="padding:8px"><input id="fe-name" class="he-in" value="${(f.name||f.type||'').replace(/"/g,'&quot;')}" placeholder="nome (ex.: Hemograma mar/2026)"><select id="fe-type" class="he-in">${['Carteira de vacinação','Caderneta de saúde','Exame','Atestado de saúde','Microchip','Pedigree','Contrato / adoção','Receita','A categorizar','Outro'].map(o=>`<option${(f.type||'').toLowerCase()===o.toLowerCase()?' selected':''}>${o}</option>`).join('')}</select><div style="display:flex;gap:6px"><button class="chip sm" onclick="saveFile('${f.id}')">Salvar</button><button class="chip sm" onclick="fileEdit=null;renderDocs(dogObj())">Cancelar</button></div></div>`;
       const cap=f.name&&f.type&&f.name.indexOf(f.type)===0?(f.name.split('·')[1]||'').trim()||f.name:(f.name||f.type||'');
-      return `<div class="doc-tile"><img src="${f.thumb}" onclick="viewUserDoc('${f.id}')"><div class="dt-meta"><span class="dt-lbl">${cap}</span></div><div style="display:flex"><button class="rm dt-rm" style="flex:1" onclick="editFile('${f.id}')">✎ renomear</button><button class="rm dt-rm" style="flex:1;border-left:1px solid #f0e6da" onclick="removeUserDoc('${f.id}')">✕</button></div></div>`;
+      return `<div class="doc-tile"><img src="${f.thumb}" onclick="viewUserDoc('${f.id}')"><div class="dt-meta"><span class="dt-lbl">${cap}</span></div>${f.extraiu?`<div style="padding:0 9px 6px;font-size:10.5px;color:var(--green)">✓ extraí ${f.extraiu} ite${f.extraiu===1?'m':'ns'}</div>`:''}<div style="display:flex"><button class="rm dt-rm" style="flex:1" onclick="editFile('${f.id}')">✎ renomear</button><button class="rm dt-rm" style="flex:1;border-left:1px solid #f0e6da" onclick="removeUserDoc('${f.id}')">✕</button></div></div>`;
     };
     const groups={};files.forEach(f=>{const t=f.type||'Outro';(groups[t]=groups[t]||[]).push(f);});
     Object.keys(groups).forEach(t=>{h+=`<div class="doc-group">${typeIcon(t)} ${t} <span class="hist-count">(${groups[t].length})</span></div><div class="doc-grid">`+groups[t].map(tile).join('')+`</div>`;});
   }
   else{h+=`<div class="empty-doc"><div style="font-size:30px">📁</div><p style="margin:8px 0 0;font-size:13px;color:var(--brown-mid)">Nada guardado ainda. As fotos que você manda no Plano caem aqui, e você pode adicionar microchip, pedigree, atestado e exames — tudo num lugar só.</p></div>`;}
-  h+=`<div style="margin-top:14px"><div style="font-size:12px;color:var(--brown-mid);margin-bottom:5px">Guardar um documento novo</div><select id="udoc-label" class="he-in"><option>Exame</option><option>Atestado de saúde</option><option>Microchip</option><option>Pedigree</option><option>Contrato / adoção</option><option>Receita</option><option>Outro</option></select><label class="chip up big" style="margin-top:8px">📎 Guardar documento<input type="file" accept="image/*,.pdf" onchange="addUserDoc(this)"></label><p style="font-size:11.5px;color:var(--brown-mid);opacity:.85;margin:8px 0 0">Por enquanto guarda imagens (foto/scan). PDF e sincronização entre aparelhos chegam com a conta na nuvem.</p></div></div>`;
+  h+=`<div style="margin-top:14px"><label class="chip up big" style="display:inline-flex;align-items:center;gap:8px;cursor:pointer">📎 Adicionar documento<input type="file" accept="image/*,.pdf" multiple style="display:none" onchange="nannyReadDoc(this,'doc')"></label><p style="font-size:11.5px;color:var(--brown-mid);opacity:.85;margin:8px 0 0">Carteira, exame, receita, pedigree — eu leio, classifico e guardo os dados no lugar certo. Você confere tudo antes de salvar.</p></div></div>`;
   document.getElementById('tab-carteira-docs').innerHTML=h;}
 function addUserDoc(input){const f=input.files&&input.files[0];if(!f)return;const dog=dogObj();if(!dog)return;const type=(document.getElementById('udoc-label')||{}).value||'Documento';
   downscaleImage(f,1100,0.75).then(thumb=>{if(!thumb){alert('Por enquanto dá pra guardar imagens (foto ou scan). PDF chega com a conta na nuvem.');return;}dog.files=dog.files||[];dog.files.push({id:uid(),type,name:type,thumb,at:Date.now()});saveDogs();renderDocs(dog);});}
@@ -905,16 +911,24 @@ function buildFicha(dog){const b=getBreed(dog);const raca=b._synthetic?dog.custo
   return h;}
 function printFicha(){const dog=dogObj();if(!dog)return;document.getElementById('ficha').innerHTML=buildFicha(dog);window.print();}
 function renderPlan(dog){const items=carePlan(dog),hw=healthWatch(dog),b=getBreed(dog);
-  const proxVet=(((dog.health||{}).proximas_datas)||[]).filter(p=>p&&p.data&&new Date(p.data+'T00:00:00')>=startOfToday()).sort((a,b)=>String(a.data).localeCompare(String(b.data)));
+  const proxVet=(((dog.health||{}).proximas_datas)||[]).filter(p=>{
+    if(!(p&&p.data&&new Date(p.data+'T00:00:00')>=startOfToday()))return false;
+    const cls=vacFuncClass({nome:p.o_que||''});
+    if(cls!=='multi'&&cls!=='rabies')return true;
+    const it2=items.find(x=>x.key===(cls==='multi'?'annual_multi':'annual_rabies'));if(!it2)return true;
+    const st2=itemStatus(dog,it2);if(!st2||!st2.next)return true;
+    return Math.abs((new Date(p.data+'T00:00:00'))-st2.next)/864e5>20;   // se nosso relógio já diz o mesmo, a nota é eco
+  }).sort((a,b)=>String(a.data).localeCompare(String(b.data)));
   const proxVetHTML=proxVet.length?`<div style="margin-top:8px;border-top:1px dashed var(--line);padding-top:8px">${proxVet.map(p=>`<div class="pi-d" style="padding:3px 0">📅 <b>Anotado pelo vet:</b> ${escH(p.o_que)||'próxima dose'} — ${emDias(new Date(p.data+'T00:00:00'))} (${fmtISO(p.data)})</div>`).join('')}<div class="pi-when muted" style="margin-top:2px">Lidas da carteira — confirme com o vet.</div></div>`:'';
   const fotoCTA=`<div style="margin-top:10px"><label class="chip sm2" style="display:inline-flex;align-items:center;gap:6px;cursor:pointer">📷 Foto da etiqueta ou da carteira — eu leio e registro sozinha<input type="file" accept="image/*,.pdf" multiple style="display:none" onchange="nannyReadDoc(this,'doc')"></label></div>`;
-  const extrasMap={};(((dog.health||{}).vacinas)||[]).forEach(v=>{const n0=(v&&v.nome)||'';if(!n0||/v8|v10|polival|m[úu]ltipla|r[áa]bica|revacina/i.test(n0))return;const n1=n0.replace(/^vacina\s*/i,'');if(!(n1 in extrasMap)||String(v.data||'')>String(extrasMap[n1]||''))extrasMap[n1]=v.data||'';});
+  const extrasMap={};(((dog.health||{}).vacinas)||[]).forEach(v=>{const n0=(v&&v.nome)||'';if(!n0||/revacina/i.test(n0)||vacFuncClass({nome:n0})!=='outra')return;const n1=n0.replace(/^vacina\s*/i,'');if(!(n1 in extrasMap)||String(v.data||'')>String(extrasMap[n1]||''))extrasMap[n1]=v.data||'';});
   const hj0=startOfToday();
-  const temLembrete=(n)=>((dog.health||{}).proximas_datas||[]).some(p=>p&&p.o_que&&p.data&&p.o_que.toLowerCase().indexOf(n.toLowerCase())>=0&&new Date(p.data+'T00:00:00')>=hj0);
+  const _toks=(t)=>String(t||'').toLowerCase().split(/[^a-zà-ú0-9]+/).filter(w=>w.length>3&&!/revacina|refor[çc]o|vacina|lembrete/.test(w));
+  const temLembrete=(n)=>{const tn=_toks(n);return ((dog.health||{}).proximas_datas||[]).some(p=>{if(!(p&&p.o_que&&p.data&&new Date(p.data+'T00:00:00')>=hj0))return false;const tp=_toks(p.o_que);return tn.some(w=>tp.indexOf(w)>=0);});};
   const atvX=[],antX=[];Object.keys(extrasMap).forEach(n=>{const d0=extrasMap[n];const dd=d0?Math.floor((hj0-new Date(d0+'T00:00:00'))/864e5):9999;(dd<=457?atvX:antX).push(n);});
   const extraRow=(n)=>{const d0=extrasMap[n];return `<div style="display:flex;gap:9px;align-items:flex-start;padding:8px 0;border-top:1px dashed var(--line)"><span style="font-size:15px">💉</span><div style="flex:1"><div style="font-size:13.5px;color:var(--brown);font-weight:600">${escH(n)}</div><div class="pi-when muted">últ. ${d0?fmtISO(d0):'—'} · protocolo definido pelo vet</div><div style="margin-top:6px">${temLembrete(n)?'<span class="pi-when ok">✓ lembrete no plano</span>':`<button class="chip sm2" onclick="nannyLembrarExtra('${escH(n).replace(/'/g,'')}','${d0||''}')">🔔 Lembrar em 1 ano</button>`}</div></div></div>`;};
   const extrasVac=(atvX.length?`<div style="margin-top:10px"><div class="sec-label" style="font-size:10.5px;margin-bottom:0">Outras vacinas da ${gArt(dog)==='a'?'':''}carteira</div>${atvX.slice(0,4).map(extraRow).join('')}</div>`:'')
-    +(antX.length?`<div class="pi-when muted" style="margin-top:8px">Histórico antigo: ${antX.slice(0,4).map(n=>escH(n)).join(' · ')} — datas na seção Documentos.</div>`:'');
+    ;
   let h=`<div class="disc">🩺 <div>Marque o que já foi feito — o plano recalcula sozinho. As datas são guias; <b>confirme com seu veterinário</b>.</div></div>`;
   // (cabeçalho de status removido — o Score no Hoje já dá o veredito e os insights)
   h+=docCardHTML(dog);
@@ -1301,7 +1315,8 @@ function confirmDoc(){const dog=dogObj();if(!dog||!pendingDoc)return;const ex=pe
   dog.health=mergeHealth(dog.health,ex);
   if(ex.pedigree&&Object.keys(ex.pedigree).some(k=>ex.pedigree[k])){dog.pedigree=Object.assign({},dog.pedigree||{});Object.keys(ex.pedigree).forEach(k=>{if(ex.pedigree[k])dog.pedigree[k]=ex.pedigree[k];});}
   if(ex.microchip&&!dog.microchip)dog.microchip=ex.microchip;
-  (pendingDoc.thumbs||[]).forEach(t=>{dog.files=dog.files||[];dog.files.push(t);});
+  const _exN=['vacinas','antiparasitario','vermifugo','exames','proximas_datas'].reduce((a,k)=>a+((ex[k]||[]).length),0);
+  (pendingDoc.thumbs||[]).forEach(t=>{if(ex.tipo_documento){t.tipo=String(ex.tipo_documento).slice(0,34);t.type=t.tipo;}t.extraiu=_exN;dog.files=dog.files||[];dog.files.push(t);});
   applyHealthToPlan(dog,dog.health);
   pendingDoc=null;saveDogs();setTab('cuidados');renderProfile();window.scrollTo({top:0,behavior:'smooth'});
   const n=document.querySelector('#tab-cuidados .ai-note');if(n){n.className='ai-note ok';n.style.display='block';n.innerHTML='\u2705 Guardei no dossie. Datas conferidas por voce.';}
