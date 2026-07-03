@@ -99,6 +99,16 @@
     if(window.renderHoje)window.renderHoje(dog);
     try{ if(window.gtag)window.gtag('event','racao_anotada',{}); }catch(e){}
   };
+  window.nannySalvarTapete=function(){
+    var dog=(typeof window.dogObj==='function')?window.dogObj():null; if(!dog) return;
+    var q=parseInt(((document.getElementById('tp-qtd')||{}).value||''),10);
+    var pd=parseInt(((document.getElementById('tp-dia')||{}).value||'2'),10)||2;
+    var ini=(document.getElementById('tp-data')||{}).value||'';
+    if(!q||!ini){ alert('Quantos tapetes tem o pacote e quando come\u00e7ou? 🙂'); return; }
+    dog.tapete={qtd:q,porDia:pd,inicio:ini};
+    if(typeof window.saveDogs==='function')window.saveDogs(); if(window.nannySync)window.nannySync(true);
+    if(window.renderHoje)window.renderHoje(dog);
+  };
   function nannyReposicao(dog){
     try{
       var hoje=new Date(); hoje.setHours(0,0,0,0);
@@ -144,6 +154,24 @@
           +'<input id="repo-marca" placeholder="marca (opcional)" style="width:130px;padding:7px 9px;border:1px solid '+CT.line+';border-radius:9px;font-family:inherit;font-size:12.5px">'
           +'<button onclick="nannySalvarRacao()" style="background:'+CT.green+';color:#fff;border:0;border-radius:9px;padding:8px 13px;font-weight:600;font-size:12.5px;cursor:pointer;font-family:inherit">Anotar</button>'
           +'</div></div>';
+      }
+      // tapete higiênico: só entra em cena pra quem usa (chip de xixi marcado ou pacote já anotado)
+      var tp=dog.tapete;
+      if(tp&&tp.qtd&&tp.inicio){
+        var pdT=(+tp.porDia)||2, durT=Math.max(1,Math.round(tp.qtd/pdT));
+        var restaT=Math.round((new Date(tp.inicio+'T00:00:00')-hoje)/864e5)+durT;
+        if(restaT<=10){ rows.push('<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-top:1px solid '+CT.cream+'">'
+          +'<span style="flex:1;font-size:13px;color:'+CT.pri+'">\ud83e\uddfb Tapete higi\u00eanico <span style="color:'+(restaT<0?'#b5483a':(restaT<=4?'#b7902a':CT.sec))+'">\u2014 '+(restaT<0?'acabou':(restaT===0?'acaba hoje':('acaba em ~'+restaT+' d')))+'</span></span>'
+          +'<a href="https://www.petz.com.br/cachorro/tapetes-fraldas-e-banheiros/tapetes-higienicos" target="_blank" rel="noopener" onclick="try{window.gtag&&gtag(\'event\',\'reposicao_click\',{})}catch(e){}" style="flex:0 0 auto;font-size:12px;color:#fff;background:'+CT.green+';border-radius:9px;padding:6px 12px;text-decoration:none;font-weight:600">Comprar</a></div>'); }
+        else infoR+='<div style="font-size:12px;color:'+CT.mut+';padding:8px 0 2px;border-top:1px solid '+CT.cream+'">\ud83e\uddfb Tapete: d\u00e1 pra ~'+restaT+' dias.</div>';
+      } else if((dog.temperamento||[]).indexOf('xixi')>=0){
+        infoR+='<div style="padding:9px 0 2px;border-top:1px solid '+CT.cream+'">'
+          +'<div style="font-size:12.5px;color:'+CT.sec+';margin-bottom:7px">\ud83e\uddfb Usa tapete higi\u00eanico? Me conta o pacote que eu aviso antes de acabar.</div>'
+          +'<div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">'
+          +'<input id="tp-qtd" type="number" min="1" placeholder="qtd no pacote" style="width:115px;padding:7px 9px;border:1px solid '+CT.line+';border-radius:9px;font-family:inherit;font-size:12.5px">'
+          +'<select id="tp-dia" style="padding:7px 9px;border:1px solid '+CT.line+';border-radius:9px;font-family:inherit;font-size:12.5px"><option value="1">1/dia</option><option value="2" selected>2/dia</option><option value="3">3/dia</option><option value="4">4/dia</option></select>'
+          +'<input id="tp-data" type="date" style="padding:7px 9px;border:1px solid '+CT.line+';border-radius:9px;font-family:inherit;font-size:12.5px">'
+          +'<button onclick="nannySalvarTapete()" style="background:'+CT.green+';color:#fff;border:0;border-radius:9px;padding:8px 13px;font-weight:600;font-size:12.5px;cursor:pointer;font-family:inherit">Anotar</button></div></div>';
       }
       if(!rows.length && !infoR) return '';
       return '<div style="background:#fff;border:1px solid '+CT.line+';border-radius:16px;padding:13px 15px;margin-bottom:16px">'
