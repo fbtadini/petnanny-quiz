@@ -236,27 +236,49 @@
     if(!older.length){ box.innerHTML=''; return; }
     var open = box.getAttribute('data-open')==='1';
     var h='<button type="button" id="na-hist-toggle" aria-expanded="'+open+'" style="width:100%;text-align:left;background:none;border:0;border-top:1px solid '+CT.line+';margin-top:14px;padding:12px 2px 6px;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:space-between">'
-      + '<span style="font-size:12.5px;font-weight:600;color:'+CT.sec+'">Conversas anteriores ('+older.length+')</span>'
+      + '<span style="font-size:12.5px;font-weight:600;color:'+CT.sec+'">'+((dog&&dog.nome)?('\ud83d\udcd2 Di\u00e1rio d'+(dog.sexo==='femea'?'a ':'o ')+esc(dog.nome)):'\ud83d\udcd2 Di\u00e1rio de sa\u00fade')+' ('+older.length+')</span>'
       + '<span style="color:'+CT.mut+';font-size:16px;display:inline-block;transform:rotate('+(open?'90':'0')+'deg);transition:transform .15s">\u203a</span></button>';
     if(open){
-      h+='<div>'+older.slice().reverse().map(function(p){
-        var realIdx=pg.indexOf(p), n=NIVEL[p.nivel]||NIVEL.observar;
+      // Diário: agrupa por tema clínico; a bolinha reflete o DESFECHO (resolvido/acompanhando/piorou), não só o nível da resposta
+      var TEMAS=[
+        ['\ud83e\udde0','Comportamento',/fora do lugar|late|latid|ansied|medo|mord|destr|puxa|sozinh|agitad/i],
+        ['\ud83c\udf7d\ufe0f','Digestivo',/coc[o\u00f4]|fezes|diarr|v[o\u00f4]mit|apetite|comend|n[a\u00e3]o come|barriga|intestin/i],
+        ['\ud83e\uddf4','Pele & pelo',/pelo|pele|coceira|co[\u00e7c]a|lamb|queda|caindo|alerg|orelha/i],
+        ['\ud83e\uddb4','Locomo\u00e7\u00e3o',/manca|pata|quadril|articula|escada/i],
+        ['\ud83d\udc89','Sa\u00fade geral',/vacin|verm[i\u00ed]fug|pulga|carrapat|castra|\bcio\b|rem[e\u00e9]dio/i]
+      ];
+      var temaClin=function(p){ var t=(p.entendi||p.texto||''); for(var i=0;i<TEMAS.length;i++){ if(TEMAS[i][2].test(t)) return TEMAS[i]; } return ['\ud83d\udccc','Outros',null]; };
+      var statusDe=function(p){
+        if(p.outcome==='melhorou') return {cor:CT.green, lab:'resolvido'};
+        if(p.outcome==='piorou')   return {cor:'#b5483a', lab:'piorou'};
+        if(p.outcome==='igual')    return {cor:'#b7902a', lab:'acompanhando'};
+        var n=NIVEL[p.nivel]||NIVEL.observar; return {cor:n.cor, lab:n.label};
+      };
+      var rowDe=function(p){
+        var realIdx=pg.indexOf(p), st=statusDe(p);
         var title=esc((p.entendi||p.texto||'(foto)').slice(0,90));
         var ex=(expandedHist===realIdx);
         var row='<div style="border-top:1px solid '+CT.cream+'">'
           + '<button type="button" onclick="nannyHistToggle('+realIdx+')" style="width:100%;text-align:left;background:none;border:0;padding:10px 2px;cursor:pointer;font-family:inherit;display:flex;gap:9px;align-items:flex-start">'
-          + '<span style="flex:0 0 8px;width:8px;height:8px;border-radius:50%;background:'+n.cor+';margin-top:5px"></span>'
+          + '<span style="flex:0 0 8px;width:8px;height:8px;border-radius:50%;background:'+st.cor+';margin-top:5px"></span>'
           + '<span style="flex:1;min-width:0"><span style="font-size:13px;color:'+CT.pri+';display:block;line-height:1.4">'+title+'</span>'
-          + '<span style="font-size:11px;color:'+CT.mut+'">'+esc(n.label)+' \u00b7 '+relTime(p.data)+'</span></span>'
+          + '<span style="font-size:11px;color:'+CT.mut+'">'+esc(st.lab)+' \u00b7 '+relTime(p.data)+'</span></span>'
           + '<span style="color:'+CT.mut+';font-size:15px;margin-top:1px">'+(ex?'\u2212':'+')+'</span></button>';
         if(ex){
           row+='<div style="padding:0 2px 12px 19px">'
             + (p.resposta?'<div style="font-size:13px;color:'+CT.pri+';line-height:1.55;margin-bottom:7px">'+mdLite(p.resposta)+'</div>':'')
-            + (p.pro_vet?'<div style="font-size:11.5px;color:'+CT.green+';margin-bottom:9px">\ud83e\ude7a Resumo pro vet guardado na Saúde.</div>':'')
+            + (p.pro_vet?'<div style="font-size:11.5px;color:'+CT.green+';margin-bottom:9px">\ud83e\ude7a Resumo pro vet guardado na Sa\u00fade.</div>':'')
             + '<button type="button" onclick="nannyContinuar('+realIdx+')" style="background:'+CT.green+';color:#fff;border:0;border-radius:9px;padding:8px 15px;font-weight:600;font-size:12.5px;cursor:pointer;font-family:inherit">Continuar essa conversa</button>'
             + '</div>';
         }
         return row+'</div>';
+      };
+      var grupos={}, ordem=[];
+      older.slice().reverse().forEach(function(p){ var t=temaClin(p), k=t[0]+' '+t[1]; if(!grupos[k]){grupos[k]=[];ordem.push(k);} grupos[k].push(p); });
+      h+='<div>'+ordem.map(function(k){
+        var abertos=grupos[k].filter(function(p){return !p.outcome&&(p.nivel==='observar'||p.nivel==='procurar_vet'||p.nivel==='urgente');}).length;
+        return '<div style="font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:'+CT.sec+';padding:12px 2px 2px">'+k+' <span style="font-weight:500;color:'+CT.mut+'">('+grupos[k].length+(abertos?(' \u00b7 '+abertos+' em aberto'):'')+')</span></div>'
+          + grupos[k].map(rowDe).join('');
       }).join('')+'</div>';
     }
     box.innerHTML=h;

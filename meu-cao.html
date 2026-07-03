@@ -561,7 +561,11 @@ function planItemHTML(dog,it){const s=itemStatus(dog,it),today=localISO();
   let status='',actions='';
   if(it.recorrente){
     if(s.st==='rec-done'){const t0=startOfToday();
-      if(s.next>=t0){status=`<div class="pi-when ok">✓ Última: ${fmt(new Date(s.doneDate+'T00:00:00'))} · Próxima: <b>${emDias(s.next)}</b> (${fmt(s.next)})</div>`;}
+      if(s.next>=t0){
+        const prodChip=(isAnti&&cur&&cur!=='outro')?`<span style="display:inline-block;background:var(--warm);border:1px solid var(--line);border-radius:20px;padding:1px 9px;font-size:11px;color:var(--brown);margin-left:6px;vertical-align:1px">${cur}</span>`:'';
+        const tot=it.intervalo||30,pas=Math.max(0,Math.min(tot,Math.round((t0-new Date(s.doneDate+'T00:00:00'))/864e5))),restPct=Math.max(2,Math.round(100*(1-pas/tot)));
+        status=`<div class="pi-when ok">✓ Última: ${fmt(new Date(s.doneDate+'T00:00:00'))}${prodChip} · Próxima: <b>${emDias(s.next)}</b> (${fmt(s.next)})</div><div style="height:5px;background:var(--line);border-radius:4px;margin-top:6px;overflow:hidden"><div style="height:100%;width:${restPct}%;background:${restPct>30?'var(--green)':'#b7902a'};border-radius:4px"></div></div>`;
+      }
       else{const stale=(t0-s.next)/864e5>it.intervalo;status=`<div class="pi-when warn">⚠️ ${stale?`Última faz tempo (${fmt(new Date(s.doneDate+'T00:00:00'))}) — confirme/registre a atual`:`Atrasada ${emDias(s.next)} — venceu ${fmt(s.next)}`}</div>`;}
       actions=markToday('✓ Registrei hoje')+`<button class="mini" onclick="undoDone('${it.key}')">desfazer</button>`;}
     else{status=`<div class="pi-when muted">${(it.nota&&it.nota!==it.det)?it.nota+' · ':''}ainda não registrado</div>`;actions=markToday('✓ Registrei hoje');}
@@ -715,9 +719,17 @@ function weightChartBrand(dog){
   var ws=(dog.weights||[]);if(!ws.length)return '';
   var W=320,H=148,pl=8,pr=8,pt=16,pb=22;
   var kgs=ws.map(w=>w.kg);var mn=Math.min.apply(null,kgs),mx=Math.max.apply(null,kgs);if(mn===mx){mn-=1;mx+=1;}var pad=(mx-mn)*0.22;mn-=pad;mx+=pad;
+  // zona de referência: limites da faixa de porte do peso atual — dá leitura "dentro/fora da faixa" já com 1 pesagem
+  var zc=null; try{ var _fx={'0':[0.5,2],'1':[2,4.5],'2':[4.5,10],'3':[10,20],'4':[20,40],'5':[40,56]}[faixaFromKg(kgs[kgs.length-1])];
+    if(_fx){ zc=_fx; mn=Math.min(mn,_fx[0]); mx=Math.max(mx,_fx[1]); var _p2=(mx-mn)*0.06; mn-=_p2; mx+=_p2; } }catch(e){}
   var y=k=>pt+(1-(k-mn)/(mx-mn))*(H-pt-pb);
   var x=i=>ws.length<=1?(W/2):pl+i*(W-pl-pr)/(ws.length-1);
   var h='<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;height:auto;display:block">';
+  if(zc){ var zy1=y(zc[1]), zy2=y(zc[0]);
+    h+='<rect x="0" y="'+zy1.toFixed(1)+'" width="'+W+'" height="'+Math.max(0,(zy2-zy1)).toFixed(1)+'" fill="#6b8e6f" opacity="0.10"/>'
+      +'<line x1="0" x2="'+W+'" y1="'+zy1.toFixed(1)+'" y2="'+zy1.toFixed(1)+'" stroke="#6b8e6f" stroke-width="1" stroke-dasharray="3,3" opacity="0.5"/>'
+      +'<line x1="0" x2="'+W+'" y1="'+zy2.toFixed(1)+'" y2="'+zy2.toFixed(1)+'" stroke="#6b8e6f" stroke-width="1" stroke-dasharray="3,3" opacity="0.5"/>'
+      +'<text x="'+(W-4)+'" y="'+(zy1+11).toFixed(1)+'" font-size="9" fill="#6b8e6f" text-anchor="end">faixa do porte \u00b7 '+String(zc[0]).replace('.',',')+'\u2013'+String(zc[1]).replace('.',',')+' kg</text>'; }
   if(ws.length>=2){
     var pts=ws.map((w,i)=>x(i).toFixed(1)+','+y(w.kg).toFixed(1));
     var area='M'+x(0).toFixed(1)+','+(H-pb)+' L'+pts.join(' L')+' L'+x(ws.length-1).toFixed(1)+','+(H-pb)+' Z';
@@ -737,7 +749,8 @@ function saudePainelHTML(dog){
     +'<div style="font-size:11.5px;color:var(--brown-mid);margin-bottom:10px">O peso '+suf+' ao longo do tempo — e o que está em dia.</div>';
   if(ws.length){
     h+=weightChartBrand(dog);
-    var trTxt=tr?((tr.up?'↑ +':(tr.down?'↓ ':'· '))+String(Math.abs(tr.delta).toFixed(1)).replace('.',',')+' kg desde a última'):'estável';
+    if(ws.length===1)h+='<div style="font-size:11.5px;color:var(--brown-mid);text-align:center;margin-top:4px">Registra a 2ª pesagem pra eu desenhar a tendência.</div>';
+    var trTxt=tr?((tr.up?'↑ +':(tr.down?'↓ ':'· '))+String(Math.abs(tr.delta).toFixed(1)).replace('.',',')+' kg desde a última'):(ws.length>1?'estável':'1ª pesagem');
     var trCol=tr?'#b7902a':'#7a5c44';
     var ups=(typeof upcomingReminders==='function')?upcomingReminders(dog):[];var next=ups.filter(u=>u.status==='upcoming')[0];
     h+='<div style="display:flex;gap:8px;margin-top:10px">'
@@ -844,10 +857,11 @@ function printFicha(){const dog=dogObj();if(!dog)return;document.getElementById(
 function renderPlan(dog){const items=carePlan(dog),hw=healthWatch(dog),b=getBreed(dog);
   const proxVet=(((dog.health||{}).proximas_datas)||[]).filter(p=>p&&p.data&&new Date(p.data+'T00:00:00')>=startOfToday()).sort((a,b)=>String(a.data).localeCompare(String(b.data)));
   const proxVetHTML=proxVet.length?`<div style="margin-top:8px;border-top:1px dashed var(--line);padding-top:8px">${proxVet.map(p=>`<div class="pi-d" style="padding:3px 0">📅 <b>Anotado pelo vet:</b> ${p.o_que||'próxima dose'} — ${emDias(new Date(p.data+'T00:00:00'))} (${fmtISO(p.data)})</div>`).join('')}<div class="pi-when muted" style="margin-top:2px">Lidas da carteira — confirme com o vet.</div></div>`:'';
+  const fotoCTA=`<div style="margin-top:10px"><label class="chip sm2" style="display:inline-flex;align-items:center;gap:6px;cursor:pointer">📷 Foto da etiqueta ou da carteira — eu leio e registro sozinha<input type="file" accept="image/*,.pdf" multiple style="display:none" onchange="nannyReadDoc(this,'doc')"></label></div>`;
   let h=`<div class="disc">🩺 <div>Marque o que já foi feito — o plano recalcula sozinho. As datas são guias; <b>confirme com seu veterinário</b>.</div></div>`;
   // (cabeçalho de status removido — o Score no Hoje já dá o veredito e os insights)
   h+=docCardHTML(dog);
-  ['Vacinas','Antiparasitário e vermífugo'].forEach(g=>{h+=`<div class="card"><div class="sec-label">${g}</div>`+items.filter(i=>i.grupo===g).map(i=>planItemHTML(dog,i)).join('')+(g==='Vacinas'?proxVetHTML:'')+(g==='Vacinas'?`<details class="hist-sec" style="margin-top:10px"><summary><span>📚 Por que reforço todo ano?</span><span class="hist-count"> </span></summary><div class="hist-body" style="padding-top:8px;font-size:12.5px;color:var(--brown-mid);line-height:1.5">Baseado nas diretrizes WSAVA/AAHA. No Brasil reforça-se todo ano por causa da <b>leptospirose</b> e da <b>antirrábica</b> (imunidade curta); o componente de cinomose/parvovirose costuma durar mais. <b>Confirme o protocolo com seu veterinário.</b></div></details>`:'')+`</div>`;});
+  ['Vacinas','Antiparasitário e vermífugo'].forEach(g=>{h+=`<div class="card"><div class="sec-label">${g}</div>`+items.filter(i=>i.grupo===g).map(i=>planItemHTML(dog,i)).join('')+(g==='Vacinas'?proxVetHTML+fotoCTA:'')+(g==='Vacinas'?`<details class="hist-sec" style="margin-top:10px"><summary><span>📚 Por que reforço todo ano?</span><span class="hist-count"> </span></summary><div class="hist-body" style="padding-top:8px;font-size:12.5px;color:var(--brown-mid);line-height:1.5">Baseado nas diretrizes WSAVA/AAHA. No Brasil reforça-se todo ano por causa da <b>leptospirose</b> e da <b>antirrábica</b> (imunidade curta); o componente de cinomose/parvovirose costuma durar mais. <b>Confirme o protocolo com seu veterinário.</b></div></details>`:'')+`</div>`;});
   h+=`<div class="card"><div class="sec-label">Saúde a acompanhar${b._synthetic?'':' — '+b.name}</div>`;
   if(hw.length){h+=`<p style="margin:0 0 12px;font-size:13.5px;color:var(--brown-mid)">Pontos que essa raça costuma exigir atenção — vale conversar com o vet.</p>`;
     hw.forEach(r=>{const ck=condKey(r.cond),cs=(dog.conditions||{})[ck];
