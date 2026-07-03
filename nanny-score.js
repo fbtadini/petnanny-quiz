@@ -78,14 +78,25 @@
   ];
   window.nannyRecurring = function (dog) {
     var pg=(dog&&dog.perguntas)||[]; if(pg.length<2) return null;
-    var recent=pg.slice(-10), counts={};
+    var recent=pg.slice(-10), hits={};
     recent.forEach(function(p){ var txt=stripAcc((p.entendi||'')+' '+(p.texto||''));
-      THEMES.forEach(function(th,i){ if(th.rx.test(txt)) counts[i]=(counts[i]||0)+1; }); });
-    var best=null;
-    Object.keys(counts).forEach(function(i){ if(counts[i]>=2 && (!best||counts[i]>best.c)) best={label:THEMES[i].label,c:counts[i]}; });
-    if(!best) return null;
+      THEMES.forEach(function(th,i){ if(th.rx.test(txt)){ (hits[i]=hits[i]||[]).push(p); } }); });
+    var bi=null; Object.keys(hits).forEach(function(i){ if(hits[i].length>=2 && (bi===null||hits[i].length>hits[bi].length)) bi=i; });
+    if(bi===null) return null;
+    var arr=hits[bi], c=arr.length, label=THEMES[bi].label, last=arr[arr.length-1];
+    // o desfecho manda: resolvido não grita pra sempre — vira monitoramento gentil e some em 3 semanas
+    if(last && last.outcome==='melhorou'){
+      var dd=999; try{ dd=Math.floor((Date.now()-new Date((last.outcome_data||last.data)+'T00:00:00'))/864e5); }catch(e){}
+      if(dd>21) return null;
+      return { ic:'🔁', recurring:true, resolved:true,
+        t:'Tivemos '+label+' '+c+' vezes por aqui — a última você marcou como resolvida ✓. Sigo de olho: se voltar, me conta na hora, porque aí é padrão, não episódio.' };
+    }
+    if(last && last.outcome==='piorou'){
+      return { ic:'🔁', recurring:true,
+        t:'Você já me trouxe '+label+' '+c+' vezes e a última PIOROU. Isso deixou de ser episódio isolado — leva ao veterinário.' };
+    }
     return { ic:'🔁', recurring:true,
-      t:'Você já me trouxe '+best.label+' '+best.c+' vezes. Se está voltando, não trate como episódio isolado — vale mostrar ao veterinário.' };
+      t:'Você já me trouxe '+label+' '+c+' vezes. Se está voltando, não trate como episódio isolado — vale mostrar ao veterinário.' };
   };
 
   function fmtDate(d){ try{ return d.toLocaleDateString('pt-BR'); }catch(e){ return ''; } }
@@ -370,7 +381,7 @@
       var val = rg.known ? (rg.pct+'%') : '—';
       var isPeso = (rg.key==='peso');
       var canLog = isPeso && (typeof window.nannyLogWeight==='function');
-      var sub = rg.state==='incompleto' ? (canLog?'toque pra pesar':'sem dado') : (rg.detail ? esc(rg.detail) : (rg.state==='ok'?'em dia':(rg.state==='watch'?'de olho':'atenção')));
+      var sub = rg.state==='incompleto' ? (canLog?'toque pra pesar':'sem dado') : (rg.detail ? esc(rg.detail) : (rg.state==='ok'?'em dia':(rg.state==='watch'?'atenção':'atrasado')));
       var onclk = canLog ? 'nannyLogWeight()' : "setTab('saude');window.scrollTo({top:0,behavior:'smooth'})";
       h += '<button onclick="'+onclk+'" style="flex:1;text-align:center;background:'+CT.cream+';border:0;border-radius:12px;padding:11px 6px;cursor:pointer;font-family:inherit">'
         + '<div style="position:relative;width:52px;height:52px;margin:0 auto">'+ring(rg.known?rg.pct:0,52,6,rc)
@@ -414,7 +425,7 @@
     }
     if(reparou){
       h += '<div style="display:flex;gap:11px;align-items:flex-start;margin-top:11px;padding-top:12px;border-top:1px solid '+CT.cream+'">'
-        + '<span style="flex:0 0 30px;width:30px;height:30px;border-radius:50%;background:'+CT.cream+';display:flex;align-items:center;justify-content:center;font-size:15px">'+(reparou.ic||'💡')+'</span>'
+        + '<span style="flex:0 0 32px;width:32px;height:32px;border-radius:50%;background:'+CT.peach+';border:1px solid #f3d9c2;display:flex;align-items:center;justify-content:center;overflow:hidden">'+(((typeof WESTIE!=='undefined')&&WESTIE)?WESTIE:('<span style="font-size:15px">'+(reparou.ic||'💡')+'</span>'))+'</span>'
         + '<div style="flex:1"><div style="font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:'+CT.mut+';font-weight:700;margin-bottom:2px">A Nanny reparou</div>'
         + '<div style="font-size:13px;color:'+CT.pri+';line-height:1.5">'+esc(reparou.t||'')+'</div></div></div>';
     }

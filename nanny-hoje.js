@@ -53,6 +53,16 @@
       if(careX.patella && /senta|patinha|perninha|manc|pulinh|salt|apoia/.test(ntX) && !out.some(function(o){return o.ic==='\ud83e\uddb5';}))
         out.unshift({ic:'\ud83e\uddb5',t:'Voc\u00ea contou que '+art(dog)+' '+n+' senta/apoia diferente \u2014 em ra\u00e7a com tend\u00eancia a patela, vale filmar o movimento e mostrar ao vet na pr\u00f3xima consulta.'});
     }catch(e){}
+    // CRUZAMENTO: mudança de faixa de peso — dose de antiparasitário/vermífugo acompanha o peso
+    try{
+      var wsX=dog.weights||[];
+      if(wsX.length>=2 && typeof window.faixaFromKg==='function'){
+        var _BND={'0':'< 2 kg','1':'2–4,5 kg','2':'4,5–10 kg','3':'10–20 kg','4':'20–40 kg','5':'40–56 kg'};
+        var fA=window.faixaFromKg(wsX[wsX.length-2].kg), fB=window.faixaFromKg(wsX[wsX.length-1].kg);
+        if(fA!==fB && _BND[fB] && !out.some(function(o){return /faixa de peso/.test(o.t||'');}))
+          out.unshift({ic:'⚖️',t:ArtU(dog)+' '+n+' mudou de faixa de peso (agora '+_BND[fB]+') — dose de antiparasitário e vermífugo acompanha o peso; confere o rótulo na próxima compra.'});
+      }
+    }catch(e){}
     return out.slice(0, 3);
   };
 

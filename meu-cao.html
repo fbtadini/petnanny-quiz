@@ -411,6 +411,24 @@ function fmt(dt){return dt.getDate()+' '+MES[dt.getMonth()]+' '+dt.getFullYear()
 function localISO(d){d=d||new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}
 function emDias(d){if(!d)return '';const t0=new Date();t0.setHours(0,0,0,0);const n=Math.round((d-t0)/864e5);if(n===0)return 'hoje';if(n===1)return 'amanhã';if(n===-1)return 'ontem';return n>0?('em '+n+' dias'):('há '+(-n)+' dias')}
 function escH(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function bandFor(dog,kg){
+  try{
+    var n=(((typeof getBreed==='function')?(getBreed(dog)||{}).name:'')||'').toLowerCase();
+    var T=[[/pomer|lulu|spitz alem[aã]o an/,[1.5,3.5]],[/chihuahua/,[1.5,3]],[/yorkshire/,[2,3.5]],[/malt[eê]s/,[3,4]],[/shih/,[4,7.5]],[/pinscher/,[3,6]],[/dachshund|teckel|salsicha/,[4,12]],[/\bpug\b/,[6,9]],[/buldogue franc|bulldog franc/,[8,14]],[/beagle/,[9,16]],[/shiba/,[7,11]],[/schnauzer/,[5,9]],[/cocker/,[12,15]],[/border collie/,[14,20]],[/buldogue ingl|bulldog ingl/,[18,25]],[/golden/,[25,34]],[/labrador/,[25,36]],[/pastor alem/,[22,40]],[/rottweiler/,[35,60]],[/husky/,[16,27]],[/lhasa/,[5,8]],[/westie|west highland/,[6,10]],[/pit ?bull|amstaff/,[14,27]],[/boxer/,[25,32]],[/akita/,[23,39]],[/jack russell/,[5,8]]];
+    for(var i=0;i<T.length;i++){ if(T[i][0].test(n)) return {b:T[i][1],breed:true}; }
+    var k=(kg!=null)?kg:((dog.weights&&dog.weights.length)?dog.weights[dog.weights.length-1].kg:null);
+    if(k!=null){ var fx={'0':[0.5,2],'1':[2,4.5],'2':[4.5,10],'3':[10,20],'4':[20,40],'5':[40,56]}[faixaFromKg(k)]; if(fx) return {b:fx,breed:false}; }
+  }catch(e){}
+  return null;
+}
+function pesoStatus(kg,bd){
+  if(!bd||kg==null)return null; var lo=bd[0],hi=bd[1];
+  if(kg>=lo&&kg<=hi)   return {t:'dentro da faixa da raça',c:'#5c7a52'};
+  if(kg>hi&&kg<=hi*1.15) return {t:'um pouco acima da faixa — machos e linhagens maiores variam; vale confirmar com o vet',c:'#9a7717'};
+  if(kg>hi)            return {t:'acima da faixa da raça — vale pesar no vet e conversar sobre a condição corporal',c:'#c0722e'};
+  if(kg>=lo*0.85)      return {t:'um pouco abaixo da faixa da raça',c:'#9a7717'};
+  return {t:'abaixo da faixa da raça — vale conversar com o vet',c:'#c0722e'};
+}
 function bravecto(kg){if(kg<2)return null;if(kg<=4.5)return{f:'2–4,5 kg',d:'112,5 mg'};if(kg<=10)return{f:'4,5–10 kg',d:'250 mg'};if(kg<=20)return{f:'10–20 kg',d:'500 mg'};if(kg<=40)return{f:'20–40 kg',d:'1000 mg'};return{f:'40–56 kg',d:'1400 mg'}}
 
 function startOfToday(){const d=new Date();d.setHours(0,0,0,0);return d}
@@ -443,7 +461,7 @@ function itemStatus(dog,it){const done=(dog.done||{})[it.key];
 function markDone(key,date){const dog=dogObj();dog.done=dog.done||{};dog.done[key]=date;saveDogs();renderPlan(dog);if(window.renderHoje)renderHoje(dog)}
 function undoDone(key){const dog=dogObj();if(dog.done)delete dog.done[key];saveDogs();renderPlan(dog);if(window.renderHoje)renderHoje(dog)}
 function toggleMark(key,def){const w=document.getElementById('mk-'+key);if(!w)return;const open=w.style.display==='flex';w.style.display=open?'none':'flex';const dt=document.getElementById('dt-'+key);if(!open&&dt&&!dt.value)dt.value=def||localISO()}
-function confirmMark(key){const dt=document.getElementById('dt-'+key);const ps=document.getElementById('prod-'+key);if(ps&&ps.value){const dog=dogObj();if(dog){dog.done=dog.done||{};dog.done.antiProduto=ps.value;}}if(dt&&dt.value)markDone(key,dt.value)}
+function confirmMark(key){const dt=document.getElementById('dt-'+key);const ps=document.getElementById('prod-'+key);const mi=document.getElementById('marca-'+key);const dog=dogObj();if(dog){dog.done=dog.done||{};if(ps&&ps.value)dog.done.antiProduto=ps.value;if(mi&&mi.value.trim())dog.done[key+'_marca']=mi.value.trim().slice(0,40);}if(dt&&dt.value)markDone(key,dt.value)}
 function upcomingReminders(dog){const out=[],today=startOfToday();
   carePlan(dog).forEach(it=>{const s=itemStatus(dog,it);const tp=it.grupo==='Vacinas'?'Vacina':'Cuidado';
     if(it.recorrente&&s.st==='rec-done'){
@@ -529,7 +547,7 @@ function behaviorHTML(dog,b){let h='';
   let ph=[];if(cc.patella)ph.push('às vezes segura a patinha');if(cc.brachy)ph.push('cansa rápido no calor');if(cc.longBack)ph.push('cuidado ao pular do sofá');if(cc.bloat)ph.push('come rápido demais');ph.push('tem medo de fogos','adora colo','não curte outros cães');
   const phStr='Ex.: '+ph.slice(0,4).join(', ')+'…';
   const tips=notesTips(dog);
-  h+=`<div class="card"><div class="sec-label">Como ${gArt(dog)} ${dog.nome} é</div><p style="font-size:13px;color:var(--brown-mid);margin:0 0 9px">Marque o que combina e me conte o resto — eu uso pra personalizar os cuidados e lembro quando a gente conversa.</p><div class="tags" style="margin-bottom:12px">${TEMPERAMENTOS.map(t=>`<span class="tag" style="cursor:pointer;${sel.indexOf(t.key)>=0?'background:var(--accent);color:#fff':''}" onclick="toggleTemperamento('${t.key}')">${sel.indexOf(t.key)>=0?'✓ ':''}${t.label}</span>`).join('')}</div><textarea id="dogNotes" placeholder="${phStr}">${(dog.notes||'').replace(/</g,'&lt;')}</textarea><div style="display:flex;gap:8px;margin-top:10px"><button class="chip" onclick="saveNotes()">Salvar</button></div><div class="ai-note" id="notesAi"></div>${tips.length?`<div style="margin-top:12px"><div class="sec-label" style="margin:0 0 6px">A partir do que você contou</div>${tips.map(t=>`<div class="pi-d" style="padding:6px 0;line-height:1.5">${t}</div>`).join('')}</div>`:''}</div>`;
+  h+=`<div class="card"><div class="sec-label">Como ${gArt(dog)} ${dog.nome} é</div><p style="font-size:13px;color:var(--brown-mid);margin:0 0 9px">Marque o que combina — a raça dá tendências, mas quem manda é o que você observa: cada cão é único. Eu uso pra personalizar os cuidados e lembro quando a gente conversa.</p><div class="tags" style="margin-bottom:12px">${TEMPERAMENTOS.map(t=>`<span class="tag" style="cursor:pointer;${sel.indexOf(t.key)>=0?'background:var(--accent);color:#fff':''}" onclick="toggleTemperamento('${t.key}')">${sel.indexOf(t.key)>=0?'✓ ':''}${t.label}</span>`).join('')}</div><textarea id="dogNotes" placeholder="${phStr}">${(dog.notes||'').replace(/</g,'&lt;')}</textarea><div style="display:flex;gap:8px;margin-top:10px"><button class="chip" onclick="saveNotes()">Salvar</button></div><div class="ai-note" id="notesAi"></div>${tips.length?`<div style="margin-top:12px"><div class="sec-label" style="margin:0 0 6px">A partir do que você contou</div>${tips.map(t=>`<div class="pi-d" style="padding:6px 0;line-height:1.5">${t}</div>`).join('')}</div>`:''}</div>`;
   const cs=behaviorConcerns(dog,b);
   if(cs.length){h+=`<div class="card"><div class="sec-label">Convívio — o que pode aparecer</div><p style="font-size:12.5px;color:var(--brown-mid);margin:0 0 8px">Com base na raça e no que você marcou. Toque pra abrir cada tema.</p>`;
     cs.forEach(k=>{const c=BEHAVIOR_CATALOG[k];h+=`<details class="hw" style="padding:0;border:1px solid var(--line);border-radius:12px;margin-bottom:8px"><summary style="cursor:pointer;padding:11px 13px;display:flex;align-items:center;gap:9px"><span class="hw-ic">${c.ic}</span><span style="flex:1"><span class="hw-t">${c.label}</span><span class="hw-i" style="display:block">${c.quando}</span></span></summary><div style="padding:0 13px 13px"><div class="hw-q" style="color:#3a5e44">${c.normalize}</div><div style="margin:6px 0"><b style="font-size:12.5px">Primeiros passos:</b><ul style="margin:4px 0 0;padding-left:18px;font-size:13px;color:var(--brown)">${c.passos.map(pp=>`<li style="margin:2px 0">${pp}</li>`).join('')}</ul></div><div class="pi-when" style="margin-top:4px">🏥 ${c.escalar}</div></div></details>`;});
@@ -554,17 +572,20 @@ function planItemHTML(dog,it){const s=itemStatus(dog,it),today=localISO();
   const PRODS=['Bravecto','Simparic','NexGard','Seresto (coleira)','Frontline','Advantage','Credelio'];
   const cur=(dog.done&&dog.done.antiProduto)||'';
   const prodSel=isAnti?`<select id="prod-${it.key}" class="he-in" style="margin:0;max-width:170px"><option value="">qual produto?</option>${PRODS.map(p=>`<option${cur===p?' selected':''}>${p}</option>`).join('')}<option value="outro"${cur==='outro'?' selected':''}>Outro / não sei</option></select>`:'';
+  const isVac=it.grupo==='Vacinas';
+  const marcaIn=isVac?`<input type="text" id="marca-${it.key}" placeholder="marca (ex.: Vanguard)" class="he-in" style="margin:0;max-width:160px" value="${escH((dog.done&&dog.done[it.key+'_marca'])||'')}">`:'';
   // one-tap: "Registrei hoje" grava na hora; "outro dia" revela o seletor de data. Anti pede o produto (o intervalo depende dele).
-  const markToday=(label)=>isAnti
-    ?`<button class="chip up sm2" onclick="toggleMark('${it.key}','${today}')">${label}</button><span class="markrow" id="mk-${it.key}">${prodSel}<input type="date" id="dt-${it.key}" max="${today}" value="${today}"><button class="chip up sm2" onclick="confirmMark('${it.key}')">Salvar</button></span>`
+  const markToday=(label)=>(isAnti||isVac)
+    ?`<button class="chip up sm2" onclick="toggleMark('${it.key}','${today}')">${label}</button><span class="markrow" id="mk-${it.key}">${isAnti?prodSel:marcaIn}<input type="date" id="dt-${it.key}" max="${today}" value="${today}"><button class="chip up sm2" onclick="confirmMark('${it.key}')">Salvar</button></span>`
     :`<button class="chip up sm2" onclick="markDone('${it.key}','${today}')">${label}</button> <button class="chip sm2" onclick="toggleMark('${it.key}','${today}')">outro dia</button><span class="markrow" id="mk-${it.key}"><input type="date" id="dt-${it.key}" max="${today}"><button class="chip up sm2" onclick="confirmMark('${it.key}')">Salvar</button></span>`;
   // doses passadas (protocolo de filhote): a data importa, então abre o seletor.
-  const markPast=(label,def)=>`<button class="chip sm2" onclick="toggleMark('${it.key}','${def||today}')">${label}</button><span class="markrow" id="mk-${it.key}"><input type="date" id="dt-${it.key}" max="${today}"${def?` value="${def}"`:''}><button class="chip up sm2" onclick="confirmMark('${it.key}')">Salvar</button></span>`;
+  const markPast=(label,def)=>`<button class="chip sm2" onclick="toggleMark('${it.key}','${def||today}')">${label}</button><span class="markrow" id="mk-${it.key}">${marcaIn}<input type="date" id="dt-${it.key}" max="${today}"${def?` value="${def}"`:''}><button class="chip up sm2" onclick="confirmMark('${it.key}')">Salvar</button></span>`;
   let status='',actions='';
   if(it.recorrente){
     if(s.st==='rec-done'){const t0=startOfToday();
       if(s.next>=t0){
-        const prodChip=(isAnti&&cur&&cur!=='outro')?`<span style="display:inline-block;background:var(--warm);border:1px solid var(--line);border-radius:20px;padding:1px 9px;font-size:11px;color:var(--brown);margin-left:6px;vertical-align:1px">${cur}</span>`:'';
+        const marcaTxt=isAnti?((cur&&cur!=='outro')?cur:''):(((dog.done||{})[it.key+'_marca'])||'');
+        const prodChip=marcaTxt?`<span style="display:inline-block;background:var(--warm);border:1px solid var(--line);border-radius:20px;padding:1px 9px;font-size:11px;color:var(--brown);margin-left:6px;vertical-align:1px">${escH(marcaTxt)}</span>`:'';
         const tot=it.intervalo||30,pas=Math.max(0,Math.min(tot,Math.round((t0-new Date(s.doneDate+'T00:00:00'))/864e5))),restPct=Math.max(2,Math.round(100*(1-pas/tot)));
         status=`<div class="pi-when ok">✓ Última: ${fmt(new Date(s.doneDate+'T00:00:00'))}${prodChip} · Próxima: <b>${emDias(s.next)}</b> (${fmt(s.next)})</div><div style="height:5px;background:var(--line);border-radius:4px;margin-top:6px;overflow:hidden"><div style="height:100%;width:${restPct}%;background:${restPct>30?'var(--green)':'#b7902a'};border-radius:4px"></div></div>`;
       }
@@ -572,7 +593,7 @@ function planItemHTML(dog,it){const s=itemStatus(dog,it),today=localISO();
       actions=markToday('✓ Registrei hoje')+`<button class="mini" onclick="undoDone('${it.key}')">desfazer</button>`;}
     else{status=`<div class="pi-when muted">${(it.nota&&it.nota!==it.det)?it.nota+' · ':''}ainda não registrado</div>`;actions=markToday('✓ Registrei hoje');}
   }else{
-    if(s.st==='done'){status=`<div class="pi-when ok">✓ Feita em ${fmt(new Date(s.doneDate+'T00:00:00'))}</div>`;actions=`<button class="mini" onclick="undoDone('${it.key}')">desfazer</button>`;}
+    if(s.st==='done'){status=`<div class="pi-when ok">✓ Feita em ${fmt(new Date(s.doneDate+'T00:00:00'))}${(dog.done||{})[it.key+'_marca']?(' · '+escH(dog.done[it.key+'_marca'])):''}</div>`;actions=`<button class="mini" onclick="undoDone('${it.key}')">desfazer</button>`;}
     else if(s.st==='overdue'){status=`<div class="pi-when">Prevista ${emDias(it.sugerido)} (~${fmt(it.sugerido)}) · registre se já deu</div>`;actions=markPast('✓ Já dei essa',localISO(it.sugerido));}
     else{status=`<div class="pi-when">Sugerida: ${it.sugerido?`<b>${emDias(it.sugerido)}</b> (${fmt(it.sugerido)})`:'a definir'}</div>`;actions=markPast('✓ Já dei essa');}
   }
@@ -722,12 +743,9 @@ function weightChartBrand(dog){
   var W=320,H=148,pl=8,pr=8,pt=16,pb=22;
   var kgs=ws.map(w=>w.kg);var mn=Math.min.apply(null,kgs),mx=Math.max.apply(null,kgs);if(mn===mx){mn-=1;mx+=1;}var pad=(mx-mn)*0.22;mn-=pad;mx+=pad;
   // zona de referência: limites da faixa de porte do peso atual — dá leitura "dentro/fora da faixa" já com 1 pesagem
-  var zc=null, zlab='faixa do porte'; try{
-    var _bn=(((typeof getBreed==='function')?(getBreed(dog)||{}).name:'')||'').toLowerCase();
-    var _T=[[/pomer|lulu|spitz alem[aã]o an/,[1.5,3.5]],[/chihuahua/,[1.5,3]],[/yorkshire/,[2,3.5]],[/malt[eê]s/,[3,4]],[/shih/,[4,7.5]],[/pinscher/,[3,6]],[/dachshund|teckel|salsicha/,[4,12]],[/\bpug\b/,[6,9]],[/buldogue franc|bulldog franc/,[8,14]],[/beagle/,[9,16]],[/shiba/,[7,11]],[/schnauzer/,[5,9]],[/cocker/,[12,15]],[/border collie/,[14,20]],[/buldogue ingl|bulldog ingl/,[18,25]],[/golden/,[25,34]],[/labrador/,[25,36]],[/pastor alem/,[22,40]],[/rottweiler/,[35,60]],[/husky/,[16,27]],[/lhasa/,[5,8]],[/westie|west highland/,[6,10]],[/pit ?bull|amstaff/,[14,27]],[/boxer/,[25,32]],[/akita/,[23,39]],[/jack russell/,[5,8]]];
-    for(var _i=0;_i<_T.length;_i++){ if(_T[_i][0].test(_bn)){ zc=_T[_i][1]; zlab='faixa da raça (adulto)'; break; } }
-    if(!zc){ var _fx={'0':[0.5,2],'1':[2,4.5],'2':[4.5,10],'3':[10,20],'4':[20,40],'5':[40,56]}[faixaFromKg(kgs[kgs.length-1])]; if(_fx) zc=_fx; }
-    if(zc){ mn=Math.min(mn,zc[0]); mx=Math.max(mx,zc[1]); var _p2=(mx-mn)*0.06; mn-=_p2; mx+=_p2; } }catch(e){}
+  var _bz=bandFor(dog,kgs[kgs.length-1]);
+  var zc=_bz?_bz.b:null, zlab=(_bz&&_bz.breed)?'faixa da raça (adulto)':'faixa do porte';
+  if(zc){ mn=Math.min(mn,zc[0]); mx=Math.max(mx,zc[1]); var _p2=(mx-mn)*0.06; mn-=_p2; mx+=_p2; }
   var y=k=>pt+(1-(k-mn)/(mx-mn))*(H-pt-pb);
   var x=i=>ws.length<=1?(W/2):pl+i*(W-pl-pr)/(ws.length-1);
   var h='<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;height:auto;display:block">';
@@ -758,9 +776,11 @@ function saudePainelHTML(dog){
     if(ws.length===1)h+='<div style="font-size:11.5px;color:var(--brown-mid);text-align:center;margin-top:4px">Registra a 2ª pesagem pra eu desenhar a tendência.</div>';
     var trTxt=tr?((tr.up?'↑ +':(tr.down?'↓ ':'· '))+String(Math.abs(tr.delta).toFixed(1)).replace('.',',')+' kg desde a última'):(ws.length>1?'estável':'1ª pesagem');
     var trCol=tr?'#b7902a':'#7a5c44';
+    var _bd=bandFor(dog,ws[ws.length-1].kg);
+    var _ps=(_bd&&_bd.breed)?pesoStatus(ws[ws.length-1].kg,_bd.b):null;
     var ups=(typeof upcomingReminders==='function')?upcomingReminders(dog):[];var next=ups.filter(u=>u.status==='upcoming')[0];
     h+='<div style="display:flex;gap:8px;margin-top:10px">'
-      +'<div style="flex:1;background:var(--warm);border-radius:12px;padding:10px 11px"><div style="font-size:11px;color:var(--brown-mid)">Peso atual</div><div style="font-size:19px;font-weight:700;color:var(--brown);line-height:1.1;margin-top:2px">'+String(ws[ws.length-1].kg).replace('.',',')+'<span style="font-size:12px;font-weight:400"> kg</span></div><div style="font-size:11px;color:'+trCol+';margin-top:2px">'+trTxt+'</div></div>'
+      +'<div style="flex:1;background:var(--warm);border-radius:12px;padding:10px 11px"><div style="font-size:11px;color:var(--brown-mid)">Peso atual</div><div style="font-size:19px;font-weight:700;color:var(--brown);line-height:1.1;margin-top:2px">'+String(ws[ws.length-1].kg).replace('.',',')+'<span style="font-size:12px;font-weight:400"> kg</span></div><div style="font-size:11px;color:'+trCol+';margin-top:2px">'+trTxt+'</div>'+(_ps?('<div style="font-size:10.5px;color:'+_ps.c+';margin-top:3px;line-height:1.35">'+_ps.t+'</div>'):'')+'</div>'
       +'<div style="flex:1;background:var(--warm);border-radius:12px;padding:10px 11px"><div style="font-size:11px;color:var(--brown-mid)">Próximo cuidado</div>'+(next?('<div style="font-size:13.5px;font-weight:600;color:var(--brown);margin-top:3px;line-height:1.2">'+escH((next.t||'').split('(')[0].trim())+'</div><div style="font-size:11px;color:var(--brown-mid);margin-top:2px"><b>'+emDias(next.when)+'</b> · '+fmt(next.when)+'</div>'):'<div style="font-size:13px;color:var(--brown-mid);margin-top:5px">nada agendado</div>')+'</div>'
       +'</div>';
   } else {
@@ -849,7 +869,7 @@ window.nannyLogWeight=nannyLogWeight;
 function buildFicha(dog){const b=getBreed(dog);const raca=b._synthetic?dog.customBreed:b.name;const he=dog.health||{};
   let h=`<div class="fh1">🐾 ${dog.nome}</div><div class="fmeta">${raca} · ${ageLabel(ageInMonths(dog))}${dog.sexo?(' · '+(dog.sexo==='femea'?'fêmea':'macho')):''}${dog.microchip?(' · Microchip '+dog.microchip):''}</div>`;
   h+=`<div class="fsec">Plano de cuidado</div>`;
-  carePlan(dog).forEach(it=>{const s=itemStatus(dog,it);let st;if(it.recorrente)st=s.st==='rec-done'?('última '+fmtISO(s.doneDate)+' · próxima '+fmtISO(localISO(s.next))):'ainda não registrado';else st=s.st==='done'?('feito'+(s.doneDate?(' em '+fmtISO(s.doneDate)):'')):(s.st==='overdue'?'atrasado':'pendente');h+=`<div class="frow">• ${it.nome}: ${st}</div>`;});
+  carePlan(dog).forEach(it=>{const s=itemStatus(dog,it);const mk2=(dog.done&&(dog.done[it.key+'_marca']||(it.key==='anti'?(dog.done.antiProduto&&dog.done.antiProduto!=='outro'?dog.done.antiProduto:''):'')))||'';let st;if(it.recorrente)st=s.st==='rec-done'?('última '+fmtISO(s.doneDate)+(mk2?(' ('+mk2+')'):'')+' · próxima '+fmtISO(localISO(s.next))):'ainda não registrado';else st=s.st==='done'?('feito'+(s.doneDate?(' em '+fmtISO(s.doneDate)):'')+(mk2?(' ('+mk2+')'):'')):(s.st==='overdue'?'atrasado':'pendente');h+=`<div class="frow">• ${it.nome}: ${st}</div>`;});
   if((he.vacinas||[]).length){h+=`<div class="fsec">Vacinas (do documento)</div>`;he.vacinas.forEach(v=>h+=`<div class="frow">• ${v.nome||'Vacina'}${v.data?(' — '+fmtISO(v.data)):''}</div>`);}
   if((he.antiparasitario||[]).length){h+=`<div class="fsec">Antipulga / carrapato</div>`;he.antiparasitario.forEach(a=>h+=`<div class="frow">• ${a.produto||'—'}${a.data?(' — '+fmtISO(a.data)):''}</div>`);}
   if((he.vermifugo||[]).length){h+=`<div class="fsec">Vermífugo</div>`;he.vermifugo.forEach(a=>h+=`<div class="frow">• ${a.produto||'—'}${a.data?(' — '+fmtISO(a.data)):''}</div>`);}
