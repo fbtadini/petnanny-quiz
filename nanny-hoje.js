@@ -229,7 +229,7 @@
     // --- dossiê (o acúmulo, clicável) ---
     var files = dog.files || [];
     var last = files.length ? files[files.length-1] : null;
-    h += '<div onclick="setTab(\'carteira\')" style="cursor:pointer;display:flex;align-items:center;gap:8px;padding:11px 13px;background:#efe6da;border-radius:12px">'
+    h += '<div onclick="setTab(\'carteira\')" style="cursor:pointer;display:flex;align-items:center;gap:8px;padding:11px 13px;background:var(--ct-track);border-radius:12px">'
       + '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="'+CT.mut+'" stroke-width="2" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>'
       + '<div style="flex:1"><div style="font-size:12.5px;color:'+CT.pri+';font-weight:500">Dossiê d'+art(dog)+' '+esc(nome(dog))+'</div>'
       + '<div style="font-size:11px;color:'+CT.mut+';margin-top:1px">'+(last?('última guardada: '+esc(last.type||'documento')):'toque pra guardar carteira, exames e documentos')+'</div></div>'

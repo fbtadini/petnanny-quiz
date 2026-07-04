@@ -279,33 +279,70 @@
       var s=null; try{ s = g('nannyScore') && window.nannyScore(dog); }catch(e){}
       var score = (s && typeof s.score==='number' && s.conf!=='baixa') ? s.score : null;
       var b = g('getBreed') ? window.getBreed(dog) : null;
+      var idade=''; try{ if(g('ageLabel')&&g('ageInMonths')) idade=window.ageLabel(window.ageInMonths(dog))||''; }catch(e){}
+
+      // chips: o que faz alguém ter orgulho de compartilhar
+      var chips=[];
+      try{
+        var ups = g('upcomingReminders') ? window.upcomingReminders(dog) : [];
+        var vacLate = ups.some(function(u){ return u.tipo==='Vacina' && u.status!=='upcoming'; });
+        var temVac = ((dog.health&&dog.health.vacinas)||[]).length>0;
+        if(temVac && !vacLate) chips.push('\ud83d\udc89 Vacinas em dia');
+        var anti=null; ups.forEach(function(u){ if(!anti && /antiparasit|antipulga|carrapato/i.test(u.t||'') && u.status==='upcoming') anti=u; });
+        if(anti && anti.when) chips.push('\ud83d\udee1\ufe0f Protegido at\u00e9 '+brDate(new Date(anti.when)));
+      }catch(e){}
+      try{
+        var ch=parseD(dog.chegada);
+        if(ch){ var dj=daysBetween(ch, new Date()); if(dj>0) chips.push('\ud83c\udfe0 '+dj.toLocaleString('pt-BR')+' dias juntos'); }
+      }catch(e){}
+      chips=chips.slice(0,3);
+
       var c=document.createElement('canvas'); c.width=1080; c.height=1350;
       var x=c.getContext('2d');
+      // fundo + moldura
       x.fillStyle='#faf7f2'; x.fillRect(0,0,1080,1350);
+      x.strokeStyle='#f0e4d3'; x.lineWidth=3; x.strokeRect(36,36,1008,1278);
+      // patinhas discretas nos cantos
+      x.globalAlpha=.16; x.font='64px serif'; x.fillText('\ud83d\udc3e',86,150); x.fillText('\ud83d\udc3e',930,1250); x.globalAlpha=1;
       x.textAlign='center';
-      x.fillStyle='#e8733a'; x.font='700 42px "DM Sans",sans-serif'; x.fillText('PetNanny', 540, 122);
-      x.fillStyle='#3d2c1e'; x.font='800 94px "Playfair Display",Georgia,serif'; x.fillText(dog.nome||'Meu cão', 540, 295);
-      if(b && b.name){ x.fillStyle='#7a5c44'; x.font='500 40px "DM Sans",sans-serif'; x.fillText(b.name, 540, 358); }
-      var cx=540, cy=705, R=212;
-      x.lineWidth=36; x.strokeStyle='#efe6da'; x.beginPath(); x.arc(cx,cy,R,0,Math.PI*2); x.stroke();
+      x.fillStyle='#e8733a'; x.font='700 42px "DM Sans",sans-serif'; x.fillText('PetNanny',540,138);
+      x.fillStyle='#a8967f'; x.font='500 26px "DM Sans",sans-serif'; x.fillText('a bab\u00e1 digital do seu c\u00e3o',540,178);
+      // nome + raça + idade
+      x.fillStyle='#3d2c1e'; x.font='800 100px "Playfair Display",Georgia,serif'; x.fillText(dog.nome||'Meu c\u00e3o',540,330);
+      var sub=[(b&&b.name)||dog.customBreed||'', idade].filter(Boolean).join(' \u00b7 ');
+      if(sub){ x.fillStyle='#7a5c44'; x.font='500 40px "DM Sans",sans-serif'; x.fillText(sub,540,396); }
+      // anel do score
+      var cx=540, cy=660, R=185;
+      x.lineWidth=32; x.strokeStyle='#efe6da'; x.beginPath(); x.arc(cx,cy,R,0,Math.PI*2); x.stroke();
       if(score!=null){
         x.strokeStyle = score>=80?'#4a7c59':(score>=60?'#e8733a':'#c0562e'); x.lineCap='round';
         x.beginPath(); x.arc(cx,cy,R,-Math.PI/2,-Math.PI/2+Math.PI*2*score/100); x.stroke();
-        x.fillStyle='#3d2c1e'; x.font='800 152px "Playfair Display",Georgia,serif'; x.fillText(String(score), 540, cy+54);
-        x.fillStyle='#7a5c44'; x.font='600 38px "DM Sans",sans-serif'; x.fillText('Score de cuidado', 540, cy+R+92);
+        x.fillStyle='#3d2c1e'; x.font='800 132px "Playfair Display",Georgia,serif'; x.fillText(String(score),540,cy+34);
+        x.fillStyle='#a8967f'; x.font='500 30px "DM Sans",sans-serif'; x.fillText('score de cuidado',540,cy+86);
       } else {
-        x.fillStyle='#7a5c44'; x.font='600 44px "DM Sans",sans-serif'; x.fillText('cuidando com a Nanny 🐶', 540, cy+16);
+        x.fillStyle='#7a5c44'; x.font='600 46px "DM Sans",sans-serif'; x.fillText('cuidando com a Nanny \ud83d\udc36',540,cy+16);
       }
-      x.fillStyle='#a8967f'; x.font='400 32px "DM Sans",sans-serif';
-      x.fillText(new Date().toLocaleDateString('pt-BR'), 540, cy+R+148);
-      x.fillStyle='#3d2c1e'; x.font='600 38px "DM Sans",sans-serif'; x.fillText('🐾 petnanny.com.br', 540, 1272);
+      // chips empilhadas
+      var yy=cy+R+86;
+      x.font='600 34px "DM Sans",sans-serif';
+      chips.forEach(function(t){
+        var w=x.measureText(t).width+72, h=62, xx=540-w/2, r=31;
+        x.fillStyle='#f5efe6'; x.strokeStyle='#e8dcc9'; x.lineWidth=2;
+        x.beginPath(); x.moveTo(xx+r,yy); x.arcTo(xx+w,yy,xx+w,yy+h,r); x.arcTo(xx+w,yy+h,xx,yy+h,r); x.arcTo(xx,yy+h,xx,yy,r); x.arcTo(xx,yy,xx+w,yy,r); x.closePath(); x.fill(); x.stroke();
+        x.fillStyle='#5f5142'; x.fillText(t,540,yy+42);
+        yy+=80;
+      });
+      // rodapé
+      x.fillStyle='#a8967f'; x.font='400 28px "DM Sans",sans-serif'; x.fillText(new Date().toLocaleDateString('pt-BR'),540,1218);
+      x.fillStyle='#3d2c1e'; x.font='600 36px "DM Sans",sans-serif'; x.fillText('\ud83d\udc3e petnanny.com.br',540,1268);
+
       c.toBlob(function(blob){
         if(!blob) return;
-        var f=null; try{ f=new File([blob],'petnanny-score.png',{type:'image/png'}); }catch(e){}
+        var f=null; try{ f=new File([blob],'petnanny-'+String(dog.nome||'cao').toLowerCase().replace(/[^a-z0-9]+/g,'-')+'.png',{type:'image/png'}); }catch(e){}
         if(f && navigator.canShare && navigator.canShare({files:[f]})){
           navigator.share({files:[f], title:'PetNanny'}).catch(function(){});
         } else {
-          var a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='petnanny-score.png';
+          var a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=f?f.name:'petnanny-cartao.png';
           document.body.appendChild(a); a.click(); a.remove();
         }
         if(window.gtag) try{ gtag('event','share_card'); }catch(e){}

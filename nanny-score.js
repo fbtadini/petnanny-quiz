@@ -402,7 +402,7 @@
     var prev = null; try { prev = (typeof window.nannyForecast==='function') ? window.nannyForecast(dog) : null; } catch(e){}
     if(prev){
       h += '<div style="display:flex;gap:11px;align-items:flex-start;background:#eef4fa;border:1px solid #d9e6f2;border-radius:12px;padding:11px 13px;margin-top:13px">'
-        + '<span style="flex:0 0 30px;width:30px;height:30px;border-radius:50%;background:#dcebf7;display:flex;align-items:center;justify-content:center;font-size:15px">'+(prev.ic||'📅')+'</span>'
+        + '<span class="nv-face" style="background:#dcebf7;font-size:15px">'+(prev.ic||'📅')+'</span>'
         + '<div style="flex:1"><div style="font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:#3f6a94;font-weight:700;margin-bottom:2px">A Nanny prevê</div>'
         + '<div style="font-size:13px;color:'+CT.pri+';line-height:1.5">'+esc(prev.t)+'</div></div></div>';
     }
@@ -431,7 +431,7 @@
       if(ins.length) reparou = ins[0];
     }
     if(reparou){
-      h += '<div style="display:flex;gap:11px;align-items:flex-start;margin-top:11px;padding-top:12px;border-top:1px solid '+CT.cream+'">'
+      h += '<div style="display:flex;gap:11px;align-items:flex-start;margin-top:11px;padding:12px 13px 0;border-top:1px solid '+CT.cream+'">'
         + '<span class="nv-face" style="background:'+CT.peach+'">'+(((typeof WESTIE!=='undefined')&&WESTIE)?WESTIE:('<span style="font-size:15px">'+(reparou.ic||'💡')+'</span>'))+'</span>'
         + '<div style="flex:1"><div style="font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:'+CT.mut+';font-weight:700;margin-bottom:2px">A Nanny reparou</div>'
         + '<div style="font-size:13px;color:'+CT.pri+';line-height:1.5">'+esc(reparou.t||'')+'</div></div></div>';
@@ -452,7 +452,7 @@
         + '<span style="color:'+(Math.abs(tot)<0.3?CT.mut:(tot>0?CT.amber:CT.greenSoft))+'">('+(tot>0?'+':'')+tot.toFixed(1).replace('.',',')+' kg)</span></div></div>';
     }
 
-    if(!isSetup){ h += '<div style="margin-top:12px"><button onclick="window.nannyShareCard&&nannyShareCard()" style="background:none;border:1.5px solid '+CT.line+';border-radius:20px;padding:6px 13px;font-size:12px;font-weight:600;color:'+CT.sec+';cursor:pointer;font-family:inherit">\ud83d\udce4 compartilhar o score</button></div>'; }
+    if(!isSetup){ h += '<div style="margin-top:12px"><button onclick="window.nannyShareCard&&nannyShareCard()" style="background:none;border:1.5px solid '+CT.line+';border-radius:20px;padding:6px 13px;font-size:12px;font-weight:600;color:'+CT.sec+';cursor:pointer;font-family:inherit">\ud83d\udce4 compartilhar cart\u00e3o</button></div>'; }
     h += '<div style="font-size:10.5px;color:'+CT.mut+';margin-top:12px;line-height:1.4;opacity:.9">O score é um índice de cuidado e prevenção — não é diagnóstico. A decisão de saúde é sempre do veterinário.</div>';
     h += '</div>';
     return h;
