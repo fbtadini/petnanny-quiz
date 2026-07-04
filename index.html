@@ -5339,6 +5339,7 @@ function showResults(){
           <li style="margin-bottom:8px"><strong>Reavaliar 1-2 critérios</strong> (ex: creche pra resolver "8h sozinho")</li>
           <li><strong>Conversar com veterinário</strong> (alergia merece teste real)</li>
         </ul>
+        <button onclick="enterWhatif()" style="margin-top:16px;width:100%;background:#4a7c59;color:#fff;border:0;border-radius:11px;padding:13px 16px;font-family:'DM Sans',sans-serif;font-weight:700;font-size:14px;cursor:pointer">🔮 Simular flexibilizações — o que mudaria no resultado?</button>
       </div>`;
     document.getElementById('expectationSection').style.display='none';
     document.querySelector('.results-actions-top').style.display='none';
@@ -5372,6 +5373,10 @@ function showResults(){
   if(isAdotar){
     renderConjointSection();
     renderExpectationSection();
+    // Ponte pro hub: o intent block (com CTA "Criar plano de chegada") precisa
+    // aparecer TAMBÉM na adoção — é o fluxo que mais precisa dos 90 dias de
+    // acolhimento. Sem isso, o funil de adoção morria no PDF.
+    renderIntentBlock(container);
     showScreen('results');
     window.scrollTo(0,0);
     return;

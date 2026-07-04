@@ -268,14 +268,14 @@ html[data-theme="dark"] [style*="color:#3f6a94"]{color:#9dc1e4!important}
 
   <section id="s-prechegada" class="screen">
     <h1 style="font-size:26px">Plano de chegada</h1>
-    <p class="sub">Pra você se preparar pra chegada do seu cão — só o que importa agora. Peso, vacinas e o resto entram quando ele chegar.</p>
+    <p class="sub">Pra você se preparar pra chegada do seu cão — só o que importa agora. Peso, vacinas e o resto entram na chegada.</p>
     <label>Raça (ou o que você está pensando)</label>
     <select id="pc-breed" onchange="togglePcOutra()"></select>
     <div id="pc-outra-wrap" style="display:none">
       <label>Qual raça ou mistura?</label>
       <input id="pc-outra" placeholder="Ex.: Labradoodle, vira-lata caramelo…">
     </div>
-    <label>De onde ele vem? <span class="opt">(opcional)</span></label>
+    <label>De onde vem? <span class="opt">(opcional)</span></label>
     <select id="pc-origem"><option value="">Selecione…</option><option value="adotado">Adoção — ONG / abrigo / resgate</option><option value="filhote_criador">Criador / loja</option><option value="indeciso">Ainda decidindo de onde</option></select>
     <label>Previsão de chegada <span class="opt">(se já tiver ideia)</span></label>
     <input id="pc-prev" type="date">
@@ -331,6 +331,37 @@ let dogs=[],currentId=null,sex='',neut='',porte=3,reposMode=false,editingId=null
 
 function loadDogs(){try{dogs=JSON.parse(localStorage.getItem(LS_KEY))||[]}catch(e){dogs=[]}}
 function saveDogs(){try{localStorage.setItem(LS_KEY,JSON.stringify(dogs))}catch(e){}; if(window.nannySync)window.nannySync();}
+/* ---------- backup local (localStorage é frágil: limpar dados do navegador apaga tudo) ---------- */
+function pnExportBackup(){
+  try{
+    const payload={v:1,app:'petnanny',exportadoEm:new Date().toISOString(),dogs:dogs};
+    const blob=new Blob([JSON.stringify(payload)],{type:'application/json'});
+    const a=document.createElement('a');a.href=URL.createObjectURL(blob);
+    a.download='petnanny-backup-'+localISO()+'.json';document.body.appendChild(a);a.click();
+    setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},400);
+    try{localStorage.setItem('petnanny_last_backup',localISO())}catch(e){}
+    try{if(typeof gtag==='function')gtag('event','backup_export',{dogs:dogs.length})}catch(e){}
+  }catch(e){alert('Não consegui gerar o backup — tenta de novo.')}
+}
+function pnImportBackup(input){
+  const f=input.files&&input.files[0];if(!f)return;
+  const r=new FileReader();
+  r.onload=()=>{
+    try{
+      const j=JSON.parse(r.result);
+      const arr=Array.isArray(j)?j:(j&&Array.isArray(j.dogs)?j.dogs:null);
+      if(!arr||!arr.length||!arr[0]||!arr[0].id){alert('Esse arquivo não parece um backup do PetNanny.');input.value='';return;}
+      // Merge por id: restaurar NUNCA apaga o que já existe neste aparelho.
+      const byId={};dogs.forEach(d=>{byId[d.id]=1});
+      let novos=0;arr.forEach(d=>{if(d&&d.id&&!byId[d.id]){dogs.push(d);novos++;}});
+      saveDogs();renderList();
+      try{if(typeof gtag==='function')gtag('event','backup_import',{novos})}catch(e){}
+      alert(novos?('Backup restaurado — '+novos+(novos>1?' cães adicionados.':' cão adicionado.')):'Tudo desse backup já estava aqui.');
+    }catch(e){alert('Não consegui ler esse arquivo.')}
+    input.value='';
+  };
+  r.readAsText(f);
+}
 function uid(){return 'd'+Date.now().toString(36)+Math.random().toString(36).slice(2,5)}
 function show(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));document.getElementById(id).classList.add('active');window.scrollTo(0,0);document.getElementById('backBtn').style.visibility=(id==='s-welcome')?'hidden':'visible'}
 function goHome(){renderList();show('s-welcome')}
@@ -912,7 +943,9 @@ function vetObsCardHTML(dog){
 }
 function renderDocs(dog){const files=dog.files||[];const he=dog.health||{};
   const temHist=(he.vacinas||[]).length||(he.antiparasitario||[]).length||(he.vermifugo||[]).length||(he.condicoes||[]).length||he.vet||he.microchip;
-  let h=saudePainelHTML(dog)+vetObsCardHTML(dog)+pedigreeCardHTML(dog);
+  // Aguardando: sem painel de status nem observações do vet (não existe cão pra
+  // ter status). Pedigree + carteira lida + upload ficam — chegam antes do cão.
+  let h=(dog.aguardando?'':saudePainelHTML(dog)+vetObsCardHTML(dog))+pedigreeCardHTML(dog);
   if(temHist){h+=`<div class="card"><div class="sec-label">📁 Carteira e registros lidos</div><p style="font-size:12.5px;color:var(--brown-mid);margin:0 0 2px">A fonte dos dados: cada aplicação que a Nanny leu dos documentos. O resumo do que fazer fica no plano, acima. Use ✎ pra corrigir ou ✕ pra remover.</p>${healthHistoryHTML(he)}</div>`;}
   h+=`<div class="card"><div class="sec-label">📁 Documentos & fotos</div>`;
   if(files.length){
@@ -1028,7 +1061,17 @@ function renderProfile(){const dog=dogObj();if(!dog)return goHome();migrateDog(d
   if(dog.aguardando){document.getElementById('p-meta').textContent=raca+' · plano de chegada'+(dog.previsao?(' · previsão '+fmtISO(dog.previsao)):'');}
   else{const pd=pesoDisplay(dog);document.getElementById('p-meta').textContent=`${raca} · ${ageLabel(ageInMonths(dog))}${pd?(' · '+pd):''}${dog.sexo?(' · '+(dog.sexo==='femea'?'fêmea':'macho')):''}`;}
   const pc=document.getElementById('p-chip');if(dog.microchip){pc.style.display='block';pc.textContent='🔖 Microchip: '+dog.microchip}else{pc.style.display='none'}
-  setAvatar();renderAcolher(dog);renderGuide(dog);renderPlan(dog);renderDocs(dog);if(window.renderHoje)window.renderHoje(dog);}
+  setAvatar();renderAcolher(dog);renderGuide(dog);
+  // Pré-chegada: a promessa da tela é "peso, vacinas e o resto entram quando ele
+  // chegar" — então a máquina de cuidados NÃO renderiza no modo aguardando.
+  // O dossiê continua (contrato, pedigree e carteira que o criador/ONG manda
+  // ANTES da chegada são exatamente o que a pessoa quer guardar agora).
+  if(dog.aguardando){renderPreArrivalCuidados(dog);}else{renderPlan(dog);}
+  renderDocs(dog);if(window.renderHoje)window.renderHoje(dog);}
+function renderPreArrivalCuidados(dog){
+  const el=document.getElementById('tab-cuidados');if(!el)return;
+  const nm=(dog.nome&&dog.nome!=='Meu futuro cão')?dog.nome:'seu cão';
+  el.innerHTML='<div class="card" style="margin-top:14px"><div class="sec-label">🔒 Libera na chegada</div><p style="margin:0;font-size:13px;color:var(--brown-mid);line-height:1.55">Peso, vacinas, lembretes e o diário abrem quando '+nm+' chegar — é só avisar no plano de chegada, na aba Hoje. Se o criador ou a ONG já te mandou a carteira de vacinação ou o contrato, dá pra guardar logo abaixo, no dossiê: a Nanny lê e deixa tudo pronto pro dia 1.</p></div>';}
 function setTab(t){var alias={cuidados:'saude',cuidar:'saude',plano:'saude',carteira:'saude',lembretes:'saude',docs:'saude',guia:'raca',sobre:'raca'};t=alias[t]||t;document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('on',x.dataset.tab===t));var map={hoje:['tab-hoje'],saude:['tab-cuidados','tab-carteira-docs'],raca:['tab-raca']};var showing=map[t]||['tab-hoje'];['tab-hoje','tab-raca','tab-cuidados','tab-carteira-docs'].forEach(function(id){var e=document.getElementById(id);if(e)e.style.display=(showing.indexOf(id)>=0)?'block':'none';});}
 
 const MARCOS=[
@@ -1253,7 +1296,9 @@ function preChegadaHTML(dog){
     +chegadaGearHTML(dog)
     +`<div class="sec-label" style="margin:14px 0 4px">O que esperar nos primeiros dias</div><p style="margin:0;font-size:13px;color:var(--brown-mid)"><b>${prev.t}:</b> ${prev.normal} ${prev.faca}</p>`
     +(provavelFilhote?`<p style="margin:8px 0 0;font-size:12.5px;color:var(--brown-mid)"><b>Se for filhote:</b> a janela de socialização (≈3 a 16 semanas) é ouro — apresente sons, pessoas e ambientes novos com calma e reforço positivo. Mas, antes de completar as vacinas, evite parques e o chão do pet shop (risco de doença); socialize com cães vacinados que você confia.</p>`:'')
-    +'<div style="margin-top:14px"><button class="btn" onclick="marcouChegada()">🎉 Ele chegou!</button></div>'
+    +'<div style="margin-top:14px"><button class="btn" onclick="marcouChegada()">🎉 '+(temNome?(dog.nome+' chegou!'):'Chegou!')+'</button>'
+    +'<button class="chip" style="margin-left:8px;vertical-align:middle" onclick="toggleChegadaData()">Chegou em outra data</button>'
+    +'<div id="chegada-data-wrap" style="display:none;margin-top:10px"><input type="date" id="chegada-data" max="'+localISO()+'" style="padding:9px 11px;border:1px solid #e8ddd2;border-radius:9px;font-family:inherit;font-size:13px"> <button class="btn" style="padding:10px 15px;font-size:13.5px" onclick="marcouChegadaComData()">Confirmar</button></div></div>'
     +`<div class="nanny-msg" style="margin-top:11px"><div class="nanny-av">${WESTIE}</div><div class="nanny-bubble">Sem pressa pra decidir tudo — o importante é o básico pronto e um ambiente calmo. O resto a gente ajusta quando ele chegar.</div></div>`
     +'</div>';
   return h;
@@ -1262,6 +1307,17 @@ function marcouChegada(){
   const dog=dogObj(); if(!dog)return;
   dog.aguardando=false; dog.indeciso=false;
   dog.chegada=localISO();
+  saveDogs(); renderProfile(); setTab('raca'); window.scrollTo({top:0,behavior:'smooth'});
+}
+function toggleChegadaData(){const w=document.getElementById('chegada-data-wrap');if(w)w.style.display=(w.style.display==='none')?'block':'none';}
+function marcouChegadaComData(){
+  // Vida real: o cão chegou na sexta, a pessoa só abre o app na terça. Sem
+  // retro-data, os 90 dias do acolhimento começam errados e todo marco desliza.
+  const inp=document.getElementById('chegada-data'); const v=inp&&inp.value; if(!v)return;
+  const d=new Date(v+'T00:00:00'); const hoje=new Date(); hoje.setHours(23,59,59,999);
+  if(isNaN(d)||d>hoje)return;
+  const dog=dogObj(); if(!dog)return;
+  dog.aguardando=false; dog.indeciso=false; dog.chegada=v;
   saveDogs(); renderProfile(); setTab('raca'); window.scrollTo({top:0,behavior:'smooth'});
 }
 
@@ -1400,7 +1456,11 @@ function renderList(){const el=document.getElementById('dogList');const qc=quizC
     banner=`<div class="card" style="background:var(--accent-light);border-color:#f3d9c2;cursor:pointer;margin-bottom:14px" onclick="startRegisterFromQuiz()"><div style="display:flex;gap:11px;align-items:center"><div class="nanny-av">${WESTIE}</div><div style="flex:1"><div style="font-weight:700;font-size:14px">Você combinou com ${qc.matchedName} no quiz</div><div style="font-size:12.5px;color:var(--brown-mid);margin-top:2px">Cadastre seu cão que eu já começo com a raça preenchida — e uso o que aprendi de você pra personalizar.</div></div><div style="font-size:20px;color:var(--accent-deep)">→</div></div></div>`;
   }
   if(!dogs.length){el.innerHTML=banner;return}
-  el.innerHTML=banner+'<div class="sec-label" style="margin-top:6px">Seus cães</div>'+dogs.map(d=>{const b=getBreed(d);const av=d.photo?`<img src="${d.photo}" style="object-position:${d.photoPos.x}% ${d.photoPos.y}%">`:(b._synthetic?WESTIE:(b.emoji||'🐶'));return `<div class="dog-list-item" onclick="openDog('${d.id}')"><div class="dll-em">${av}</div><div><div style="font-weight:700">${d.nome}</div><div style="font-size:12.5px;color:var(--brown-mid)">${b._synthetic?(d.customBreed||'Raça a definir'):b.name} · ${d.aguardando?'plano de chegada':ageLabel(ageInMonths(d))}</div></div></div>`}).join('');}
+  el.innerHTML=banner+'<div class="sec-label" style="margin-top:6px">Seus cães</div>'+dogs.map(d=>{const b=getBreed(d);const av=d.photo?`<img src="${d.photo}" style="object-position:${d.photoPos.x}% ${d.photoPos.y}%">`:(b._synthetic?WESTIE:(b.emoji||'🐶'));return `<div class="dog-list-item" onclick="openDog('${d.id}')"><div class="dll-em">${av}</div><div><div style="font-weight:700">${d.nome}</div><div style="font-size:12.5px;color:var(--brown-mid)">${b._synthetic?(d.customBreed||'Raça a definir'):b.name} · ${d.aguardando?'plano de chegada':ageLabel(ageInMonths(d))}</div></div></div>`}).join('')
+  +'<div style="margin-top:20px;padding-top:14px;border-top:1px solid #f0e8dd">'
+  +'<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center"><button class="chip" onclick="pnExportBackup()">💾 Backup dos dados</button><button class="chip" onclick="document.getElementById(\'pn-import\').click()">Restaurar backup</button><input id="pn-import" type="file" accept="application/json,.json" style="display:none" onchange="pnImportBackup(this)"></div>'
+  +'<div style="font-size:11.5px;color:var(--brown-light);margin-top:7px;line-height:1.5">Seus dados vivem neste aparelho. Se limpar o navegador, eles somem — baixe um backup de vez em quando.</div>'
+  +'</div>';}
 function openDog(id){currentId=id;reposMode=false;renderProfile();show('s-profile');setTab('hoje')}
 function renderAdmin(){const el=document.getElementById('adminList');const reqs=dogs.filter(d=>d.breedKey==='__outra'&&d.customBreed);
   if(!reqs.length){el.innerHTML='<div class="empty">Nenhuma raça "Outra" cadastrada ainda neste aparelho.</div>';return;}

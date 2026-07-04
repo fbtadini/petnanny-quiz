@@ -111,6 +111,7 @@
   };
   function nannyReposicao(dog){
     try{
+      if(dog && dog.aguardando) return ''; // pré-chegada: sem reposição de cão que não chegou
       var hoje=new Date(); hoje.setHours(0,0,0,0);
       var rows=[], notaEst=false;
       var BRAND={bravecto:'/bravecto',seresto:'/seresto',simparic:'/simparic',nexgard:'/nexgard',frontline:'/frontline',drontal:'/drontal'};
