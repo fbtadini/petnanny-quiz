@@ -15,6 +15,7 @@
   function esc(s){ return String(s==null?'':s).replace(/[&<>]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;'}[c];}); }
   function br(d){ if(!d)return''; var m=/^(\d{4})-(\d{2})-(\d{2})/.exec(d); return m?(m[3]+'/'+m[2]+'/'+m[1]):esc(d); }
   function byDateDesc(a,b){ return String(b.data||'').localeCompare(String(a.data||'')); }
+  function diasEntre(a,b){ try{ return (new Date(b)-new Date(a))/864e5; }catch(e){ return 9e9; } }
   var CLS_LABEL={polivalente:'Polivalente (V8/V10)',multi:'Polivalente (V8/V10)',raiva:'Antirr\u00e1bica',rabies:'Antirr\u00e1bica',antirrabica:'Antirr\u00e1bica',giardia:'Gi\u00e1rdia',tosse:'Tosse dos canis',tosse_canis:'Tosse dos canis',gripe:'Gripe canina',influenza:'Gripe canina',leish:'Leishmaniose',leishmaniose:'Leishmaniose'};
   function clsKey(v){ var c=String((v&&v.classe)||'').toLowerCase().trim(); if(c&&CLS_LABEL[c])return c; try{ if(typeof window!=='undefined'&&typeof window.vacFuncClass==='function'){ var k=window.vacFuncClass(v||{}); if(k)return String(k).toLowerCase(); } }catch(e){} return c||null; }
   function clsLabel(v){ var k=clsKey(v); return (k&&CLS_LABEL[k])||((v&&v.classe)?esc(v.classe):'\u2014'); }
@@ -53,10 +54,32 @@
     var body=''
       + '<div class="head"><div><div class="doc-title">Resumo clínico</div><div class="doc-sub">'+esc(dog.nome||'Cão')+' · '+esc(raca)+'</div></div><div class="doc-date">Gerado em '+hoje+'</div></div>'
       + '<table class="id">'+idRows+'</table>'
-      + sec('Vacinas \u2014 registro de aplica\u00e7\u00f5es', vac.length?tbl(['Vacina','Classe','Aplica\u00e7\u00e3o'],rows(vac,[function(v){return v.nome;},function(v){return clsLabel(v);},function(v){return br(v.data);}])):'')
+      + sec('Vacinas \u2014 registro de aplica\u00e7\u00f5es', (function(){
+          if(!vac.length) return '';
+          var ORDER=['multi','polivalente','rabies','raiva','giardia','tosse','tosse_canis','gripe','leish','leishmaniose'];
+          var groups={};
+          vac.forEach(function(v){ var k=clsKey(v)||'outra'; (groups[k]=groups[k]||[]).push(v); });
+          var keys=Object.keys(groups).sort(function(a,b){ var ia=ORDER.indexOf(a),ib=ORDER.indexOf(b); ia=ia<0?99:ia; ib=ib<0?99:ib; return ia-ib; });
+          var LIM24=(function(){ var d=new Date(); d.setMonth(d.getMonth()-24); return d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2)+'-'+('0'+d.getDate()).slice(-2); })();
+          var body='';
+          keys.forEach(function(k){
+            var arr=groups[k].slice().sort(function(a,b){ return String(a.data||'').localeCompare(String(b.data||'')); });
+            var lbl=CLS_LABEL[k]||(k==='outra'?'Outras':esc(k));
+            body+='<tr><td colspan="3" style="font-weight:700;padding-top:10px;border-bottom:1px solid #ccc">'+lbl+'</td></tr>';
+            if(arr.length>=3 && arr[0].data){
+              var j=0; while(j+1<arr.length && arr[j+1].data && diasEntre(arr[0].data,arr[j+1].data)<=180) j++;
+              if(j+1>=3 && arr[j].data<LIM24){
+                body+='<tr><td colspan="2" style="color:#444">Protocolo inicial (filhote): '+(j+1)+' doses entre '+br(arr[0].data)+' e '+br(arr[j].data)+' \u2014 conclu\u00eddo</td><td>\u2014</td></tr>';
+                arr=arr.slice(j+1);
+              }
+            }
+            arr.slice().reverse().forEach(function(v){ body+='<tr><td>'+esc(v.nome||'\u2014')+'</td><td>'+br(v.data)+'</td><td>'+(v.incerto?'conferir':'\u2014')+'</td></tr>'; });
+          });
+          return tbl(['Vacina','Aplica\u00e7\u00e3o','Obs.'], body);
+        })())
       + sec('Antiparasitário', anti.length?tbl(['Produto','Aplicação'],rows(anti,[function(v){return v.produto;},function(v){return br(v.data);}])):'')
       + sec('Vermífugo', verm.length?tbl(['Produto','Aplicação'],rows(verm,[function(v){return v.produto;},function(v){return br(v.data);}])):'')
-      + sec('Pr\u00f3ximas datas registradas (futuras)', (prox.length?tbl(['Item','Previs\u00e3o'],rows(prox,[function(v){return v.o_que;},function(v){return br(v.data);}])):'')+(proxVenc?'<p style="font-size:11px;color:#777;margin:5px 0 0">'+proxVenc+' previs\u00e3o(\u00f5es) antiga(s), j\u00e1 vencida(s), omitida(s) \u2014 constam no registro original do documento.</p>':''))
+      + sec('Pr\u00f3ximas datas registradas (futuras)', (prox.length?tbl(['Item','Previs\u00e3o'],rows(prox,[function(v){return v.o_que;},function(v){return br(v.data);}])):'')+(proxVenc?'<p style="font-size:11px;color:#777;margin:5px 0 0">'+((function(){var old=proxAll.filter(function(p){return String(p.data||'')<_hj;});if(old.length>=3&&old[0].data&&diasEntre(old[0].data,old[old.length-1].data)<=730){var y1=String(old[0].data).slice(0,4),y2=String(old[old.length-1].data).slice(0,4);return old.length+' previs\u00f5es antigas omitidas \u2014 em grande parte o protocolo/refor\u00e7os de '+y1+(y2!==y1?('\u2013'+y2):'')+', j\u00e1 cumpridos conforme o registro acima.';}return proxVenc+' previs\u00e3o(\u00f5es) antiga(s), j\u00e1 vencida(s), omitida(s) \u2014 constam no registro original do documento.';})())+'</p>':''))
       + sec('Exames e laudos', ex.length?tbl(['Tipo','Achado (transcrito)','Data'],rows(ex,[function(v){return v.tipo;},function(v){return v.achado;},function(v){return br(v.data);}])):'')
       + sec('Condições registradas', cond.length?'<ul>'+cond.map(function(c){return '<li>'+esc(typeof c==='string'?c:(c.nome||JSON.stringify(c)))+'</li>';}).join('')+'</ul>':'')
       + sec('Observações relatadas (triagem Nanny)', obs.length?tbl(['Data','Observação'],rows(obs,[function(o){return br(o.data);},function(o){return o.pro_vet;}])):'')

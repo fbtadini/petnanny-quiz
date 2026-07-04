@@ -4,8 +4,8 @@
  * Ao mudar arquivos, NÃO precisa mexer aqui — o cache é só rede-caiu.
  */
 var V = 'petnanny-v1';
-var CORE = ['/meu-cao.html','/breeds.js','/gear.js','/nanny-identity.js','/nanny-ask-ui.js',
-            '/nanny-hoje.js','/nanny-score.js','/nanny-vet-resumo.js','/nanny-extras.js','/manifest.json'];
+var CORE = ['/meu-cao.html','/index.html','/privacidade.html','/breeds.js','/gear.js','/nanny-identity.js','/nanny-ask-ui.js',
+            '/nanny-hoje.js','/nanny-score.js','/nanny-vet-resumo.js','/nanny-extras.js','/manifest.json','/icon-192.png','/icon-512.png'];
 
 self.addEventListener('install', function(e){
   e.waitUntil(caches.open(V).then(function(c){ return c.addAll(CORE); }).then(function(){ return self.skipWaiting(); }));

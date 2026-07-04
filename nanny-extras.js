@@ -54,7 +54,7 @@
     top.innerHTML = climaShell();
     if(el.firstElementChild) el.insertBefore(top, el.firstElementChild.nextSibling); else el.appendChild(top);
     var box = document.createElement('div'); box.id='pn-extras-b';
-    box.innerHTML = reposicaoHTML(dog) + memoriaHTML(dog) + padraoHTML(dog);
+    box.innerHTML = reposicaoHTML(dog) + racaoHTML(dog) + memoriaHTML(dog) + padraoHTML(dog);
     el.appendChild(box);
     climaFill(dog);
     countUp();
@@ -190,6 +190,45 @@
         + '<div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">'
         + '<a href="'+link+'" target="_blank" rel="noopener" onclick="window.gtag&&gtag(\'event\',\'reposicao_petz\')" style="text-decoration:none;background:var(--accent);color:#fff;border-radius:20px;padding:7px 14px;font-size:12px;font-weight:600">ver na Petz →</a>'
         + '<button onclick="nannyICS()" style="background:none;border:1.5px solid var(--ct-line);border-radius:20px;padding:7px 13px;font-size:12px;font-weight:600;color:var(--ct-sec);cursor:pointer;font-family:inherit">📅 pôr datas no calendário</button>'
+        + '</div></div>';
+    }catch(e){ return ''; }
+  }
+
+  /* ---- reposição de ração (15 g/kg/dia sobre o peso real) ---- */
+  function pesoDe(dog){
+    try{ if(g('pesoExato')){ var p=window.pesoExato(dog); if(p) return p; } }catch(e){}
+    try{ if(g('rangeOf')){ var r=window.rangeOf(dog); if(r) return (r[0]+r[1])/2; } }catch(e){}
+    return null;
+  }
+  window.nannyRacaoAberta = function(){
+    var dog=g('dogObj')&&window.dogObj(); if(!dog||!dog.racao) return;
+    dog.racaoAbertura=(new Date()).getFullYear()+'-'+('0'+((new Date()).getMonth()+1)).slice(-2)+'-'+('0'+(new Date()).getDate()).slice(-2);
+    if(g('saveDogs'))window.saveDogs();
+    if(g('renderHoje'))window.renderHoje(dog);
+    try{ navigator.vibrate&&navigator.vibrate(12); }catch(e){}
+  };
+  function racaoHTML(dog){
+    try{
+      var r=dog.racao; if(!r||!r.kg) return '';
+      var peso=pesoDe(dog); if(!peso) return '';
+      var diario=Math.max(30,Math.round(peso*15)); // g/dia (regra geral — o pacote diz o exato)
+      var link='https://www.petz.com.br/busca?q='+encodeURIComponent((r.marca||'ração')+' '+String(r.kg).replace('.',','))+'';
+      if(!dog.racaoAbertura){
+        return '<div class="card" style="padding:12px 16px"><div style="display:flex;align-items:center;gap:10px;justify-content:space-between"><div style="min-width:0"><div style="font-size:13px;font-weight:600;color:var(--ct-pri)">🥣 Ração '+(r.marca?esc(r.marca):'')+'</div><div style="font-size:11.5px;color:var(--ct-mut);margin-top:2px">marca quando abrir um pacote — eu aviso ~1 semana antes de acabar</div></div><button onclick="nannyRacaoAberta()" style="border:none;background:var(--accent);color:#fff;border-radius:20px;padding:8px 13px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap">abri hoje</button></div></div>';
+      }
+      var ab=parseD(dog.racaoAbertura); if(!ab) return '';
+      var totalDias=Math.floor(r.kg*1000/diario);
+      var passados=daysBetween(ab,(function(){var d=new Date();d.setHours(0,0,0,0);return d;})());
+      var resta=totalDias-passados;
+      if(resta>10) return '';
+      var urg=resta<=2;
+      var txt=resta<0?'pelo consumo d'+(dog.nome?'a '+esc(dog.nome):'o seu cão')+', o pacote já deve ter acabado':(resta===0?'acaba hoje':'acaba em ~'+resta+' dia'+(resta===1?'':'s'));
+      return '<div class="card" style="padding:14px 16px;border-left:3px solid '+(urg?'var(--ct-red)':'var(--ct-amber)')+'">'
+        + '<div style="font-size:13px;font-weight:600;color:var(--ct-pri)">🥣 Ração '+(r.marca?esc(r.marca):'')+' <span style="background:var(--ct-cream);border-radius:12px;padding:1px 8px;font-size:11px;font-weight:600;color:var(--ct-sec)">'+String(r.kg).replace('.',',')+' kg</span></div>'
+        + '<div style="font-size:12.5px;color:var(--ct-sec);margin-top:4px;line-height:1.5">'+txt+' — pacote aberto em '+brDate(ab)+', consumo estimado de '+diario+' g/dia pro peso de '+String(peso).replace('.',',')+' kg.</div>'
+        + '<div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">'
+        + '<a href="'+link+'" target="_blank" rel="noopener" onclick="window.gtag&&gtag(\'event\',\'reposicao_racao\')" style="text-decoration:none;background:var(--accent);color:#fff;border-radius:20px;padding:7px 14px;font-size:12px;font-weight:600">comprar na Petz →</a>'
+        + '<button onclick="nannyRacaoAberta()" style="background:none;border:1.5px solid var(--ct-line);border-radius:20px;padding:7px 13px;font-size:12px;font-weight:600;color:var(--ct-sec);cursor:pointer;font-family:inherit">🥣 abri um novo</button>'
         + '</div></div>';
     }catch(e){ return ''; }
   }

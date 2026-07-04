@@ -250,6 +250,8 @@ html[data-theme="dark"] [style*="color:#3f6a94"]{color:#9dc1e4!important}
     <label>Peso / porte</label>
     <select id="f-weight"><option value="">Selecione a faixa de peso…</option><option value="0">Menos de 2 kg (toy)</option><option value="1">2 – 4,5 kg (mini)</option><option value="2">4,5 – 10 kg (pequeno)</option><option value="3">10 – 20 kg (médio)</option><option value="4">20 – 40 kg (grande)</option><option value="5">Acima de 40 kg (gigante)</option></select>
     <p class="hint">A faixa define a dose certa do antiparasitário e o porte do seu cão — sem precisar pesar exato.</p>
+    <label>Ração <span class="opt">(opcional — a Nanny avisa antes de acabar)</span></label>
+    <div style="display:flex;gap:8px"><input id="f-racao-marca" placeholder="Marca (ex.: Premier Fórmula)" style="flex:2;min-width:0"><select id="f-racao-kg" style="flex:1"><option value="">pacote…</option><option value="1">1 kg</option><option value="3">3 kg</option><option value="7.5">7,5 kg</option><option value="10.1">10,1 kg</option><option value="12">12 kg</option><option value="15">15 kg</option><option value="20">20 kg</option></select></div>
     <label>Castrado(a)? <span class="opt">(opcional)</span></label>
     <div class="seg" id="f-neut"><button type="button" data-v="sim">Sim</button><button type="button" data-v="nao">Não</button></div>
     <label>Quando ele chegou na sua casa? <span class="opt">(ajuda na fase de adaptação)</span></label>
@@ -299,7 +301,7 @@ html[data-theme="dark"] [style*="color:#3f6a94"]{color:#9dc1e4!important}
     <div id="tab-cuidados" style="display:none"></div>
     <div id="tab-carteira-docs" style="display:none"></div>
     <button class="del" id="delBtn" onclick="deleteDog()">Remover este cão</button>
-    <p class="foot">As recomendações são gerais e não substituem a avaliação do seu veterinário.</p>
+    <p class="foot">As recomendações são gerais e não substituem a avaliação do seu veterinário. · <a href="/privacidade.html" style="color:inherit;text-decoration:underline">Privacidade</a></p>
   </section>
 
   <section id="s-admin" class="screen">
@@ -409,6 +411,8 @@ function startRegister(){
 function showErr(msg){const e=document.getElementById('f-error');e.textContent=msg;e.style.display='block'}
 function submitDog(){
   const nome=document.getElementById('f-name').value.trim();
+  const _rm=(document.getElementById('f-racao-marca')||{}).value,_rk=(document.getElementById('f-racao-kg')||{}).value;
+  const _racao=((_rm&&_rm.trim())||_rk)?{marca:(_rm||'').trim().slice(0,60),kg:parseFloat(_rk)||null}:null;
   const breedKey=document.getElementById('f-breed').value;
   const birth=document.getElementById('f-birth').value;
   const ay=parseInt(document.getElementById('f-age-y').value)||0,am=parseInt(document.getElementById('f-age-m').value)||0;
@@ -435,6 +439,7 @@ function editDog(){
   document.getElementById('reg-title').textContent='Editar dados do cão';
   document.getElementById('reg-submit').textContent='Salvar alterações';
   document.getElementById('f-name').value=dog.nome||'';
+  (function(){var r=dog.racao||{};var a=document.getElementById('f-racao-marca'),b=document.getElementById('f-racao-kg');if(a)a.value=r.marca||'';if(b)b.value=(r.kg!=null?String(r.kg):'');})();
   document.getElementById('f-breed').value=dog.breedKey;
   document.getElementById('f-outra').value=dog.customBreed||'';
   onBreedChange();
@@ -665,8 +670,16 @@ function planItemHTML(dog,it){const s=itemStatus(dog,it),today=localISO();
     else if(s.st==='overdue'){status=`<div class="pi-when">Prevista ${emDias(it.sugerido)} (~${fmt(it.sugerido)}) · registre se já deu</div>`;actions=markPast('✓ Já dei essa',localISO(it.sugerido));}
     else{status=`<div class="pi-when">Sugerida: ${it.sugerido?`<b>${emDias(it.sugerido)}</b> (${fmt(it.sugerido)})`:'a definir'}</div>`;actions=markPast('✓ Já dei essa');}
   }
-  return `<div class="plan-item"><div class="pi-ic">${it.ic}</div><div style="flex:1"><div class="pi-t">${it.nome}</div><div class="pi-d">${it.det||it.nota}</div>${status}<div class="markwrap">${actions}</div></div></div>`;
+  return `<div class="plan-item"><div class="pi-ic">${it.ic}</div><div style="flex:1"><div class="pi-t">${it.nome}</div><div class="pi-d">${it.det||it.nota}</div>${status}${vacCartLine(it,dog)}<div class="markwrap">${actions}</div></div></div>`;
 }
+function vacCartLine(it,dog){try{
+  if(!it||!/^annual_(multi|rabies)$/.test(it.key))return '';
+  const tgt=it.key==='annual_multi'?'multi':'rabies';
+  const cand=(((dog||{}).health||{}).vacinas||[]).filter(v=>{try{return vacFuncClass(v)===tgt}catch(e){return false}})
+    .sort((a,b)=>String(a.data||'').localeCompare(String(b.data||'')));
+  const l=cand[cand.length-1]; if(!l||!l.data)return '';
+  return `<div class="pi-when muted" style="margin-top:3px">📁 carteira: ${escH(l.nome||'vacina')} · ${fmtISO(l.data)}</div>`;
+}catch(e){return ''}}
 function fmtISO(iso){if(!iso)return '';const p=(''+iso).split('-');if(p.length<3)return iso;const mi=parseInt(p[1])-1;return parseInt(p[2])+' '+(MES[mi]||'')+' '+p[0];}
 function mergeHealth(prev,ex){prev=prev||{};ex=ex||{};const out=Object.assign({},prev);
   Object.keys(ex).forEach(k=>{const v=ex[k];if(Array.isArray(v))return;if(v===true){out[k]=v;return;}if(v&&typeof v!=='object')out[k]=v;});
@@ -923,7 +936,7 @@ function weightCardHTML(dog){const ws=(dog.weights||[]);let rows='';
     rows+=`<div class="wlog"><div style="flex:1"><b>${w.kg} kg</b> <span class="wd">· ${fmtISO(w.d)}</span></div><div style="font-size:12.5px">${tr}</div><button class="rm" onclick="removeWeight(${i})">✕</button></div>`;}
   } else rows=`<p style="font-size:13px;color:var(--brown-mid);margin:0 0 10px">Acompanhe o peso ao longo do tempo — manter o peso ideal é a melhor proteção pras articulações${healthWatch(dog).length?' (importante pra essa raça)':''}.</p>`;
   return `<div style="margin-top:12px;border-top:1px dashed var(--line);padding-top:10px"><div style="font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--brown-mid);font-weight:700;margin-bottom:6px">Pesagens</div>${rows}<div style="display:flex;gap:8px;margin-top:10px;align-items:center;flex-wrap:wrap"><input id="w-kg" class="he-in" type="number" step="0.1" min="0" placeholder="kg" style="max-width:90px;margin:0"><input id="w-date" class="he-in" type="date" style="max-width:160px;margin:0"><button class="chip" onclick="addWeight()">Registrar</button></div></div>`;}
-function addWeight(){const dog=dogObj();if(!dog)return;const kg=parseFloat((document.getElementById('w-kg')||{}).value);if(!kg||kg<=0)return;const d=((document.getElementById('w-date')||{}).value)||localISO();dog.weights=dog.weights||[];dog.weights.push({d,kg:+kg.toFixed(2)});dog.weights.sort((a,b)=>a.d<b.d?-1:1);const lastKg=dog.weights[dog.weights.length-1].kg;dog.pesoKg=lastKg;dog.pesoFaixa=faixaFromKg(lastKg);saveDogs();renderProfile();}
+function addWeight(){const dog=dogObj();if(!dog)return;const kg=parseFloat((document.getElementById('w-kg')||{}).value);if(!kg||kg<=0)return;const d=((document.getElementById('w-date')||{}).value)||localISO();dog.weights=dog.weights||[];dog.weights.push({d,kg:+kg.toFixed(2)});dog.weights.sort((a,b)=>a.d<b.d?-1:1);const lastKg=dog.weights[dog.weights.length-1].kg;dog.pesoKg=lastKg;dog.pesoFaixa=faixaFromKg(lastKg);if(_racao){dog.racao=_racao;}else{delete dog.racao;delete dog.racaoAbertura;}saveDogs();renderProfile();}
 function removeWeight(i){const dog=dogObj();if(!dog||!dog.weights)return;dog.weights.splice(i,1);saveDogs();renderProfile();}
 // registro rápido de peso — chamado pelo anel Peso do Score (1 toque a partir do Hoje)
 function nannyLogWeight(){var dog=dogObj();if(!dog)return;var today=localISO();

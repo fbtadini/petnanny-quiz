@@ -12,6 +12,35 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>PetNanny — A raça de cachorro certa pra você</title>
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#faf7f2" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#16110d" media="(prefers-color-scheme: dark)">
+<script>
+(function(){try{
+ var KEY='pn_theme', mq=window.matchMedia('(prefers-color-scheme: dark)');
+ function pref(){try{return localStorage.getItem(KEY)||'auto'}catch(e){return 'auto'}}
+ function apply(){var p=pref(), d=(p==='dark')||(p==='auto'&&mq.matches);
+   document.documentElement.setAttribute('data-theme', d?'dark':'light');
+   try{var c=d?'#16110d':'#faf7f2';var ms=document.querySelectorAll('meta[name="theme-color"]');for(var i=0;i<ms.length;i++)ms[i].setAttribute('content',c);}catch(e){}
+   var b=document.getElementById('pn-theme-btn');
+   if(b){b.textContent=(p==='auto'?'\ud83c\udf17':(p==='dark'?'\ud83c\udf19':'\u2600\ufe0f'));b.title='Tema: '+(p==='auto'?'autom\u00e1tico':(p==='dark'?'escuro':'claro'))+' \u00b7 toque pra trocar';}}
+ window.pnThemeCycle=function(){var o=['auto','light','dark'],p=pref(),n=o[(o.indexOf(p)+1)%3];
+   try{localStorage.setItem(KEY,n)}catch(e){} apply();
+   try{if(window.gtag)gtag('event','theme_set',{modo:n});}catch(e){}};
+ if(mq.addEventListener)mq.addEventListener('change',function(){if(pref()==='auto')apply()});
+ apply();
+ document.addEventListener('DOMContentLoaded',function(){
+   apply();
+   if(!document.getElementById('pn-theme-btn')){
+     var b=document.createElement('button'); b.id='pn-theme-btn'; b.onclick=window.pnThemeCycle;
+     b.setAttribute('aria-label','Trocar tema');
+     b.style.cssText='position:fixed;top:14px;right:14px;z-index:90;width:34px;height:34px;border-radius:50%;border:1px solid var(--line,#ece1d2);background:var(--white,#fff);font-size:15px;line-height:1;cursor:pointer;box-shadow:0 2px 10px rgba(61,44,30,.12)';
+     document.body.appendChild(b); apply();
+   }
+   if('serviceWorker' in navigator){ navigator.serviceWorker.register('/sw.js').catch(function(){}); }
+ });
+}catch(e){}})();
+</script>
 <meta name="description" content="Avaliação de compatibilidade entre seu perfil e 67 raças de cachorro. Feita pra realidade brasileira, com critérios de bem-estar e segurança.">
 <meta name="theme-color" content="#e8733a">
 <meta property="og:type" content="website">
@@ -35,6 +64,12 @@
     --brown-light:#c4a882;--accent:#e8733a;--accent-light:#fceade;
     --green:#4a7c59;--green-light:#e8f2eb;--green-warm:#6b8e6f;--white:#ffffff;
   }
+  html[data-theme="dark"]{--cream:#16110d;--warm:#241c15;--brown:#efe6da;--brown-mid:#c3b19b;--brown-light:#84735c;--accent:#e8733a;--accent-light:#3a2313;--green:#7fae8c;--green-light:#22301f;--green-warm:#8fb397;--white:#211a13}
+  html[data-theme="dark"] [style*="background:#fff"]{background-color:var(--white)!important}
+  html[data-theme="dark"] .whatif-out,html[data-theme="dark"] .terms-accept-row,html[data-theme="dark"] .quickreact-top,html[data-theme="dark"] .quickreact-emoji,html[data-theme="dark"] .perfil-tutor-footer-warn,html[data-theme="dark"] .not-matched,html[data-theme="dark"] .loaded,html[data-theme="dark"] .cost-med,html[data-theme="dark"] .breed-photo-wrap,html[data-theme="dark"] .breed-card,html[data-theme="dark"] .assumptions-warn,html[data-theme="dark"] .adoption-ficha-rows{background:var(--white)!important}
+  html[data-theme="dark"] input,html[data-theme="dark"] select,html[data-theme="dark"] textarea{background:#2a2118;color:var(--brown);border-color:var(--warm)}
+  html[data-theme="dark"] img{opacity:.92}
+  html[data-theme="dark"] #pn-theme-btn{box-shadow:0 2px 10px rgba(0,0,0,.4)}
   *{box-sizing:border-box;margin:0;padding:0}
   body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--brown);min-height:100vh;overflow-x:hidden}
   .header{padding:20px 24px;display:flex;align-items:center;justify-content:space-between;max-width:640px;margin:0 auto}
@@ -800,7 +835,7 @@
         Ferramenta de apoio à decisão — não substitui orientação veterinária profissional.<br>
         <a href="#" onclick="event.preventDefault();document.getElementById('aboutApproach').open=true;document.getElementById('aboutApproach').scrollIntoView({behavior:'smooth'});return false;">Sobre nossa abordagem</a>
         ·
-        <a href="#" onclick="event.preventDefault();showTerms(null);return false;">Termos de uso</a>
+        <a href="#" onclick="event.preventDefault();showTerms(null);return false;">Termos de uso</a> · <a href="/privacidade.html">Privacidade</a>
       </p>
       
       <details id="aboutApproach" class="about-approach">
@@ -870,7 +905,7 @@
       
       <div class="terms-full" id="termsFull" style="display:none">
         <h3 class="terms-section-h3">1. Quem somos</h3>
-        <p>O PetNanny é um <strong>projeto independente em fase inicial</strong>, baseado em São Paulo, Brasil. Estamos validando o produto antes de formalizar como empresa. Para qualquer dúvida sobre privacidade, uso de dados ou estes termos, escreva pra <strong>contato@petnanny.com.br</strong> — respondemos rápido.</p>
+        <p>O PetNanny é um <strong>projeto independente em fase inicial</strong>, baseado em São Paulo, Brasil. Estamos validando o produto antes de formalizar como empresa. Para qualquer dúvida sobre privacidade, uso de dados ou estes termos, escreva pra <strong>contato@petnanny.com.br</strong> — respondemos rápido. A política de privacidade completa e sempre atual está em <a href="/privacidade.html">petnanny.com.br/privacidade</a>.</p>
         
         <h3 class="terms-section-h3">2. O que oferecemos</h3>
         <p>Um quiz interativo que sugere raças de cães com base nas suas respostas sobre rotina, contexto familiar e preferências. As sugestões são <strong>informativas e educacionais</strong> — não constituem aconselhamento veterinário, comportamental ou financeiro.</p>

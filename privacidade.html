@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Política de Privacidade · PetNanny</title>
+<meta name="theme-color" content="#faf7f2" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#16110d" media="(prefers-color-scheme: dark)">
+<script>
+(function(){try{
+ var KEY='pn_theme', mq=window.matchMedia('(prefers-color-scheme: dark)');
+ function pref(){try{return localStorage.getItem(KEY)||'auto'}catch(e){return 'auto'}}
+ function apply(){var p=pref(), d=(p==='dark')||(p==='auto'&&mq.matches);
+   document.documentElement.setAttribute('data-theme', d?'dark':'light');}
+ if(mq.addEventListener)mq.addEventListener('change',function(){if(pref()==='auto')apply()});
+ apply(); document.addEventListener('DOMContentLoaded',apply);
+}catch(e){}})();
+</script>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--cream:#faf7f2;--warm:#f5efe6;--brown:#3d2c1e;--brown-mid:#7a5c44;--accent:#e8733a;--line:#ece1d2;--card:#fff}
+html[data-theme="dark"]{--cream:#16110d;--warm:#241c15;--brown:#efe6da;--brown-mid:#c3b19b;--accent:#e8733a;--line:#372c21;--card:#211a13}
+*{box-sizing:border-box}
+body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--brown);margin:0;line-height:1.65;font-size:15px}
+.wrap{max-width:680px;margin:0 auto;padding:28px 20px 60px}
+h1{font-family:'Playfair Display',serif;font-size:28px;margin:8px 0 4px}
+.sub{color:var(--brown-mid);font-size:13px;margin:0 0 26px}
+h2{font-size:16px;margin:30px 0 8px;border-bottom:1px solid var(--line);padding-bottom:6px}
+h3{font-size:14px;margin:18px 0 6px}
+p,li{color:var(--brown);font-size:14.5px}
+ul{padding-left:20px;margin:6px 0}
+li{margin:4px 0}
+.box{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px 18px;margin:14px 0}
+a{color:var(--accent)}
+.muted{color:var(--brown-mid);font-size:13px}
+table{width:100%;border-collapse:collapse;font-size:13px;margin:10px 0}
+td,th{text-align:left;padding:7px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+th{color:var(--brown-mid);font-weight:600;font-size:12px;text-transform:uppercase;letter-spacing:.04em}
+.back{display:inline-block;margin-bottom:14px;color:var(--brown-mid);text-decoration:none;font-size:13px}
+</style>
+</head>
+<body>
+<div class="wrap">
+<a class="back" href="/">‹ voltar pro PetNanny</a>
+<h1>Política de Privacidade</h1>
+<p class="sub">PetNanny · versão 2 · julho de 2026 · petnanny.com.br</p>
+
+<div class="box">
+<p style="margin:0"><b>Resumo honesto:</b> o PetNanny é um projeto independente em fase inicial, baseado em São Paulo. Coletamos o mínimo necessário, a maior parte dos dados do seu cão fica <b>no seu próprio aparelho</b>, e nunca vendemos dados. Dúvidas: <b>contato@petnanny.com.br</b> — respondemos rápido.</p>
+</div>
+
+<h2>1. Quem somos</h2>
+<p>O PetNanny (petnanny.com.br) é um projeto independente em validação, ainda não formalizado como empresa, operado a partir de São Paulo, Brasil. Enquanto não houver CNPJ, o controlador de dados é a pessoa física responsável pelo projeto, contatável em contato@petnanny.com.br.</p>
+
+<h2>2. O que coletamos, onde fica e pra quê</h2>
+
+<h3>2.1 Quiz de raças</h3>
+<ul>
+<li><b>Suas respostas</b> (preferências de estilo de vida, moradia, experiência) e o resultado do match — associadas a um identificador de sessão <b>anônimo</b>, sem nome, e-mail ou telefone. Finalidade: gerar seu resultado e melhorar o modelo de recomendação. Base legal: consentimento (art. 7º, I).</li>
+<li>Armazenamento: no seu navegador (localStorage) e em planilha segura (Google Sheets) de forma anonimizada.</li>
+</ul>
+
+<h3>2.2 Hub "Meu Cão"</h3>
+<ul>
+<li><b>Dados do seu cão</b> (nome, raça, nascimento, peso, castração, saúde): ficam <b>no seu aparelho</b> (localStorage). Se você ativar a sincronização multi-dispositivo, uma cópia vai para planilha segura (Google Sheets) vinculada a um identificador — finalidade: continuidade entre aparelhos. Base legal: execução do serviço solicitado.</li>
+<li><b>Documentos e fotos que você envia</b> (carteira de vacinação, exames, receitas): são processados por inteligência artificial para extrair datas e nomes de vacinas/produtos. Esses documentos <b>podem conter dados pessoais seus ou do seu veterinário</b> (nome, endereço, CRMV) — envie apenas o necessário. O processamento usa a API da Anthropic (EUA) — ver seção 4.</li>
+<li><b>Conversas com a Nanny</b> (perguntas de saúde/comportamento): processadas pela mesma IA para gerar a orientação; um resumo fica no seu aparelho para o diário e o resumo do vet.</li>
+<li><b>Localização aproximada (opcional)</b>: só se você tocar em "permitir" no card de clima. Usamos coordenadas arredondadas (~1 km), guardadas <b>somente no seu aparelho</b>, enviadas apenas ao serviço de previsão Open-Meteo a cada consulta. Nunca chegam aos nossos servidores. Você pode desligar a qualquer momento no próprio card.</li>
+</ul>
+
+<h3>2.3 Analytics e infraestrutura</h3>
+<ul>
+<li><b>Google Analytics 4</b>: uso agregado das páginas (eventos, dispositivo, região aproximada) para melhorar o produto. Base legal: legítimo interesse (art. 7º, IX). Removemos parâmetros sensíveis da URL antes da medição.</li>
+<li><b>Vercel</b> (hospedagem): logs técnicos de acesso (IP, horário) pelo período padrão da plataforma, para segurança e operação.</li>
+</ul>
+
+<h2>3. Operadores (com quem os dados passam)</h2>
+<table>
+<tr><th>Serviço</th><th>Papel</th><th>Dados</th></tr>
+<tr><td>Google (Sheets, Analytics, Fonts)</td><td>Armazenamento anonimizado / métricas / fontes</td><td>Respostas do quiz, cópia de sync, eventos de uso</td></tr>
+<tr><td>Vercel</td><td>Hospedagem e APIs</td><td>Logs técnicos de acesso</td></tr>
+<tr><td>Anthropic (EUA)</td><td>Processamento de IA</td><td>Documentos/fotos enviados e perguntas à Nanny, apenas durante o processamento</td></tr>
+<tr><td>Open-Meteo</td><td>Previsão do tempo</td><td>Coordenadas aproximadas (~1 km), sem identificador, opt-in</td></tr>
+</table>
+
+<h2>4. Transferência internacional</h2>
+<p>O processamento de IA (documentos e conversas com a Nanny) ocorre em servidores da Anthropic nos Estados Unidos, país com regime de proteção de dados distinto do brasileiro. A transferência se apoia no art. 33 da LGPD, é limitada ao estritamente necessário para executar a funcionalidade que você acionou, e a Anthropic se compromete contratualmente a não usar esses dados para treinar modelos por padrão na API. Se preferir não usar IA, você pode preencher os dados do seu cão manualmente — todas as funções principais continuam funcionando.</p>
+
+<h2>5. Retenção e exclusão</h2>
+<ul>
+<li>Dados no seu aparelho: ficam até você removê-los ("Remover este cão" apaga tudo do dispositivo) ou limpar o navegador.</li>
+<li>Cópia de sincronização e respostas do quiz: mantidas enquanto o serviço existir ou até você pedir exclusão.</li>
+<li><b>Pra excluir tudo</b>: escreva pra contato@petnanny.com.br informando o identificador ou e-mail usado; excluímos em até 15 dias e confirmamos.</li>
+</ul>
+
+<h2>6. Seus direitos (art. 18 da LGPD)</h2>
+<p>Você pode, a qualquer momento e gratuitamente: confirmar a existência de tratamento; acessar, corrigir ou excluir seus dados; solicitar portabilidade; revogar consentimentos (por exemplo, a localização, direto no card de clima); e reclamar à ANPD. Canal: contato@petnanny.com.br.</p>
+
+<h2>7. Cookies e armazenamento local</h2>
+<p>Usamos localStorage para guardar seus dados no aparelho (cão, preferência de tema, sessão do quiz) e os cookies do Google Analytics para métricas agregadas. Não usamos cookies de publicidade.</p>
+
+<h2>8. Menores de idade</h2>
+<p>O PetNanny é destinado a maiores de 18 anos. Não coletamos intencionalmente dados de menores.</p>
+
+<h2>9. O que o PetNanny não é</h2>
+<p>A Nanny é uma IA de organização e orientação — <b>não é veterinária e nada aqui é consulta, diagnóstico ou prescrição</b>. Decisões de saúde são sempre do seu veterinário.</p>
+
+<h2>10. Mudanças nesta política</h2>
+<p>Podemos atualizar esta política; mudanças relevantes serão sinalizadas no produto. Versão atual: <b>v2, julho de 2026</b> (anterior: v1, maio de 2026, dentro dos termos do quiz).</p>
+
+<p class="muted" style="margin-top:28px">Lei aplicável: Lei 13.709/2018 (LGPD) e legislação brasileira. Foro: comarca de São Paulo, SP.</p>
+</div>
+</body>
+</html>
