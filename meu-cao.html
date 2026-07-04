@@ -285,6 +285,11 @@ html[data-theme="dark"] [style*="color:#3f6a94"]{color:#9dc1e4!important}
     <div style="margin-top:22px"><button class="btn" onclick="submitPreChegada()">Criar plano de chegada →</button></div>
   </section>
 
+  <section id="s-avaliar" class="screen">
+    <button class="chip" onclick="show('s-profile')" style="margin-bottom:12px">‹ Voltar pro plano</button>
+    <div id="avaliarBody"></div>
+  </section>
+
   <section id="s-profile" class="screen">
     <div class="dog-head">
       <div class="avatar-wrap" id="p-avatar-wrap"><div class="avatar" id="p-avatar" onclick="avatarTap()"><span id="p-emoji">🐶</span></div><span class="cam" onclick="event.stopPropagation();pickPhoto()"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="3.5"/></svg></span><input id="p-photo" type="file" accept="image/*" style="display:none" onchange="onPhoto(this)"></div>
@@ -1312,6 +1317,7 @@ function preChegadaHTML(dog){
     +(adotado?`<p style="margin:8px 0 0;font-size:12.5px;color:var(--brown-mid)"><b>Vindo de ONG ou abrigo — a regra 3-3-3:</b> uns <b>3 dias</b> pra descomprimir (pode comer pouco, se esconder — é normal), <b>3 semanas</b> pra aprender a rotina e <b>3 meses</b> pra se sentir em casa de verdade. A personalidade real aparece aos poucos — não julgue nada na primeira semana. E mantenha o contato com a ONG: eles conhecem o cão, costumam acompanhar a adaptação e são seu melhor recurso se algo estranhar.</p>`:'')
     +(provavelFilhote?`<p style="margin:8px 0 0;font-size:12.5px;color:var(--brown-mid)"><b>Se for filhote:</b> a janela de socialização (≈3 a 16 semanas) é ouro — apresente sons, pessoas e ambientes novos com calma e reforço positivo. Mas, antes de completar as vacinas, evite parques e o chão do pet shop (risco de doença); socialize com cães vacinados que você confia.</p>`:'')
     +(residente?`<div class="note-soft" style="font-size:12.5px;margin-top:10px"><b>🐕 A casa já é d${gArt(residente)} ${residente.nome}:</b> apresente os dois em <b>território neutro</b> (calçada, pracinha) antes de entrar em casa. Nos primeiros dias, recolha brinquedos e potes d${gArt(residente)} ${residente.nome} — disputa de recurso é o maior gatilho de briga. Recursos separados (duas camas, dois potes, distância na comida) e supervisão nas primeiras semanas. E reserve atenção individual pro veteran${gArt(residente)==='a'?'a':'o'}: ${gArt(residente)==='a'?'ela':'ele'} sente a mudança tanto quanto quem chega.</div>`:'')
+    +avaliadorBoxHTML(dog)
     +'<div style="margin-top:14px"><button class="btn" onclick="marcouChegada()">🎉 '+(temNome?(dog.nome+' chegou!'):'Chegou!')+'</button>'
     +'<button class="chip" style="margin-left:8px;vertical-align:middle" onclick="toggleChegadaData()">Chegou em outra data</button>'
     +'<div id="chegada-data-wrap" style="display:none;margin-top:10px"><input type="date" id="chegada-data" max="'+localISO()+'" style="padding:9px 11px;border:1px solid #e8ddd2;border-radius:9px;font-family:inherit;font-size:13px"> <button class="btn" style="padding:10px 15px;font-size:13.5px" onclick="marcouChegadaComData()">Confirmar</button></div></div>'
@@ -1335,6 +1341,127 @@ function marcouChegadaComData(){
   const dog=dogObj(); if(!dog)return;
   dog.aguardando=false; dog.indeciso=false; dog.chegada=v;
   saveDogs(); renderProfile(); setTab('raca'); window.scrollTo({top:0,behavior:'smooth'});
+}
+
+/* ---------- avaliador de cão candidato ----------
+   A pessoa está na ONG, na frente de um cão real. 2 minutos, veredito na hora,
+   perguntas certas pro protetor. O quiz decide o perfil; isto decide O cão.
+   Regra ética: a ferramenta orienta e pergunta — nunca veta um cão. */
+let avAns={}, avCtx={}, avEditId=null;
+function avEsc(s){return String(s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+const AV_QS=[
+  {id:'porte',t:'Que porte aparenta?',opts:[['pequeno','Pequeno'],['medio','Médio'],['grande','Grande']]},
+  {id:'idade',t:'Idade (pergunte ao protetor)',opts:[['filhote','Filhote <1a'],['jovem','Jovem 1–2a'],['adulto','Adulto 2–7a'],['idoso','Idoso 7a+']]},
+  {id:'energia',t:'Energia que você observa',sub:'Observe alguns minutos — não só o primeiro impulso da chegada.',opts:[['calmo','Calmo'],['moderado','Moderado'],['pilhado','Pilhado']]},
+  {id:'reacao',t:'Como reagiu a você, um estranho?',opts:[['tranquilo','Veio tranquilo'],['timido','Tímido, mas curioso'],['travou','Se escondeu / travou'],['reativo','Latiu / rosnou']]},
+  {id:'crianca',t:'Testado com crianças?',cond:c=>c.crianca,opts:[['sim','Sim, convive bem'],['nao','Não convive'],['ns','Não sei']]},
+  {id:'gato',t:'Testado com gatos?',cond:c=>c.gato,opts:[['sim','Sim, tranquilo'],['nao','Não / caça'],['ns','Não sei']]},
+  {id:'caes',t:'Socializa com outros cães?',cond:c=>c.outrocao,opts:[['sim','Sim, tranquilo'],['depende','Depende do cão'],['nao','Não'],['ns','Não sei']]},
+  {id:'saude',t:'Condição de saúde conhecida?',opts:[['nenhuma','Nenhuma conhecida'],['cronica','Sim, crônica'],['ns','Não sei']]}
+];
+function avQsAtivas(){return AV_QS.filter(q=>!q.cond||q.cond(avCtx));}
+function openAvaliador(editId){
+  const dog=dogObj(); if(!dog)return;
+  avEditId=editId||null;
+  const q=dog.quiz||{};
+  const residente=dogs.find(x=>x.id!==dog.id&&!x.aguardando);
+  if(avEditId){
+    const c=(dog.candidatos||[]).find(x=>x.id===avEditId);
+    avAns=c?Object.assign({},c.ans):{}; avCtx=c?Object.assign({},c.ctx):{};
+  }else{
+    avAns={};
+    avCtx={primeiro:q.experiencia==='primeiro_cao',crianca:q.criancas==='criancas_pequenas',gato:false,outrocao:!!residente};
+  }
+  try{if(typeof gtag==='function')gtag('event','avaliador_open',{edit:!!avEditId})}catch(e){}
+  renderAvaliador(); show('s-avaliar');
+}
+function avCtxToggle(k){avCtx[k]=!avCtx[k];delete avAns[{crianca:'crianca',gato:'gato',outrocao:'caes'}[k]];renderAvaliador(true);}
+function avSet(qid,v){avAns[qid]=v;renderAvaliador(true);}
+function avVerdict(){
+  const A=avAns,C=avCtx,red=[],yel=[],perg=['Há quanto tempo ele está com vocês e o que sabem da história?','Como ele é no dia a dia aqui — na rotina, com os outros cães da ONG?'];
+  if(A.reacao==='reativo'){ if(C.primeiro) red.push('Reatividade com estranhos + primeiro cão é a combinação que mais pede apoio profissional — só siga com conversa franca com o protetor e adestrador combinado desde o dia 1.'); else yel.push('Reatividade com estranhos: pergunte se é só no primeiro contato ou padrão — e como a ONG maneja.'); perg.push('Ele é assim com todo estranho, ou melhora depois que conhece?'); }
+  if(A.reacao==='travou'){ yel.push('Medo/travamento é muito comum em abrigo e costuma melhorar bastante em casa — mas pede paciência real nas primeiras semanas.'); perg.push('Ele é assim com todo mundo ou só no primeiro contato? Como ele fica longe da agitação?'); }
+  if(C.crianca){ if(A.crianca==='nao') red.push('Não convive com criança + criança pequena em casa: peça um teste supervisionado antes de qualquer decisão — esse ponto não dá pra apostar.'); if(A.crianca==='ns'){ yel.push('Convivência com criança não testada — transforme o "não sei" em teste antes de decidir.'); perg.push('Dá pra fazer um encontro supervisionado com criança antes?'); } }
+  if(C.gato){ if(A.gato==='nao') red.push('Instinto de caça + gato em casa é risco sério pro gato — só considere com plano de manejo aprovado pela ONG.'); if(A.gato==='ns'){ yel.push('Convivência com gato não testada — item crítico pra sua casa.'); perg.push('Ele já conviveu com gato? Topam um teste supervisionado?'); } }
+  if(C.outrocao){ if(A.caes==='nao') yel.push('Não socializa com outros cães e você já tem um — a apresentação vai exigir manejo profissional; converse com a ONG sobre viabilidade real.'); if(A.caes==='ns'||A.caes==='depende') perg.push('Como ele reage a outros cães? Dá pra apresentar ao meu antes de fechar?'); }
+  if(A.idade==='filhote'&&C.primeiro) yel.push('Filhote + primeiro cão é o modo difícil: temperamento é loteria e o trabalho dos primeiros meses é pesado. Um adulto (2+) entrega personalidade já conhecida.');
+  if(A.energia==='pilhado'&&(dogObj().quiz||{}).atividade==='sedentario') yel.push('Energia alta observada × sua rotina mais caseira (do quiz): antes de decidir, desenhe o plano diário de gasto de energia — sem isso, vira destruição e latido.');
+  if(A.saude==='cronica'){ yel.push('Condição crônica não é impeditivo — é custo e rotina previsíveis. Peça o histórico e uma estimativa mensal de tratamento.'); perg.push('Qual o tratamento da condição dele e quanto custa por mês, na real?'); }
+  if(A.saude==='ns') perg.push('Tem a carteira de vacinação e o histórico veterinário pra eu ver?');
+  const info=[];
+  if(A.idade==='idoso') info.push('Idoso = temperamento 100% conhecido e adaptação geralmente mais tranquila — alinhe só a expectativa de custos de saúde com o vet.');
+  if(A.reacao==='tranquilo'&&A.energia!=='pilhado') info.push('Reação tranquila a estranho é um dos melhores sinais que existem numa visita curta.');
+  const nivel=red.length?'laranja':(yel.length?'amarelo':'verde');
+  return {nivel,red,yel,info,perg:perg.slice(0,5)};
+}
+function renderAvaliador(keepScroll){
+  const el=document.getElementById('avaliarBody'); if(!el)return;
+  const sy=keepScroll?window.scrollY:0;
+  const dog=dogObj(); const cand=avEditId?(dog.candidatos||[]).find(x=>x.id===avEditId):null;
+  const CTXCHIPS=[['primeiro','Primeiro cão'],['crianca','Criança pequena em casa'],['gato','Tem gato'],['outrocao','Tem outro cão']];
+  let h='<h1 style="font-size:24px;margin:0 0 4px">Avaliar um candidato</h1>'
+    +'<p class="sub" style="margin:0 0 14px">Na frente de um cão real, na ONG ou feira. 2 minutos — veredito na hora e as perguntas certas pro protetor.</p>'
+    +'<div class="card"><div class="sec-label">Seu contexto</div><div style="display:flex;gap:7px;flex-wrap:wrap">'
+    +CTXCHIPS.map(c=>'<button class="chip'+(avCtx[c[0]]?' up':'')+'" onclick="avCtxToggle(\''+c[0]+'\')">'+(avCtx[c[0]]?'✓ ':'')+c[1]+'</button>').join('')
+    +'</div></div>';
+  avQsAtivas().forEach(q=>{
+    h+='<div class="card" style="padding:14px 16px"><div style="font-weight:700;font-size:14.5px;margin-bottom:'+(q.sub?'3px':'9px')+'">'+q.t+'</div>'
+      +(q.sub?'<div style="font-size:12px;color:var(--brown-mid);margin-bottom:9px">'+q.sub+'</div>':'')
+      +'<div style="display:flex;gap:7px;flex-wrap:wrap">'
+      +q.opts.map(o=>'<button class="chip'+(avAns[q.id]===o[0]?' up':'')+'" onclick="avSet(\''+q.id+'\',\''+o[0]+'\')">'+o[1]+'</button>').join('')
+      +'</div></div>';
+  });
+  const faltam=avQsAtivas().filter(q=>!avAns[q.id]).length;
+  if(faltam){
+    h+='<div class="card" style="text-align:center;color:var(--brown-mid);font-size:13px">Responda '+(faltam===1?'a última pergunta':'as '+faltam+' perguntas que faltam')+' pra ver o veredito.</div>';
+  }else{
+    const v=avVerdict();
+    const V={verde:{ic:'💚',t:'Encaixa forte com seu perfil',bg:'#eef4ea',bd:'#cfe3d4'},amarelo:{ic:'💛',t:v.yel.length===1?'Encaixa bem, com um ponto de atenção':'Encaixa com ressalvas',bg:'#fdf6e3',bd:'#ead9a8'},laranja:{ic:'🧡',t:'Sinais de atenção — conversa séria antes',bg:'#fdf0e6',bd:'#ecc9a8'}}[v.nivel];
+    h+='<div class="card" style="background:'+V.bg+';border-color:'+V.bd+';color:#3a2e22">'
+      +'<div style="font-size:17px;font-weight:700;font-family:\'Playfair Display\',Georgia,serif">'+V.ic+' '+V.t+'</div>'
+      +(v.red.length?'<div style="margin-top:10px">'+v.red.map(r=>'<div style="font-size:13px;line-height:1.55;margin:6px 0;padding-left:10px;border-left:3px solid #d07840">'+r+'</div>').join('')+'</div>':'')
+      +(v.yel.length?'<div style="margin-top:8px">'+v.yel.map(r=>'<div style="font-size:13px;line-height:1.55;margin:6px 0;padding-left:10px;border-left:3px solid #d9b64a">'+r+'</div>').join('')+'</div>':'')
+      +(v.info.length?'<div style="margin-top:8px">'+v.info.map(r=>'<div style="font-size:13px;line-height:1.55;margin:6px 0;padding-left:10px;border-left:3px solid #7a9970">'+r+'</div>').join('')+'</div>':'')
+      +'<div class="sec-label" style="margin:14px 0 5px">Pergunte agora ao protetor</div>'
+      +'<ul style="margin:0;padding-left:18px;font-size:13px">'+v.perg.map(p=>'<li style="margin:4px 0">'+p+'</li>').join('')+'</ul>'
+      +'<p style="font-size:12px;color:var(--brown-mid);margin:12px 0 0;font-style:italic">Isto é um retrato de 2 minutos — não substitui conhecer com calma. Se der, volte um segundo dia: o match aparece.</p>'
+      +'</div>'
+      +'<div class="card"><div class="sec-label">Salvar este candidato</div>'
+      +'<p style="font-size:12.5px;color:var(--brown-mid);margin:0 0 8px">Visitou mais de um cão? Salve pra comparar depois, com calma.</p>'
+      +'<div style="display:flex;gap:8px"><input id="av-nome" placeholder="Nome do cão (ou apelido)" value="'+avEsc(cand?cand.nome:'')+'" style="flex:1;padding:11px 12px;border:1.5px solid var(--line);border-radius:11px;font-family:inherit;font-size:14px;background:var(--field)">'
+      +'<button class="btn" style="width:auto;padding:12px 18px;font-size:14px" onclick="avSalvar()">'+(avEditId?'Atualizar':'Salvar')+'</button></div></div>';
+  }
+  el.innerHTML=h;
+  if(keepScroll)window.scrollTo(0,sy);
+}
+function avSalvar(){
+  const dog=dogObj(); if(!dog)return;
+  const v=avVerdict();
+  const nome=(document.getElementById('av-nome')||{}).value||'';
+  dog.candidatos=dog.candidatos||[];
+  const rec={id:avEditId||uid(),nome:(nome.trim()||'Candidato '+(dog.candidatos.length+1)).slice(0,40),at:localISO(),ans:Object.assign({},avAns),ctx:Object.assign({},avCtx),nivel:v.nivel};
+  const i=dog.candidatos.findIndex(x=>x.id===rec.id);
+  if(i>=0)dog.candidatos[i]=rec;else dog.candidatos.push(rec);
+  saveDogs();
+  try{if(typeof gtag==='function')gtag('event','candidato_salvo',{nivel:v.nivel,total:dog.candidatos.length})}catch(e){}
+  avEditId=null;renderProfile();show('s-profile');window.scrollTo(0,0);
+}
+function avDelCandidato(id,ev){if(ev)ev.stopPropagation();const dog=dogObj();if(!dog||!dog.candidatos)return;if(!confirm('Remover este candidato?'))return;dog.candidatos=dog.candidatos.filter(c=>c.id!==id);saveDogs();renderProfile();}
+function avaliadorBoxHTML(dog){
+  if(dog.origem==='filhote_criador')return '';
+  const IC={verde:'💚',amarelo:'💛',laranja:'🧡'};
+  const cands=(dog.candidatos||[]).slice().sort((a,b)=>a.at<b.at?1:-1);
+  let h='<div class="sec-label" style="margin:14px 0 4px">🐕 Na ONG, na frente de um cão?</div>'
+    +'<p style="margin:0 0 8px;font-size:12.5px;color:var(--brown-mid)">Avalie o candidato na hora — 2 minutos, veredito cruzado com seu perfil e as perguntas certas pro protetor.</p>'
+    +'<button class="chip up big" onclick="openAvaliador()">🔎 Avaliar um candidato</button>';
+  if(cands.length){
+    h+='<div style="margin-top:10px">'+cands.map(c=>'<div onclick="openAvaliador(\''+c.id+'\')" style="display:flex;align-items:center;gap:8px;padding:9px 11px;background:var(--card);border:1px solid var(--line);border-radius:11px;margin-bottom:6px;cursor:pointer">'
+      +'<span style="font-size:16px">'+(IC[c.nivel]||'🐾')+'</span>'
+      +'<div style="flex:1"><div style="font-size:13.5px;font-weight:600">'+avEsc(c.nome)+'</div><div style="font-size:11px;color:var(--brown-mid)">'+fmtISO(c.at)+' · toque pra rever</div></div>'
+      +'<span onclick="avDelCandidato(\''+c.id+'\',event)" style="color:var(--brown-light);font-size:15px;padding:4px 7px">✕</span></div>').join('')+'</div>';
+    if(cands.length>1)h+='<p style="font-size:11.5px;color:var(--brown-mid);margin:4px 0 0">Comparando: 💚 encaixa forte · 💛 com ressalvas · 🧡 conversa séria antes.</p>';
+  }
+  return h;
 }
 
 /* ---------- foto: upload + reposicionar ---------- */
