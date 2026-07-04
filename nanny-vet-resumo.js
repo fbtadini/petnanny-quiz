@@ -15,6 +15,9 @@
   function esc(s){ return String(s==null?'':s).replace(/[&<>]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;'}[c];}); }
   function br(d){ if(!d)return''; var m=/^(\d{4})-(\d{2})-(\d{2})/.exec(d); return m?(m[3]+'/'+m[2]+'/'+m[1]):esc(d); }
   function byDateDesc(a,b){ return String(b.data||'').localeCompare(String(a.data||'')); }
+  var CLS_LABEL={polivalente:'Polivalente (V8/V10)',multi:'Polivalente (V8/V10)',raiva:'Antirr\u00e1bica',rabies:'Antirr\u00e1bica',antirrabica:'Antirr\u00e1bica',giardia:'Gi\u00e1rdia',tosse:'Tosse dos canis',tosse_canis:'Tosse dos canis',gripe:'Gripe canina',influenza:'Gripe canina',leish:'Leishmaniose',leishmaniose:'Leishmaniose'};
+  function clsKey(v){ var c=String((v&&v.classe)||'').toLowerCase().trim(); if(c&&CLS_LABEL[c])return c; try{ if(typeof window!=='undefined'&&typeof window.vacFuncClass==='function'){ var k=window.vacFuncClass(v||{}); if(k)return String(k).toLowerCase(); } }catch(e){} return c||null; }
+  function clsLabel(v){ var k=clsKey(v); return (k&&CLS_LABEL[k])||((v&&v.classe)?esc(v.classe):'\u2014'); }
   function rows(arr,cols){ return arr.map(function(it){return '<tr>'+cols.map(function(c){return '<td>'+esc(c(it)||'—')+'</td>';}).join('')+'</tr>';}).join(''); }
 
   function build(dog){
@@ -28,7 +31,10 @@
     var anti=(h.antiparasitario||[]).slice().sort(byDateDesc);
     var verm=(h.vermifugo||[]).slice().sort(byDateDesc);
     var ex=(h.exames||[]).slice().sort(byDateDesc);
-    var prox=(h.proximas_datas||[]).slice().sort(function(a,b){return String(a.data).localeCompare(String(b.data));});
+    var _hj=(function(){var d=new Date();d.setHours(0,0,0,0);return d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2)+'-'+('0'+d.getDate()).slice(-2);})();
+    var proxAll=(h.proximas_datas||[]).slice().sort(function(a,b){return String(a.data).localeCompare(String(b.data));});
+    var prox=proxAll.filter(function(p){return String(p.data||'')>=_hj;});
+    var proxVenc=proxAll.length-prox.length;
     var cond=(h.condicoes||[]);
     var hoje=new Date().toLocaleDateString('pt-BR');
     var pesoTxt='—';
@@ -47,10 +53,10 @@
     var body=''
       + '<div class="head"><div><div class="doc-title">Resumo clínico</div><div class="doc-sub">'+esc(dog.nome||'Cão')+' · '+esc(raca)+'</div></div><div class="doc-date">Gerado em '+hoje+'</div></div>'
       + '<table class="id">'+idRows+'</table>'
-      + sec('Histórico vacinal', vac.length?tbl(['Vacina','Classe','Aplicação'],rows(vac,[function(v){return v.nome;},function(v){return v.classe;},function(v){return br(v.data);}])):'')
+      + sec('Vacinas \u2014 registro de aplica\u00e7\u00f5es', vac.length?tbl(['Vacina','Classe','Aplica\u00e7\u00e3o'],rows(vac,[function(v){return v.nome;},function(v){return clsLabel(v);},function(v){return br(v.data);}])):'')
       + sec('Antiparasitário', anti.length?tbl(['Produto','Aplicação'],rows(anti,[function(v){return v.produto;},function(v){return br(v.data);}])):'')
       + sec('Vermífugo', verm.length?tbl(['Produto','Aplicação'],rows(verm,[function(v){return v.produto;},function(v){return br(v.data);}])):'')
-      + sec('Próximas datas registradas', prox.length?tbl(['Item','Previsão'],rows(prox,[function(v){return v.o_que;},function(v){return br(v.data);}])):'')
+      + sec('Pr\u00f3ximas datas registradas (futuras)', (prox.length?tbl(['Item','Previs\u00e3o'],rows(prox,[function(v){return v.o_que;},function(v){return br(v.data);}])):'')+(proxVenc?'<p style="font-size:11px;color:#777;margin:5px 0 0">'+proxVenc+' previs\u00e3o(\u00f5es) antiga(s), j\u00e1 vencida(s), omitida(s) \u2014 constam no registro original do documento.</p>':''))
       + sec('Exames e laudos', ex.length?tbl(['Tipo','Achado (transcrito)','Data'],rows(ex,[function(v){return v.tipo;},function(v){return v.achado;},function(v){return br(v.data);}])):'')
       + sec('Condições registradas', cond.length?'<ul>'+cond.map(function(c){return '<li>'+esc(typeof c==='string'?c:(c.nome||JSON.stringify(c)))+'</li>';}).join('')+'</ul>':'')
       + sec('Observações relatadas (triagem Nanny)', obs.length?tbl(['Data','Observação'],rows(obs,[function(o){return br(o.data);},function(o){return o.pro_vet;}])):'')
@@ -66,6 +72,7 @@
       + sec('Situação de vacinas e cuidados (calculado — confirmar)', (function(){
           var ups=[]; try{ if(typeof window!=='undefined'&&typeof window.upcomingReminders==='function') ups=window.upcomingReminders(dog)||[]; }catch(e){}
           if(!ups.length) return '';
+          var _seen={}; ups=ups.filter(function(u){ var k=null; try{ if(typeof window.vacFuncClass==='function') k=window.vacFuncClass({nome:u.t}); }catch(e){} if(k){ k=String(k).toLowerCase(); if(k!=='outra'&&k!=='desconhecida'&&k!=='nao_core'){ if(_seen[k]) return false; _seen[k]=1; } } return true; });
           function ws(w){ try{ return (w instanceof Date)?w.toLocaleDateString('pt-BR'):br(w); }catch(e){ return ''; } }
           function st(u){ return u.status==='overdue'?('Atrasado desde '+ws(u.when)):(u.status==='stale'?('Última faz tempo — '+ws(u.when)):('Em dia · próximo em '+ws(u.when))); }
           return tbl(['Item','Situação'], rows(ups,[function(u){return u.t;},function(u){return st(u);}]));

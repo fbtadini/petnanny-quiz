@@ -411,7 +411,7 @@
     if(s.topAction){
       var faceSvg = (typeof WESTIE!=='undefined'&&WESTIE)?WESTIE:'';
       h += '<div style="display:flex;gap:11px;align-items:flex-start;background:'+CT.cream+';border-radius:12px;padding:12px 13px;margin-top:13px">'
-        + '<span style="flex:0 0 32px;width:32px;height:32px;border-radius:50%;background:'+CT.peach+';border:1px solid #f3d9c2;display:flex;align-items:center;justify-content:center;overflow:hidden">'+(faceSvg||('<span style="font-size:16px">'+(s.topAction.ic||'💡')+'</span>'))+'</span>'
+        + '<span class="nv-face" style="background:'+CT.peach+'">'+(faceSvg||('<span style="font-size:16px">'+(s.topAction.ic||'💡')+'</span>'))+'</span>'
         + '<div style="flex:1"><div style="font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:'+CT.greenSoft+';font-weight:700;margin-bottom:2px">Pra subir o score</div>'
         + '<div style="font-size:13px;color:'+CT.pri+';line-height:1.5">'+esc(s.topAction.t)+'</div>'
         + (s.topAction.cta?('<button onclick="setTab(\''+s.topAction.cta+'\');window.scrollTo({top:0,behavior:\'smooth\'})" style="margin-top:8px;background:'+CT.greenSoft+';color:#fff;border:0;border-radius:9px;padding:8px 14px;font-weight:600;font-size:12.5px;cursor:pointer;font-family:inherit">Resolver agora</button>'):'')
@@ -432,7 +432,7 @@
     }
     if(reparou){
       h += '<div style="display:flex;gap:11px;align-items:flex-start;margin-top:11px;padding-top:12px;border-top:1px solid '+CT.cream+'">'
-        + '<span style="flex:0 0 32px;width:32px;height:32px;border-radius:50%;background:'+CT.peach+';border:1px solid #f3d9c2;display:flex;align-items:center;justify-content:center;overflow:hidden">'+(((typeof WESTIE!=='undefined')&&WESTIE)?WESTIE:('<span style="font-size:15px">'+(reparou.ic||'💡')+'</span>'))+'</span>'
+        + '<span class="nv-face" style="background:'+CT.peach+'">'+(((typeof WESTIE!=='undefined')&&WESTIE)?WESTIE:('<span style="font-size:15px">'+(reparou.ic||'💡')+'</span>'))+'</span>'
         + '<div style="flex:1"><div style="font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:'+CT.mut+';font-weight:700;margin-bottom:2px">A Nanny reparou</div>'
         + '<div style="font-size:13px;color:'+CT.pri+';line-height:1.5">'+esc(reparou.t||'')+'</div></div></div>';
     }

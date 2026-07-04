@@ -27,7 +27,7 @@
   function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
   function track(ev,p){ try{ if(window.gtag) window.gtag('event',ev,p||{});}catch(e){} }
   function lISO(){var d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
-  function nannyFace(px){ var s=(typeof WESTIE!=='undefined'&&WESTIE)?WESTIE:NANNY_WESTIE; return '<span class="na-face" aria-hidden="true" style="display:inline-flex;width:'+px+'px;height:'+px+'px;border-radius:50%;background:var(--ct-peach);border:1px solid #f3d9c2;padding:4px;box-sizing:border-box;flex-shrink:0">'+s+'</span>'; }
+  function nannyFace(px){ var s=(typeof WESTIE!=='undefined'&&WESTIE)?WESTIE:NANNY_WESTIE; return '<span class="na-face" aria-hidden="true" style="display:inline-flex;width:'+px+'px;height:'+px+'px;border-radius:50%;background:var(--ct-peach);border:1px solid var(--ct-line);padding:4px;box-sizing:border-box;flex-shrink:0">'+s+'</span>'; }
 
   function styleOnce(){
     if(document.getElementById('nanny-ask-css')) return;
@@ -35,7 +35,7 @@
     st.textContent='@keyframes naShimmer{0%{background-position:-200px 0}100%{background-position:200px 0}}'
       +'.na-skel{height:12px;border-radius:6px;background:#efe6da;background-image:linear-gradient(90deg,#efe6da 0px,#f6f0e6 80px,#efe6da 160px);background-size:400px 100%;animation:naShimmer 1.1s infinite linear}'
       +'.na-btn-ic{display:inline-flex;align-items:center;justify-content:center;width:42px;height:42px;border-radius:50%;border:0;cursor:pointer;background:transparent}'
-      +'.na-fade{animation:naFade .28s ease}@keyframes naFade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}'+'.na-face svg{width:100%;height:100%;display:block}'+'.na-chip{display:inline-block;font-size:11.5px;color:#5f5142;background:var(--ct-cream);border:1px solid #e8ddd2;border-radius:20px;padding:6px 11px;margin:0 6px 0 0;cursor:pointer;white-space:nowrap;flex:0 0 auto}';
+      +'.na-fade{animation:naFade .28s ease}@keyframes naFade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}'+'.na-face svg{width:100%;height:100%;display:block}'+'.na-chip{display:inline-block;font-size:11.5px;color:var(--ct-sec);background:var(--ct-cream);border:1px solid var(--ct-line);border-radius:20px;padding:6px 11px;margin:0 6px 0 0;cursor:pointer;white-space:nowrap;flex:0 0 auto}';
     document.head.appendChild(st);
   }
 
@@ -202,9 +202,11 @@
       h+='<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">'+_ob('melhorou','👍','Melhorou')+_ob('igual','😐','Igual')+_ob('piorou','👎','Piorou')+'</div>';
     }
     if(r.por_que)h+='<details style="margin-top:2px"><summary style="font-size:12px;color:'+CT.sec+';cursor:pointer;user-select:none;-webkit-user-select:none">por quê? \u203a</summary><div style="font-size:13px;color:'+CT.sec+';line-height:1.55;margin-top:6px">'+mdLite(r.por_que)+'</div></details>';
-    if(r.nivel==='urgente'||r.nivel==='procurar_vet'){
-      var termo=r.nivel==='urgente'?'pronto atendimento veterinário 24h perto de mim':'veterinário perto de mim';
-      h+='<a href="https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(termo)+'" target="_blank" rel="noopener" style="display:inline-block;margin-top:9px;background:'+n.cor+';color:#fff;text-decoration:none;border-radius:10px;padding:10px 16px;font-weight:500;font-size:13.5px">Achar um vet perto</a>';
+    var _mapsAsk=/veterin[a\u00e1]ri|\bvet\b|cl[i\u00ed]nic|emerg[e\u00ea]nc|pronto.?socorro|banho e tosa|pet ?shop/i.test(r.texto||'');
+    if(r.nivel==='urgente'||r.nivel==='procurar_vet'||_mapsAsk){
+      var _pet=/banho|tosa|pet ?shop/i.test(r.texto||'');
+      var termo=r.nivel==='urgente'?'pronto atendimento veterin\u00e1rio 24h perto de mim':(_pet?'pet shop banho e tosa perto de mim':'veterin\u00e1rio perto de mim');
+      h+='<a href="https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(termo)+'" target="_blank" rel="noopener" style="display:inline-block;margin-top:9px;background:'+n.cor+';color:#fff;text-decoration:none;border-radius:10px;padding:10px 16px;font-weight:500;font-size:13.5px">'+(typeof _pet!=='undefined'&&_pet?'\ud83d\udccd Achar um pet shop perto':'\ud83d\udccd Achar um vet perto')+'</a>';
     }
     if(r.pro_vet)h+='<div style="font-size:12px;color:'+CT.green+';margin-top:9px"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="'+CT.green+'" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg> Guardei um resumo pra levar ao vet \u2014 está na aba Saúde.</div>';
     if(!r.followup&&(r.nivel==='procurar_vet'||r.nivel==='urgente'))h+='<div style="font-size:11.5px;color:'+CT.mut+';margin-top:9px;line-height:1.4">A Nanny não é veterinária e isto não é consulta. A decisão de saúde é sempre do seu veterinário.</div>';

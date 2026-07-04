@@ -49,9 +49,12 @@
 
   function extrasHoje(dog){
     var el = document.getElementById('tab-hoje'); if(!el || !dog) return;
-    var old = document.getElementById('pn-extras'); if(old) old.remove();
-    var box = document.createElement('div'); box.id='pn-extras';
-    box.innerHTML = climaShell() + reposicaoHTML(dog) + memoriaHTML(dog) + padraoHTML(dog);
+    ['pn-extras','pn-extras-b'].forEach(function(id){ var o=document.getElementById(id); if(o) o.remove(); });
+    var top = document.createElement('div'); top.id='pn-extras';
+    top.innerHTML = climaShell();
+    if(el.firstElementChild) el.insertBefore(top, el.firstElementChild.nextSibling); else el.appendChild(top);
+    var box = document.createElement('div'); box.id='pn-extras-b';
+    box.innerHTML = reposicaoHTML(dog) + memoriaHTML(dog) + padraoHTML(dog);
     el.appendChild(box);
     climaFill(dog);
     countUp();
@@ -80,15 +83,19 @@
     return '<div class="card" id="pn-clima" style="padding:14px 16px">'
       + '<div style="display:flex;align-items:center;gap:10px;justify-content:space-between">'
       + '<div><div style="font-size:13px;font-weight:600;color:var(--ct-pri)">🌤️ Clima do passeio</div>'
-      + '<div style="font-size:11.5px;color:var(--ct-mut);margin-top:2px">a Nanny cruza o tempo de hoje com a pelagem e o focinho da raça</div></div>'
-      + '<button onclick="nannyClimaOn()" style="border:none;background:var(--accent);color:#fff;border-radius:20px;padding:8px 14px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap">ativar</button>'
+      + '<div style="font-size:11.5px;color:var(--ct-mut);margin-top:2px">a Nanny cruza o tempo de hoje com a pelagem e o focinho da ra\u00e7a</div><div style="font-size:10.5px;color:var(--ct-mut);margin-top:4px;line-height:1.45">A localiza\u00e7\u00e3o \u00e9 aproximada (~1 km), fica s\u00f3 no seu aparelho e \u00e9 usada apenas pra buscar a previs\u00e3o (Open-Meteo). N\u00e3o enviamos nem guardamos nos nossos servidores.</div></div>'
+      + '<button onclick="nannyClimaOn()" style="border:none;background:var(--accent);color:#fff;border-radius:20px;padding:8px 14px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap">permitir</button>'
       + '</div></div>';
   }
 
+  window.nannyClimaOff = function(){
+    try{ localStorage.setItem('pn_geo','denied'); localStorage.removeItem('pn_clima_c'); }catch(e){}
+    var c=document.getElementById('pn-clima'); if(c) c.remove();
+  };
   window.nannyClimaOn = function(){
     if(!navigator.geolocation){ alert('Seu navegador não permite localização.'); return; }
     navigator.geolocation.getCurrentPosition(function(pos){
-      try{ localStorage.setItem('pn_geo', pos.coords.latitude.toFixed(3)+','+pos.coords.longitude.toFixed(3)); }catch(e){}
+      try{ localStorage.setItem('pn_geo', pos.coords.latitude.toFixed(2)+','+pos.coords.longitude.toFixed(2)); }catch(e){}
       var c=document.getElementById('pn-clima'); if(c) c.innerHTML='<div style="font-size:12.5px;color:var(--ct-mut)">☁️ carregando o clima do passeio…</div>';
       var d = g('dogObj') && window.dogObj(); if(d) climaFill(d);
       if(window.gtag) try{ gtag('event','clima_on'); }catch(e){}
@@ -142,7 +149,8 @@
       + '<div style="flex:1;min-width:0">'
       + '<div style="font-size:12.5px;font-weight:600;color:var(--ct-pri)">🌤️ Passeio de hoje · máx '+v.max+'°'+(v.feel!==v.now?' · sensação '+v.feel+'°':'')+'</div>'
       + '<div style="font-size:12px;color:'+tone+';margin-top:2px;line-height:1.45">'+esc(rec)+'</div>'
-      + (hp.flags.length ? '<div style="font-size:10.5px;color:var(--ct-mut);margin-top:3px">considerando: '+esc(hp.flags.join(' · '))+'</div>' : '')
+      + (hp.flags.length ? '<div style="font-size:10.5px;color:var(--ct-mut);margin-top:3px">considerando: '+esc(hp.flags.join(' \u00b7 '))+'</div>' : '')
+      + '<div style="margin-top:3px"><a onclick="nannyClimaOff()" style="font-size:10px;color:var(--ct-mut);text-decoration:underline;cursor:pointer;opacity:.8">desligar clima</a></div>'
       + '</div></div>';
   }
 
