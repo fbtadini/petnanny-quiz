@@ -510,23 +510,47 @@ function fmt(dt){return dt.getDate()+' '+MES[dt.getMonth()]+' '+dt.getFullYear()
 function localISO(d){d=d||new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}
 function emDias(d){if(!d)return '';const t0=new Date();t0.setHours(0,0,0,0);const n=Math.round((d-t0)/864e5);if(n===0)return 'hoje';if(n===1)return 'amanhã';if(n===-1)return 'ontem';return n>0?('em '+n+' dias'):('há '+(-n)+' dias')}
 function escH(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+// Fração do peso adulto por idade (meses) e classe de porte — aproximação de
+// curvas de crescimento padrão. 1=pequeno 2=médio 3=grande 4=gigante.
+function growthFrac(m,cls){
+  var T={1:[[2,.30],[3,.47],[4,.62],[6,.82],[8,.92],[10,.98],[12,1]],
+         2:[[2,.27],[3,.40],[4,.53],[6,.72],[9,.87],[12,.95],[15,1]],
+         3:[[2,.22],[3,.33],[4,.44],[6,.62],[9,.78],[12,.88],[18,1]],
+         4:[[2,.18],[3,.28],[4,.38],[6,.55],[9,.70],[12,.80],[24,1]]}[cls]||[[12,1]];
+  if(m>=T[T.length-1][0])return 1;
+  if(m<=T[0][0])return Math.max(0.08,T[0][1]*(m/T[0][0]));
+  for(var i=1;i<T.length;i++){if(m<=T[i][0]){var a=T[i-1],b=T[i];return a[1]+(b[1]-a[1])*(m-a[0])/(b[0]-a[0]);}}
+  return 1;
+}
 function bandFor(dog,kg){
   try{
     var n=(((typeof getBreed==='function')?(getBreed(dog)||{}).name:'')||'').toLowerCase();
     var T=[[/pomer|lulu|spitz alem[aã]o an/,[1.5,3.5]],[/chihuahua/,[1.5,3]],[/yorkshire/,[2,3.5]],[/malt[eê]s/,[3,4]],[/shih/,[4,7.5]],[/pinscher/,[3,6]],[/dachshund|teckel|salsicha/,[4,12]],[/\bpug\b/,[6,9]],[/buldogue franc|bulldog franc/,[8,14]],[/beagle/,[9,16]],[/shiba/,[7,11]],[/schnauzer/,[5,9]],[/cocker/,[12,15]],[/border collie/,[14,20]],[/buldogue ingl|bulldog ingl/,[18,25]],[/golden/,[25,34]],[/labrador/,[25,36]],[/pastor alem/,[22,40]],[/rottweiler/,[35,60]],[/husky/,[16,27]],[/lhasa/,[5,8]],[/westie|west highland/,[6,10]],[/pit ?bull|amstaff/,[14,27]],[/boxer/,[25,32]],[/akita/,[23,39]],[/jack russell/,[5,8]]];
-    for(var i=0;i<T.length;i++){ if(T[i][0].test(n)) return {b:T[i][1],breed:true}; }
+    for(var i=0;i<T.length;i++){ if(T[i][0].test(n)){
+      var hit={b:T[i][1].slice(),breed:true};
+      // Filhote: comparar com faixa ADULTA gera alarme falso ("abaixo da faixa"
+      // pra um Golden de 4 meses). Escala a faixa pra idade — estimativa honesta.
+      var m=(typeof ageInMonths==='function')?ageInMonths(dog):null;
+      if(m!=null&&m>=0){
+        var mid=(hit.b[0]+hit.b[1])/2, cls=mid<10?1:(mid<25?2:(mid<40?3:4));
+        var mat={1:12,2:15,3:18,4:24}[cls];
+        if(m<mat){ var f=growthFrac(m,cls); hit.b=[Math.round(hit.b[0]*f*10)/10,Math.round(hit.b[1]*f*10)/10]; hit.puppy=true; hit.meses=m; }
+      }
+      return hit;
+    }}
     var k=(kg!=null)?kg:((dog.weights&&dog.weights.length)?dog.weights[dog.weights.length-1].kg:null);
     if(k!=null){ var fx={'0':[0.5,2],'1':[2,4.5],'2':[4.5,10],'3':[10,20],'4':[20,40],'5':[40,56]}[faixaFromKg(k)]; if(fx) return {b:fx,breed:false}; }
   }catch(e){}
   return null;
 }
-function pesoStatus(kg,bd){
+function pesoStatus(kg,bd,pup){
   if(!bd||kg==null)return null; var lo=bd[0],hi=bd[1];
-  if(kg>=lo&&kg<=hi)   return {t:'dentro da faixa da raça',c:'#5c7a52'};
-  if(kg>hi&&kg<=hi*1.15) return {t:'um pouco acima da faixa — machos e linhagens maiores variam; vale confirmar com o vet',c:'#9a7717'};
-  if(kg>hi)            return {t:'acima da faixa da raça — vale pesar no vet e conversar sobre a condição corporal',c:'#c0722e'};
-  if(kg>=lo*0.85)      return {t:'um pouco abaixo da faixa da raça',c:'#9a7717'};
-  return {t:'abaixo da faixa da raça — vale conversar com o vet',c:'#c0722e'};
+  var R=pup?'do esperado pra idade (estimativa)':'da faixa da raça';
+  if(kg>=lo&&kg<=hi)   return {t:pup?'dentro do esperado pra idade':'dentro da faixa da raça',c:'#5c7a52'};
+  if(kg>hi&&kg<=hi*1.15) return {t:'um pouco acima '+R+(pup?'':' — machos e linhagens maiores variam; vale confirmar com o vet'),c:'#9a7717'};
+  if(kg>hi)            return {t:'acima '+R+' — vale pesar no vet e conversar sobre a condição corporal',c:'#c0722e'};
+  if(kg>=lo*0.85)      return {t:'um pouco abaixo '+R,c:'#9a7717'};
+  return {t:'abaixo '+R+' — vale conversar com o vet',c:'#c0722e'};
 }
 function bravecto(kg){if(kg<2)return null;if(kg<=4.5)return{f:'2–4,5 kg',d:'112,5 mg'};if(kg<=10)return{f:'4,5–10 kg',d:'250 mg'};if(kg<=20)return{f:'10–20 kg',d:'500 mg'};if(kg<=40)return{f:'20–40 kg',d:'1000 mg'};return{f:'40–56 kg',d:'1400 mg'}}
 
@@ -639,14 +663,21 @@ function behaviorConcerns(dog,b){const out=[];const add=k=>{if(k&&BEHAVIOR_CATAL
     if(b.dificuldade==='avancado'||/teimos|cabe[çc]a-?dura|ignora comando/.test(av))add('teimosia');
   }
   return out.slice(0,5);}
+function hideQuizNote(){const dog=dogObj();if(!dog)return;dog.hideQuizNote=1;saveDogs();renderProfile();try{if(typeof gtag==='function')gtag('event','quiz_note_hidden',{})}catch(e){}}
 function toggleTemperamento(k){const dog=dogObj();if(!dog)return;dog.temperamento=dog.temperamento||[];const i=dog.temperamento.indexOf(k);if(i>=0)dog.temperamento.splice(i,1);else dog.temperamento.push(k);dog.tempAt=localISO();saveDogs();renderProfile();}
 function behaviorHTML(dog,b){let h='';
-  if(dog.quiz&&dog.quiz.matchedName&&b&&!b._synthetic){const q=dog.quiz;const notes=[];
+  if(dog.quiz&&dog.quiz.matchedName&&b&&!b._synthetic&&!dog.hideQuizNote){const q=dog.quiz;const notes=[];
+    // Frescor: o quiz descreve a rotina de UMA época. Com o tempo (mudou de casa,
+    // de rotina, era sobre outro cão), o cruzamento vira ruído — some após 6 meses.
+    let qDias=null;try{const t=q.at?(String(q.at).match(/^\d+$/)?new Date(+q.at):new Date(q.at)):null;if(t&&!isNaN(t))qDias=Math.floor((Date.now()-t)/864e5);}catch(e){}
+    if(qDias==null||qDias<=180){
     if(b.nrg>=4&&(q.atividade==='sedentario'||q.atividade==='moderado'))notes.push(`${b.name} tem energia alta e no quiz você se descreveu mais ${q.atividade==='sedentario'?'caseiro(a)':'moderado(a)'} — reserve exercício e estímulo diários; é o que evita destruição e latido por tédio.`);
     if((b.dificuldade==='avancado'||b.beg<=2)&&q.experiencia==='primeiro_cao')notes.push(`Sendo seu primeiro cão, ${b.name} pede mais manejo — apoio de um adestrador desde cedo facilita muito. Com paciência você dá conta.`);
     if(b.kid<=2&&q.criancas==='criancas_pequenas')notes.push(`Com criança pequena em casa, supervisione as interações e ensine a criança a respeitar o espaço do cão.`);
     if(b.grm>=4&&q.grooming==='grooming_minimo')notes.push(`${b.name} dá trabalho de pelo, e no quiz você preferia manutenção mínima — programe escovação/tosa pra não acumular.`);
-    if(notes.length)h+=`<div class="card"><div class="sec-label">📋 Do seu quiz — alinhando expectativa</div><p style="font-size:12.5px;color:var(--brown-mid);margin:0 0 6px">Cruzando o que você contou no quiz com a realidade ${gDe(dog)} ${dog.nome}:</p>${notes.map(n=>`<div class="pi-d" style="padding:6px 0;line-height:1.5">• ${n}</div>`).join('')}</div>`;}
+    const quando=(qDias!=null&&qDias>60)?(' (há ~'+Math.round(qDias/30)+' meses)'):'';
+    if(notes.length)h+=`<div class="card"><div class="sec-label" style="display:flex;align-items:center"><span style="flex:1">📋 Do seu quiz — alinhando expectativa</span><span onclick="hideQuizNote()" title="Não se aplica — esconder" style="cursor:pointer;color:var(--brown-light);font-size:13px;padding:2px 6px">✕</span></div><p style="font-size:12.5px;color:var(--brown-mid);margin:0 0 6px">Cruzando o que você contou no quiz${quando} com a realidade ${gDe(dog)} ${dog.nome}:</p>${notes.map(n=>`<div class="pi-d" style="padding:6px 0;line-height:1.5">• ${n}</div>`).join('')}<p style="font-size:11px;color:var(--brown-light);margin:8px 0 0">Rotina mudou ou o quiz era de outro momento? Toque no ✕ que eu paro de cruzar.</p></div>`;}
+    }
   const sel=dog.temperamento||[];
   const cc=(typeof BREED_CARE!=='undefined'&&BREED_CARE[dog.breedKey])||{};
   let ph=[];if(cc.patella)ph.push('às vezes segura a patinha');if(cc.brachy)ph.push('cansa rápido no calor');if(cc.longBack)ph.push('cuidado ao pular do sofá');if(cc.bloat)ph.push('come rápido demais');ph.push('tem medo de fogos','adora colo','não curte outros cães');
@@ -724,7 +755,7 @@ function mergeHealth(prev,ex){prev=prev||{};ex=ex||{};const out=Object.assign({}
   ['vacinas','antiparasitario','vermifugo','condicoes','proximas_datas','exames'].forEach(k=>{const seen=new Set(),m=[];[...(prev[k]||[]),...(ex[k]||[])].forEach(it=>{const key=JSON.stringify(it);if(!seen.has(key)){seen.add(key);m.push(it)}});out[k]=m;});
   return out;}
 function gArt(d){return d&&d.sexo==='femea'?'a':'o';}
-function gDe(d){return d&&d.sexo==='femea'?'da':'do';}
+function gDe(d){return d&&d.sexo==='femea'?'da':(d&&d.sexo==='macho'?'do':'de');}
 function gPoss(d){return d&&d.sexo==='femea'?'dela':'dele';}
 function nannySummary(dog,he){let s='';
   s+= he.tipo_documento ? `Li ${he.tipo_documento} ${gDe(dog)} ${dog.nome} 🐾 ` : `Fiz o check-up ${gDe(dog)} ${dog.nome} 🐾 `;
@@ -872,7 +903,7 @@ function weightChartBrand(dog){
   var kgs=ws.map(w=>w.kg);var mn=Math.min.apply(null,kgs),mx=Math.max.apply(null,kgs);if(mn===mx){mn-=1;mx+=1;}var pad=(mx-mn)*0.22;mn-=pad;mx+=pad;
   // zona de referência: limites da faixa de porte do peso atual — dá leitura "dentro/fora da faixa" já com 1 pesagem
   var _bz=bandFor(dog,kgs[kgs.length-1]);
-  var zc=_bz?_bz.b:null, zlab=(_bz&&_bz.breed)?'faixa da raça (adulto)':'faixa do porte';
+  var zc=_bz?_bz.b:null, zlab=(_bz&&_bz.breed)?(_bz.puppy?('esperado p/ '+_bz.meses+(_bz.meses===1?' m\u00eas':' meses')):'faixa da ra\u00e7a (adulto)'):'faixa do porte';
   if(zc){ mn=Math.min(mn,zc[0]); mx=Math.max(mx,zc[1]); var _p2=(mx-mn)*0.06; mn-=_p2; mx+=_p2; }
   var y=k=>pt+(1-(k-mn)/(mx-mn))*(H-pt-pb);
   var x=i=>ws.length<=1?(W/2):pl+i*(W-pl-pr)/(ws.length-1);
@@ -907,7 +938,7 @@ function saudePainelHTML(dog){
     var trTxt=tr?((tr.up?'↑ +':(tr.down?'↓ ':'· '))+String(Math.abs(tr.delta).toFixed(1)).replace('.',',')+' kg desde a última'):(ws.length>1?'estável':'1ª pesagem');
     var trCol=tr?'#b7902a':'#7a5c44';
     var _bd=bandFor(dog,ws[ws.length-1].kg);
-    var _ps=(_bd&&_bd.breed)?pesoStatus(ws[ws.length-1].kg,_bd.b):null;
+    var _ps=(_bd&&_bd.breed)?pesoStatus(ws[ws.length-1].kg,_bd.b,_bd.puppy):null;
     var ups=(typeof upcomingReminders==='function')?upcomingReminders(dog):[];var next=ups.filter(u=>u.status==='upcoming')[0];
     h+='<div style="display:flex;gap:8px;margin-top:10px">'
       +'<div style="flex:1;background:var(--warm);border-radius:12px;padding:10px 11px"><div style="font-size:11px;color:var(--brown-mid)">Peso atual</div><div style="font-size:19px;font-weight:700;color:var(--brown);line-height:1.1;margin-top:2px">'+String(ws[ws.length-1].kg).replace('.',',')+'<span style="font-size:12px;font-weight:400"> kg</span></div><div style="font-size:11px;color:'+trCol+';margin-top:2px">'+trTxt+'</div>'+(_ps?('<div style="font-size:10.5px;color:'+_ps.c+';margin-top:3px;line-height:1.35">'+_ps.t+'</div>'):'')+'</div>'
@@ -1011,7 +1042,7 @@ function buildFicha(dog){const b=getBreed(dog);const raca=b._synthetic?dog.custo
   if((he.exames||[]).length){h+=`<div class="fsec">Exames</div>`;he.exames.slice(-4).forEach(e=>{h+=`<div class="frow">• ${escH(e.tipo)||'Exame'}${e.data?(' — '+fmtISO(e.data)):''}${e.achado?(': '+escH(e.achado)):''}</div>`;});}
   const pxF=((he.proximas_datas)||[]).filter(p=>p&&p.data&&new Date(p.data+'T00:00:00')>=startOfToday());
   if(pxF.length){h+=`<div class="fsec">Próximas datas anotadas pelo veterinário</div>`;pxF.forEach(p=>h+=`<div class="frow">• ${escH(p.o_que)||'Próxima dose'} — ${fmtISO(p.data)}</div>`);}
-  if((dog.weights||[]).length){h+=`<div class="fsec">Peso</div>`;const lastW=dog.weights[dog.weights.length-1];const bF=bandFor(dog,lastW.kg);const pS=(bF&&bF.breed)?pesoStatus(lastW.kg,bF.b):null;
+  if((dog.weights||[]).length){h+=`<div class="fsec">Peso</div>`;const lastW=dog.weights[dog.weights.length-1];const bF=bandFor(dog,lastW.kg);const pS=(bF&&bF.breed)?pesoStatus(lastW.kg,bF.b,bF.puppy):null;
     h+=`<div class="frow"><b>Atual: ${String(lastW.kg).replace('.',',')} kg</b>${(bF&&bF.breed)?(' · referência da raça (adulto): '+String(bF.b[0]).replace('.',',')+'–'+String(bF.b[1]).replace('.',',')+' kg'+(pS?(' — '+pS.t.split(' — ')[0]):'')):''}</div>`;
     dog.weights.slice(-6).forEach(w=>h+=`<div class="frow">• ${fmtISO(w.d)}: ${String(w.kg).replace('.',',')} kg</div>`);}
   const cond=dog.conditions||{};const cmap={};healthWatch(dog).forEach(r=>cmap[condKey(r.cond)]=r.cond);if(Object.keys(cond).length){h+=`<div class="fsec">Avaliações de saúde (registradas por você)</div>`;Object.keys(cond).forEach(k=>{const c=cond[k];h+=`<div class="frow">• ${cmap[k]||'Condição'}: ${condLabel(c.status)}${c.date?(' — '+fmtISO(c.date)):''}${c.note?(' · '+c.note):''}</div>`});}

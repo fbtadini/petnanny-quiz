@@ -68,7 +68,7 @@
       var wsY=dog.weights||[];
       if(wsY.length && typeof window.bandFor==='function' && typeof window.pesoStatus==='function'){
         var bdY=window.bandFor(dog, wsY[wsY.length-1].kg);
-        if(bdY&&bdY.breed){ var stY=window.pesoStatus(wsY[wsY.length-1].kg,bdY.b);
+        if(bdY&&bdY.breed){ var stY=window.pesoStatus(wsY[wsY.length-1].kg,bdY.b,bdY.puppy);
           if(stY&&/^(acima|abaixo)/.test(stY.t)) out.unshift({ic:'⚖️',t:ArtU(dog)+' '+n+' está '+stY.t+'.'});
         }
       }
