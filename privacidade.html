@@ -8,11 +8,12 @@
 <meta name="theme-color" content="#16110d" media="(prefers-color-scheme: dark)">
 <script>
 (function(){try{
- var KEY='pn_theme', mq=window.matchMedia('(prefers-color-scheme: dark)');
+ var KEY='pn_theme';
  function pref(){try{return localStorage.getItem(KEY)||'auto'}catch(e){return 'auto'}}
- function apply(){var p=pref(), d=(p==='dark')||(p==='auto'&&mq.matches);
+ function isNight(){var h=new Date().getHours();return h<6||h>=18;}
+ function apply(){var p=pref(), d=(p==='dark')||(p==='auto'&&isNight());
    document.documentElement.setAttribute('data-theme', d?'dark':'light');}
- if(mq.addEventListener)mq.addEventListener('change',function(){if(pref()==='auto')apply()});
+ setInterval(function(){if(pref()==='auto')apply()},60000);
  apply(); document.addEventListener('DOMContentLoaded',apply);
 }catch(e){}})();
 </script>

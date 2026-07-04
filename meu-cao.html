@@ -21,17 +21,19 @@
 <meta name="theme-color" content="#16110d" media="(prefers-color-scheme: dark)">
 <script>
 (function(){try{
- var KEY='pn_theme', mq=window.matchMedia('(prefers-color-scheme: dark)');
+ var KEY='pn_theme';
  function pref(){try{return localStorage.getItem(KEY)||'auto'}catch(e){return 'auto'}}
- function apply(){var p=pref(), d=(p==='dark')||(p==='auto'&&mq.matches);
+ function isNight(){var h=new Date().getHours();return h<6||h>=18;}
+ function apply(){var p=pref(), d=(p==='dark')||(p==='auto'&&isNight());
    document.documentElement.setAttribute('data-theme', d?'dark':'light');
    try{var c=d?'#16110d':'#faf7f2';var ms=document.querySelectorAll('meta[name="theme-color"]');for(var i=0;i<ms.length;i++)ms[i].setAttribute('content',c);}catch(e){}
    var b=document.getElementById('pn-theme-btn');
-   if(b){b.textContent=(p==='auto'?'\ud83c\udf17':(p==='dark'?'\ud83c\udf19':'\u2600\ufe0f'));b.title='Tema: '+(p==='auto'?'autom\u00e1tico (segue o sistema)':(p==='dark'?'escuro':'claro'))+' \u00b7 toque pra trocar';}}
+   if(b){b.textContent=(p==='auto'?'\ud83c\udf17':(p==='dark'?'\ud83c\udf19':'\u2600\ufe0f'));b.title='Tema: '+(p==='auto'?'autom\u00e1tico (claro de dia, escuro \u00e0 noite)':(p==='dark'?'escuro':'claro'))+' \u00b7 toque pra trocar';}}
  window.pnThemeCycle=function(){var o=['auto','light','dark'],p=pref(),n=o[(o.indexOf(p)+1)%3];
    try{localStorage.setItem(KEY,n)}catch(e){} apply();
    try{if(window.gtag)gtag('event','theme_set',{modo:n});}catch(e){}};
- if(mq.addEventListener)mq.addEventListener('change',function(){if(pref()==='auto')apply()});
+ setInterval(function(){if(pref()==='auto')apply()},60000);
+ document.addEventListener('visibilitychange',function(){if(pref()==='auto')apply()});
  apply(); document.addEventListener('DOMContentLoaded',apply);
 }catch(e){}})();
 </script>
