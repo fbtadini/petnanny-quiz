@@ -203,6 +203,23 @@
 
     h += nannyReposicao(dog);
 
+    // --- primeiro passo (cold start): sem nenhum histórico de saúde nem documento,
+    // o caminho mais rápido pro primeiro "uau" é a foto da carteira — a Nanny lê
+    // e preenche tudo. Some sozinho assim que existir qualquer dado. ---
+    try{
+      var _he = dog.health || {};
+      var _semHist = !((_he.vacinas||[]).length || (_he.antiparasitario||[]).length || (_he.vermifugo||[]).length) && !(dog.files||[]).length && !(dog.weights||[]).length;
+      if (!dog.aguardando && _semHist) {
+        h += '<div style="background:#fff;border:1.5px solid '+CT.green+'33;border-radius:16px;padding:14px 15px;margin-bottom:16px">'
+          + '<div style="font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:'+CT.green+';font-weight:700;margin-bottom:5px">\u2728 Primeiro passo</div>'
+          + '<div style="font-size:13.5px;color:'+CT.pri+';line-height:1.5;margin-bottom:10px">Fotografa a <b>carteira de vacina\u00e7\u00e3o</b> d'+art(dog)+' '+esc(nome(dog))+' \u2014 eu leio as datas, monto o plano e te aviso do que falta. \u00c9 o jeito mais r\u00e1pido de come\u00e7ar (30 segundos, sem digitar nada).</div>'
+          + '<label style="display:inline-flex;align-items:center;gap:7px;background:'+CT.green+';color:#fff;border-radius:11px;padding:11px 16px;font-weight:700;font-size:13.5px;cursor:pointer">\ud83d\udcf8 Fotografar carteira<input type="file" accept="image/*,.pdf" multiple style="display:none" onchange="setTab(\'saude\');nannyReadDoc(this,\'doc\')"></label>'
+          + '<div style="font-size:11.5px;color:'+CT.mut+';margin-top:8px">N\u00e3o tem a carteira em m\u00e3os? Tudo bem \u2014 d\u00e1 pra registrar na aba Sa\u00fade quando quiser.</div>'
+          + '</div>';
+      }
+    }catch(e){}
+
+
     // --- pergunta pra Nanny (montada pelo módulo) ---
     h += '<div id="nanny-ask" style="margin-bottom:16px"></div>';
 

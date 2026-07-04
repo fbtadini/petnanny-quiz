@@ -688,7 +688,7 @@
     body.printing-ficha .adoption-ficha-rows{background:#f9f9f5 !important;border:1px solid #ddd !important}
 
     /* === PRINT DO GUIA COMPLETO DE ADOÇÃO === */
-    /* Inclui ficha + 5 seções (perfil, casa, ONG, custos, 1ª semana).
+    /* Inclui ficha + 6 seções (perfil, casa, ONG, entrevista, custos, 1ª semana).
        Move expectationSection pra raiz e esconde o resto. */
     body.printing-guia{min-height:0 !important;height:auto !important}
     body.printing-guia > *:not(#expectationSection){display:none !important}
@@ -5892,7 +5892,7 @@ function renderExpectationSection(){
       +`<svg class="ui-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9V2h12v7M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2M6 14h12v8H6z"/></svg>`
       +` Salvar ficha em PDF`
       +`</button>`
-      +`<button class="adoption-ficha-pdf-btn adoption-ficha-pdf-btn-full" onclick="exportGuiaCompletoPDF()" title="Salvar o guia completo em PDF: ficha + checklist da casa + perguntas pra ONG + red flags + custos + primeira semana">`
+      +`<button class="adoption-ficha-pdf-btn adoption-ficha-pdf-btn-full" onclick="exportGuiaCompletoPDF()" title="Salvar o guia completo em PDF: ficha + checklist da casa + visita e entrevista da ONG + custos + primeira semana">`
       +`<svg class="ui-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="15" y2="17"/></svg>`
       +` Salvar guia completo`
       +`</button>`
@@ -5915,7 +5915,7 @@ function renderExpectationSection(){
       +`<summary class="adoption-collapse-summary">`
       +`<span class="adoption-collapse-icon">📖</span>`
       +`<span class="adoption-collapse-text">Ver guia completo de adoção</span>`
-      +`<span class="adoption-collapse-meta">preparar a casa · visita à ONG · custos · 1ª semana</span>`
+      +`<span class="adoption-collapse-meta">preparar a casa · visita e entrevista da ONG · custos · 1ª semana</span>`
       +`<span class="adoption-collapse-chevron">▾</span>`
       +`</summary>`
       +`<div class="adoption-collapse-body">`;
@@ -5933,6 +5933,37 @@ function renderExpectationSection(){
       +`<ul class="adoption-checklist">${perguntasOng.map(t=>'<li>'+t+'</li>').join('')}</ul>`
       +`<p style="font-size:13px;color:#7c2c1f;margin:14px 0 8px 0"><strong>🚩 Sinais de alerta — desconfie se a ONG:</strong></p>`
       +`<ul class="adoption-redflag-list">${redFlags.map(t=>'<li>'+t+'</li>').join('')}</ul>`
+      +`</div>`;
+
+    // Seção 3.5: A entrevista do outro lado — a ONG também avalia VOCÊ.
+    // No Brasil o processo é rigoroso (formulário longo, fotos da casa, às vezes
+    // vistoria). Preparar a pessoa pra isso reduz reprovação e frustração — e
+    // ninguém no mercado faz.
+    const entrevistaDicas=[];
+    if(answers.sozinho==='sozinho_muito'||answers.sozinho==='sozinho_demais'){
+      entrevistaDicas.push('<strong>No seu caso:</strong> seja transparente sobre as horas fora de casa e já chegue com a solução desenhada (passeador, creche, vizinho de confiança). Honestidade + plano derruba a principal objeção antes dela nascer.');
+    }
+    if(answers.criancas==='criancas_pequenas'){
+      entrevistaDicas.push('<strong>No seu caso:</strong> conte da criança pequena logo de cara — a ONG vai te direcionar pra cães <em>testados</em> com criança, que é exatamente o que você quer.');
+    }
+    if(has('animais','gato')){
+      entrevistaDicas.push('<strong>No seu caso:</strong> mencione o gato no primeiro contato — só faz sentido conhecer cães testados com gato, e a ONG sabe quais são.');
+    }
+    html+=`<div class="adoption-section">`
+      +`<h4 class="adoption-section-title">🎤 A entrevista que a ONG faz com você</h4>`
+      +`<p style="font-size:13px;color:#3a2e22;margin:0 0 8px 0">ONG séria entrevista o adotante — formulário (às vezes com 30-40 perguntas), conversa e, em alguns casos, fotos da casa ou visita. Não é burocracia contra você: é o que evita devolução, o pior cenário pra todo mundo.</p>`
+      +`<p style="font-size:13px;color:#3a2e22;margin:10px 0 8px 0"><strong>O que costumam perguntar:</strong></p>`
+      +`<ul class="adoption-checklist">`
+      +`<li>Sua rotina e quantas horas o cão ficaria sozinho</li>`
+      +`<li>Quem cuida quando você viaja</li>`
+      +`<li>Se <strong>todos da casa</strong> concordam com a adoção</li>`
+      +`<li>Casa ou apartamento — e se as janelas/sacadas têm <strong>tela de proteção</strong> (item que mais reprova)</li>`
+      +`<li>Experiência prévia com cães e noção dos custos mensais</li>`
+      +`</ul>`
+      +`<p style="font-size:13px;color:#3a2e22;margin:12px 0 8px 0"><strong>Leve no dia:</strong> RG, CPF e comprovante de endereço recente. Você vai assinar um <strong>termo/contrato de adoção</strong> — leia com calma, é normal ter cláusula de acompanhamento pós-adoção.</p>`
+      +`<p style="font-size:13px;color:#3a2e22;margin:10px 0 0 0"><strong>Sobre a taxa:</strong> muitas ONGs cobram uma contribuição simbólica (tipicamente R$ 70–150) que cobre castração, vacinas e novos resgates. Taxa transparente é sinal de ONG séria — golpe é quem pede Pix <em>antes</em> de você conhecer o cão pessoalmente.</p>`
+      +(entrevistaDicas.length?`<div class="adoption-tips" style="margin-top:12px">${entrevistaDicas.map(t=>'<div class="adoption-tip">'+t+'</div>').join('')}</div>`:'')
+      +`<p style="font-size:12.5px;color:#5d6b50;margin:12px 0 0 0;font-style:italic">Dica de ouro: honestidade vale mais que resposta perfeita. ONG prefere quem admite limitação e mostra plano do que quem responde tudo "certinho".</p>`
       +`</div>`;
 
     // Seção 4: Custos do 1º mês (descritivo, sem R$)

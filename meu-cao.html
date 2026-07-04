@@ -1276,17 +1276,31 @@ function preChegadaHTML(dog){
   const temNome=dog.nome&&dog.nome!=='Meu futuro cão';
   const quem=temNome?('d'+gArt(dog)+' '+dog.nome):'dele';
   const provavelFilhote=dog.origem==='filhote_criador';
+  const adotado=dog.origem==='adotado';
+  // Cão residente na casa? Chegada de 2º cão é estruturalmente diferente.
+  const residente=dogs.find(x=>x.id!==dog.id&&!x.aguardando);
   const seguranca='<b>Deixe a casa à prova de cão:</b> guarde produtos de limpeza, remédios e fios elétricos, e mantenha fora do alcance os <b>alimentos e plantas tóxicos</b> — chocolate, uva e passas, cebola e alho, xilitol (adoçante de alguns produtos), macadâmia; plantas como comigo-ninguém-pode e lírio.';
-  const vet=[
+  const vet=adotado?[
+    'Agende a <b>primeira consulta</b> pros primeiros dias após a chegada. Leve o <b>contrato de adoção e todos os papéis</b> que a ONG entregar e, se der, uma <b>amostra de fezes fresca</b> — verme é comum em cão novo e nem sempre dá sinal.',
+    'Cão de ONG geralmente já vem <b>castrado, vacinado, vermifugado e microchipado</b> — peça pro vet conferir nos papéis o que já foi feito e montar o plano só com o que falta.',
+    'Alinhe a <b>prevenção contínua</b>: reforços de vacina, <b>antipulga/carrapato</b> e <b>verme do coração (dirofilariose)</b>.'
+  ]:[
     'Agende a <b>primeira consulta</b> pros primeiros dias após a chegada. Leve os <b>papéis</b> (vacinas, vermífugo, contrato de adoção/compra) e, se der, uma <b>amostra de fezes fresca</b> — verme é comum em cão novo e nem sempre dá sinal.',
     'Alinhe o <b>plano de prevenção</b>: vacinas, <b>vermífugo</b>, <b>antipulga/carrapato</b> e <b>verme do coração (dirofilariose)</b>.',
     'Converse sobre <b>castração</b> e o momento certo (em cães grandes, costuma ser depois de terminar de crescer).'
   ];
   const prev=ADAPT_PHASES[0];
+  // Countdown: previsão vira contagem regressiva (ansiedade boa merece número)
+  let prevLine='';
+  if(dog.previsao){
+    const dd=Math.round((new Date(dog.previsao+'T00:00:00')-startOfToday())/86400000);
+    const falta=dd>1?(' — faltam '+dd+' dias'):(dd===1?' — é amanhã! 🎉':(dd===0?' — é hoje! 🎉':''));
+    prevLine=`<p style="margin:0 0 8px;font-size:12.5px;color:var(--brown-mid)">Previsão de chegada: ${fmtISO(dog.previsao)}${falta}</p>`;
+  }
   let h='<div class="card" style="border-color:#cfe3d4;background:var(--green-light)">'
     +'<div class="sec-label">🗓️ Plano de chegada</div>'
     +`<p style="margin:0 0 8px;font-size:13.5px">Antes ${quem} chegar, dá pra deixar tudo pronto. Quando chegar, é só avisar aqui que a Nanny ativa o acompanhamento dos primeiros 90 dias.</p>`
-    +(dog.previsao?`<p style="margin:0 0 8px;font-size:12.5px;color:var(--brown-mid)">Previsão de chegada: ${fmtISO(dog.previsao)}</p>`:'')
+    +prevLine
     +'<div class="sec-label" style="margin:10px 0 4px">🛒 Lista de chegada'+(temNome?(' pr'+gArt(dog)+' '+dog.nome):'')+'</div>'
     +shoppingHTML(dog)
     +'<p style="font-size:12px;color:var(--brown-mid);margin:6px 0 0">E o que não se compra: combine as regras da casa com todo mundo antes — consistência desde o dia 1.</p>'
@@ -1295,7 +1309,9 @@ function preChegadaHTML(dog){
     +`<ul style="margin:0;padding-left:18px;font-size:13px;color:var(--brown)">${vet.map(i=>`<li style="margin:4px 0">${i}</li>`).join('')}</ul>`
     +chegadaGearHTML(dog)
     +`<div class="sec-label" style="margin:14px 0 4px">O que esperar nos primeiros dias</div><p style="margin:0;font-size:13px;color:var(--brown-mid)"><b>${prev.t}:</b> ${prev.normal} ${prev.faca}</p>`
+    +(adotado?`<p style="margin:8px 0 0;font-size:12.5px;color:var(--brown-mid)"><b>Vindo de ONG ou abrigo — a regra 3-3-3:</b> uns <b>3 dias</b> pra descomprimir (pode comer pouco, se esconder — é normal), <b>3 semanas</b> pra aprender a rotina e <b>3 meses</b> pra se sentir em casa de verdade. A personalidade real aparece aos poucos — não julgue nada na primeira semana. E mantenha o contato com a ONG: eles conhecem o cão, costumam acompanhar a adaptação e são seu melhor recurso se algo estranhar.</p>`:'')
     +(provavelFilhote?`<p style="margin:8px 0 0;font-size:12.5px;color:var(--brown-mid)"><b>Se for filhote:</b> a janela de socialização (≈3 a 16 semanas) é ouro — apresente sons, pessoas e ambientes novos com calma e reforço positivo. Mas, antes de completar as vacinas, evite parques e o chão do pet shop (risco de doença); socialize com cães vacinados que você confia.</p>`:'')
+    +(residente?`<div class="note-soft" style="font-size:12.5px;margin-top:10px"><b>🐕 A casa já é d${gArt(residente)} ${residente.nome}:</b> apresente os dois em <b>território neutro</b> (calçada, pracinha) antes de entrar em casa. Nos primeiros dias, recolha brinquedos e potes d${gArt(residente)} ${residente.nome} — disputa de recurso é o maior gatilho de briga. Recursos separados (duas camas, dois potes, distância na comida) e supervisão nas primeiras semanas. E reserve atenção individual pro veteran${gArt(residente)==='a'?'a':'o'}: ${gArt(residente)==='a'?'ela':'ele'} sente a mudança tanto quanto quem chega.</div>`:'')
     +'<div style="margin-top:14px"><button class="btn" onclick="marcouChegada()">🎉 '+(temNome?(dog.nome+' chegou!'):'Chegou!')+'</button>'
     +'<button class="chip" style="margin-left:8px;vertical-align:middle" onclick="toggleChegadaData()">Chegou em outra data</button>'
     +'<div id="chegada-data-wrap" style="display:none;margin-top:10px"><input type="date" id="chegada-data" max="'+localISO()+'" style="padding:9px 11px;border:1px solid #e8ddd2;border-radius:9px;font-family:inherit;font-size:13px"> <button class="btn" style="padding:10px 15px;font-size:13.5px" onclick="marcouChegadaComData()">Confirmar</button></div></div>'
