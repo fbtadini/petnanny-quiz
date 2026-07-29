@@ -1,0 +1,648 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>É a hora certa? — PetNanny</title>
+<meta name="description" content="Não é um quiz de aprovação. É um espelho: o que você espera receber de um cão, e o que a sua rotina real comporta.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700&display=swap" rel="stylesheet">
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-VHYR0X2K9F"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-VHYR0X2K9F');
+</script>
+<style>
+:root{
+  --cream:#FAF6EF; --paper:#FFFFFF; --brown:#3D2C1E; --brown-mid:#6B5947;
+  --brown-light:#8A7A68; --sage:#7A9970; --sage-deep:#3D5E30; --sage-pale:#EFF3EC;
+  --orange:#C9701F; --orange-pale:#FAEFE2; --clay:#A8553A;
+  --line:#ECE1D2; --line-soft:#F4EDE2;
+  --r:12px; --maxw:560px;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0}
+body{
+  background:var(--cream); color:var(--brown);
+  font-family:'DM Sans',system-ui,-apple-system,sans-serif;
+  font-size:16px; line-height:1.6; -webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:var(--maxw);margin:0 auto;padding:20px 20px 64px}
+h1,h2,.display{font-family:'Playfair Display',Georgia,serif;font-weight:600;line-height:1.2;letter-spacing:-0.01em}
+h1{font-size:30px;margin:0 0 12px}
+h2{font-size:23px;margin:0 0 10px}
+p{margin:0 0 14px}
+.lede{font-size:17px;color:var(--brown-mid);line-height:1.65}
+.eyebrow{font-size:11.5px;letter-spacing:0.11em;text-transform:uppercase;color:var(--brown-light);font-weight:500;margin:0 0 8px}
+.muted{color:var(--brown-light);font-size:13.5px;line-height:1.55}
+
+/* progresso: 5 módulos, largura proporcional ao peso de cada um */
+.prog{display:flex;gap:3px;margin:0 0 26px}
+.prog i{height:3px;flex:1;background:var(--line);border-radius:2px;transition:background .35s}
+.prog i.on{background:var(--sage)}
+.prog i.now{background:var(--orange)}
+
+.card{background:var(--paper);border:1px solid var(--line);border-radius:var(--r);padding:18px}
+.card + .card{margin-top:12px}
+
+button{font-family:inherit;font-size:15px;cursor:pointer}
+.btn{display:block;width:100%;background:var(--sage);color:#fff;border:0;border-radius:11px;
+  padding:14px 20px;font-weight:700;font-size:15.5px;transition:transform .12s,background .2s}
+.btn:active{transform:scale(.985)}
+.btn:disabled{background:#C8D2C4;cursor:not-allowed}
+.btn-ghost{display:block;width:100%;background:transparent;color:var(--brown-mid);
+  border:1.5px solid var(--line);border-radius:11px;padding:12px 18px;font-weight:500}
+
+.opt{display:block;width:100%;text-align:left;background:var(--paper);border:1.5px solid var(--line);
+  border-radius:11px;padding:14px 16px;margin-bottom:9px;color:var(--brown);line-height:1.5;
+  transition:border-color .15s,background .15s}
+.opt:hover{border-color:var(--sage)}
+.opt.sel{border-color:var(--sage);background:var(--sage-pale)}
+.opt b{display:block;font-weight:500;margin-bottom:2px}
+.opt span{display:block;font-size:13px;color:var(--brown-light);line-height:1.45}
+
+label.fld{display:block;font-size:13px;color:var(--brown-mid);margin:0 0 6px;font-weight:500}
+select,input[type=text]{width:100%;font-family:inherit;font-size:15px;padding:11px 12px;
+  border:1.5px solid var(--line);border-radius:10px;background:var(--paper);color:var(--brown)}
+input[type=range]{width:100%;accent-color:var(--sage);margin:6px 0}
+
+.pill{display:inline-block;font-size:11.5px;font-weight:500;padding:3px 9px;border-radius:20px;
+  background:var(--sage-pale);color:var(--sage-deep)}
+.pill.warn{background:var(--orange-pale);color:var(--orange)}
+
+.row{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
+.hr{height:1px;background:var(--line-soft);margin:16px 0}
+
+/* orçamento de tempo */
+.bar{height:26px;border-radius:6px;background:var(--line-soft);overflow:hidden;display:flex}
+.bar em{display:block;height:100%;font-style:normal}
+.over{color:var(--clay);font-weight:500}
+
+/* linha do dia — o elemento-assinatura */
+.day{position:relative;height:96px;border:1px solid var(--line);border-radius:10px;
+  background:var(--paper);overflow:hidden;margin:14px 0 6px}
+.day .hh{position:absolute;top:0;bottom:0;border-left:1px solid var(--line-soft)}
+.day .blk{position:absolute;border-radius:4px;font-size:10.5px;line-height:1;
+  display:flex;align-items:center;justify-content:center;overflow:hidden;padding:0 3px;text-align:center}
+.day .you{top:10px;height:24px;background:#E8EDF3;color:#3C5068}
+.day .dog{top:42px;height:24px;background:var(--sage-pale);color:var(--sage-deep)}
+.day .clash{top:70px;height:18px;background:#F6E3DA;color:var(--clay);font-weight:500}
+.daykey{display:flex;gap:14px;font-size:11.5px;color:var(--brown-light);margin-bottom:14px}
+.daykey b{font-weight:400}
+.daykey i{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:4px;vertical-align:0}
+
+/* resultado */
+.gap{background:var(--paper);border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
+.gap .half{padding:14px 16px}
+.gap .half + .half{border-top:1px solid var(--line-soft)}
+.gap .lbl{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--brown-light);margin:0 0 4px}
+.gap .val{font-size:15px;line-height:1.5;margin:0}
+.rupt{background:var(--orange-pale);border-radius:var(--r);padding:18px;margin:0 0 18px}
+.rupt h2{color:#7A4310;margin-bottom:8px}
+.rupt p{color:#8B5A22;margin-bottom:0;line-height:1.6}
+.rupt .split{display:flex;gap:18px;margin-top:14px;padding-top:13px;border-top:1px solid rgba(201,112,31,.22)}
+.rupt .split div p{margin:0}
+.rupt .split .k{font-size:11px;color:var(--orange);letter-spacing:.05em;text-transform:uppercase}
+.rupt .split .v{font-size:15.5px;font-weight:700;color:#7A4310}
+
+.src{font-size:11.5px;color:var(--brown-light);line-height:1.55;margin-top:26px;
+  padding-top:14px;border-top:1px solid var(--line-soft)}
+.src a{color:var(--brown-light)}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap" id="app"></div>
+
+<script>
+/* ------------------------------------------------------------------
+   PetNanny — instrumento de prontidão
+   Não devolve nota. Devolve (1) o gap entre expectativa e base real,
+   (2) o ponto de ruptura mais provável para ESTE respondente,
+   (3) a condição que o dissolveria.
+
+   Base empírica das perguntas — ver rodapé da tela de resultado.
+   ------------------------------------------------------------------ */
+
+function pnTrack(n,p){try{if(typeof gtag==='function')gtag('event',n,p||{})}catch(e){}}
+
+var S = {
+  expect:{},        // M1 estimativas do respondente
+  aloc:{},          // M2 o que foi cortado
+  dia:{acorda:7,sai:9,volta:19,dorme:23,casa:'fora'},  // M3
+  vinh:{},          // M4
+  ctx:{},           // M5
+  t0:Date.now()
+};
+
+/* ---------- M1: expectativa vs. base real ------------------------- */
+/* Powell et al. 2022: quem passou por mais atrito nos primeiros meses
+   tinha expectativa MAIS ALTA de saúde, bom comportamento e vínculo —
+   não expectativa mais baixa de trabalho. Então medimos o que a pessoa
+   espera RECEBER, não o que espera dar.                              */
+var CALIBRA = [
+  { k:'comport',
+    q:'De cada 100 cães, quantos você acha que apresentam algum problema de comportamento no primeiro ano e meio? (latido excessivo, destruição, xixi fora do lugar, medo)',
+    min:0,max:100,step:5,ini:40,real:97,
+    unidade:'em 100',
+    reveal:'Num estudo de coorte com filhotes acompanhados até os 21 meses, 96,7% dos tutores relataram pelo menos um comportamento problemático. Não é exceção — é a régua.' },
+  { k:'vinculo',
+    q:'Em quantas semanas você espera sentir que o cão "é seu" — que o vínculo está formado?',
+    min:1,max:52,step:1,ini:4,real:26,
+    unidade:'semanas',
+    reveal:'A pesquisa longitudinal com tutores mostra que as percepções sobre ter um cão só estabilizam por volta dos seis meses. Antes disso, é adaptação de parte a parte.' },
+  { k:'blues',
+    q:'De cada 100 pessoas que trazem um filhote para casa, quantas passam por um período real de ansiedade, frustração ou exaustão nas primeiras semanas?',
+    min:0,max:100,step:5,ini:15,real:48,
+    unidade:'em 100',
+    reveal:'Quase metade. O fenômeno tem nome e escala validada ("puppy blues", Universidade de Helsinque, 2024) e cerca de 10% relatam sobrecarga severa. Passa — mas quem não sabe que existe interpreta como erro de escolha.' }
+];
+
+/* ---------- M2: alocação forçada ---------------------------------- */
+/* Tradeoff, não declaração — mesmo princípio do conjoint do quiz.   */
+var CUSTO_SEMANAL = 11; // horas/semana de cuidado direto, cão adulto adaptado
+var FONTES = [
+  {k:'sono',    n:'Sono',              d:'Acordar 40 min mais cedo, todo dia'},
+  {k:'social',  n:'Vida social',       d:'Sair menos, voltar mais cedo'},
+  {k:'exerc',   n:'Exercício próprio', d:'Trocar academia pelo passeio'},
+  {k:'trabalho',n:'Trabalho',          d:'Sair na hora, recusar coisas'},
+  {k:'lazer',   n:'Lazer em casa',     d:'Menos tela, menos ócio'},
+  {k:'ninguem', n:'Não consigo cortar de lugar nenhum', d:''}
+];
+
+/* ---------- M4: vinhetas ------------------------------------------ */
+/* Sem opção socialmente correta. hold: par de consistência.          */
+var VINHETAS = [
+  { k:'v1', hold:null,
+    t:'23h40 de uma terça. Chuva. Você chegou às 22h, comeu em pé e ainda tem coisa pra amanhã. O cão não fez xixi desde as 18h.',
+    o:['Desço com ele, mesmo assim','Ponho o tapete higiênico e resolvo de manhã','Chamo alguém de casa','Deixo pra lá — um dia não mata'] },
+  { k:'v2', hold:null,
+    t:'Terceira reclamação do vizinho: o cão late sozinho por horas enquanto você trabalha. O síndico já mencionou notificação.',
+    o:['Contrato adestrador (R$ 800–1.500 o pacote)','Peço pra alguém ficar com ele de dia','Tento resolver com vídeos e paciência','Começo a achar que esse apê não comporta um cão'] },
+  { k:'v3', hold:'v3b',
+    t:'Emergência: obstrução intestinal. R$ 4.800, à vista, hoje. Você não tem esse dinheiro sobrando este mês.',
+    o:['Parcelo no cartão e me viro','Peço emprestado para família','Procuro um hospital público ou ONG','Não sei o que eu faria'] },
+  { k:'v4', hold:null,
+    t:'Mês 5. A novidade passou. Chove pelo terceiro dia. O passeio das 7h virou uma negociação diária com você mesmo.',
+    o:['Vou de qualquer jeito, é inegociável','Vou quase sempre — alguns dias falho','Passo a soltar ele no quintal ou área comum','Confesso que essa parte me assusta'] },
+  { k:'v3b', hold:null,
+    t:'Você fez as contas do ano: com ração, vacina, banho e antiparasitário, o cão custa entre R$ 350 e R$ 600 por mês. Ainda sem nenhuma emergência.',
+    o:['Cabe folgado no meu orçamento','Cabe, mas eu ia sentir','Ia ter que cortar outra coisa','Sinceramente, não tinha feito essa conta'] },
+  { k:'v5', hold:null,
+    t:'Viagem de 9 dias, marcada antes do cão. Hotelzinho custa R$ 90/dia.',
+    o:['Já tenho com quem deixar, e essa pessoa já topou','Alguém da família resolve, imagino','Pago o hotelzinho','Não tinha pensado nisso'] }
+];
+
+/* ---------- M5: contexto ------------------------------------------ */
+/* Estresse domiciliar percebido nos últimos 3 meses pesa mais que renda
+   na prática. Ponto único de falha é o fator mais subestimado.       */
+var CTX = [
+  { k:'carga', q:'Como foram os últimos três meses na sua casa?',
+    o:[['Tranquilos, sem grandes sobressaltos',0],['Normais — altos e baixos',1],
+       ['Puxados: trabalho, saúde, dinheiro ou família',2],['Muito difíceis',3]] },
+  { k:'consenso', q:'Quem mais mora com você — e como essa pessoa votaria?',
+    o:[['Moro sozinho',1],['Mora comigo e quer tanto quanto eu',0],
+       ['Mora comigo e topa, mas não é ideia dela',2],['Mora comigo e ainda não conversamos',3]] },
+  { k:'backup', q:'Quando você viaja ou adoece, quem cuida?',
+    o:[['Tenho alguém e já combinei com essa pessoa',0],['Tenho alguém em mente, mas não perguntei',2],
+       ['Pagaria hotelzinho ou dog sitter',1],['Não sei',3]] },
+  { k:'horizonte', q:'Nos próximos 24 meses, o que é provável na sua vida?',
+    o:[['Nada muda muito',0],['Uma coisa: mudança, emprego ou viagem longa',1],
+       ['Duas ou mais: mudança, filho, emprego, relação',2],['Estou no meio de uma virada agora',3]] }
+];
+
+/* ---------- necessidades do cão na linha do dia ------------------- */
+function blocosCao(d){
+  var b=[];
+  b.push({ini:d.acorda,fim:d.acorda+0.75,t:'passeio'});
+  b.push({ini:d.acorda+0.75,fim:d.acorda+1,t:'comida'});
+  b.push({ini:d.volta,fim:d.volta+0.75,t:'passeio'});
+  b.push({ini:d.dorme-1.5,fim:d.dorme-1,t:'brincar'});
+  b.push({ini:d.dorme-0.4,fim:d.dorme,t:'última saída'});
+  return b;
+}
+function conflitos(d){
+  var c=[], sozinho=d.volta-d.sai;
+  if(d.casa==='fora' && sozinho>6) c.push({ini:d.sai,fim:d.volta,t:Math.round(sozinho)+'h sozinho'});
+  if(d.acorda>7.5) c.push({ini:d.acorda-1,fim:d.acorda,t:'passeio antes do trabalho aperta'});
+  if(d.dorme-d.volta<3) c.push({ini:d.volta,fim:d.dorme,t:'pouca janela à noite'});
+  return c;
+}
+
+/* ================= render ========================================= */
+var app=document.getElementById('app');
+var step=0; // 0 intro, 1..3 calibra, 4 aloc, 5 dia, 6..11 vinhetas, 12..15 ctx, 16 result
+var vIdx=0, cIdx=0, xIdx=0;
+
+function prog(n){
+  var h='<div class="prog">';
+  for(var i=0;i<5;i++) h+='<i class="'+(i<n?'on':(i===n?'now':''))+'"></i>';
+  return h+'</div>';
+}
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;')}
+
+function go(fn){ window.scrollTo(0,0); fn(); }
+
+/* --- intro --- */
+function rIntro(){
+  app.innerHTML =
+    '<p class="eyebrow">PetNanny</p>'+
+    '<h1>Não é um teste que você passa ou não.</h1>'+
+    '<p class="lede">Quem se dá bem com um cão não é quem planejou mais. É quem entrou sabendo o que ia encontrar — porque a distância entre o que a gente imagina e o que chega é o que pesa.</p>'+
+    '<p class="lede">Então isso aqui não mede o seu preparo. Mede essa distância, e te mostra onde ela aperta na sua rotina — pra você escolher sabendo.</p>'+
+    '<div class="card" style="margin:20px 0"><div class="row"><span class="muted">5 partes</span><span class="muted">8 a 10 minutos</span></div>'+
+    '<div class="hr"></div><p class="muted" style="margin:0">Algumas perguntas não têm resposta boa. Isso é de propósito: é o que a pessoa faz quando nenhuma opção agrada que diz alguma coisa.</p></div>'+
+    '<button class="btn" id="go">Começar</button>';
+  document.getElementById('go').onclick=function(){pnTrack('prontidao_start',{});go(rCalibra)};
+}
+
+/* --- M1 calibração --- */
+function rCalibra(){
+  var c=CALIBRA[cIdx];
+  app.innerHTML = prog(0)+
+    '<p class="eyebrow">Parte 1 de 5 · Expectativa</p>'+
+    '<h2>'+esc(c.q)+'</h2>'+
+    '<div class="card" style="margin-top:16px">'+
+    '<div class="row"><span class="muted">Seu palpite</span>'+
+    '<span class="display" style="font-size:26px" id="v">'+c.ini+'</span></div>'+
+    '<input type="range" id="sl" min="'+c.min+'" max="'+c.max+'" step="'+c.step+'" value="'+c.ini+'">'+
+    '<p class="muted" style="margin:0;text-align:right">'+c.unidade+'</p></div>'+
+    '<button class="btn" id="ok" style="margin-top:16px">Ver o número real</button>';
+  var sl=document.getElementById('sl'), v=document.getElementById('v');
+  sl.oninput=function(){v.textContent=sl.value};
+  document.getElementById('ok').onclick=function(){
+    S.expect[c.k]=parseInt(sl.value,10);
+    pnTrack('prontidao_calibra',{item:c.k,palpite:S.expect[c.k],real:c.real});
+    rReveal(c);
+  };
+}
+function rReveal(c){
+  var meu=S.expect[c.k], dif=c.real-meu;
+  var dir = dif>0 ? 'subestimou' : (dif<0 ? 'superestimou' : 'acertou');
+  app.innerHTML = prog(0)+
+    '<p class="eyebrow">Parte 1 de 5 · Expectativa</p>'+
+    '<div class="card"><div class="row" style="align-items:flex-end">'+
+    '<div><p class="muted" style="margin:0 0 2px">Você disse</p>'+
+    '<p class="display" style="font-size:30px;margin:0;color:var(--brown-light)">'+meu+'</p></div>'+
+    '<div style="text-align:right"><p class="muted" style="margin:0 0 2px">A pesquisa diz</p>'+
+    '<p class="display" style="font-size:30px;margin:0;color:var(--sage-deep)">'+c.real+'</p></div></div>'+
+    '<p class="muted" style="text-align:center;margin:8px 0 0">'+c.unidade+'</p>'+
+    '<div class="hr"></div><p style="margin:0;font-size:14.5px;line-height:1.6">'+esc(c.reveal)+'</p></div>'+
+    (dir!=='acertou' ? '<p class="muted" style="margin-top:12px">Você '+dir+' — guardo isso para o final.</p>' : '')+
+    '<button class="btn" id="n" style="margin-top:16px">Continuar</button>';
+  document.getElementById('n').onclick=function(){
+    cIdx++;
+    go(cIdx<CALIBRA.length ? rCalibra : rAloc);
+  };
+}
+
+/* --- M2 alocação forçada --- */
+function rAloc(){
+  app.innerHTML = prog(1)+
+    '<p class="eyebrow">Parte 2 de 5 · Alocação</p>'+
+    '<h2>De onde saem 11 horas por semana?</h2>'+
+    '<p class="lede">Um cão adulto já adaptado consome cerca de 11 horas semanais em passeio, alimentação, higiene, deslocamento ao veterinário e presença. Filhote é bem mais.</p>'+
+    '<p class="lede">Sua semana já tem 168 horas ocupadas com alguma coisa. Então essas 11 vêm de algum lugar. De onde?</p>'+
+    '<div style="margin-top:18px" id="fs"></div>'+
+    '<p class="muted" id="hint">Escolha até duas fontes.</p>'+
+    '<button class="btn" id="ok" disabled style="margin-top:8px">Continuar</button>';
+  var box=document.getElementById('fs'), sel=[];
+  FONTES.forEach(function(f){
+    var b=document.createElement('button');
+    b.className='opt'; b.dataset.k=f.k;
+    b.innerHTML='<b>'+f.n+'</b>'+(f.d?'<span>'+f.d+'</span>':'');
+    b.onclick=function(){
+      if(f.k==='ninguem'){ sel=['ninguem']; }
+      else{
+        sel=sel.filter(function(x){return x!=='ninguem'});
+        var i=sel.indexOf(f.k);
+        if(i>=0) sel.splice(i,1);
+        else { if(sel.length>=2) sel.shift(); sel.push(f.k); }
+      }
+      Array.prototype.forEach.call(box.children,function(el){
+        el.classList.toggle('sel', sel.indexOf(el.dataset.k)>=0);
+      });
+      document.getElementById('ok').disabled = sel.length===0;
+    };
+    box.appendChild(b);
+  });
+  document.getElementById('ok').onclick=function(){
+    S.aloc.fontes=sel;
+    pnTrack('prontidao_aloc',{fontes:sel.join(',')});
+    go(rDia);
+  };
+}
+
+/* --- M3 o dia comum (assinatura) --- */
+function rDia(){
+  app.innerHTML = prog(2)+
+    '<p class="eyebrow">Parte 3 de 5 · O dia comum</p>'+
+    '<h2>Não o dia 1. Uma terça do mês 5.</h2>'+
+    '<p class="lede">O dia da chegada quase todo mundo aguenta — é a parte emocionante. Monte aqui um dia normal seu, e eu encaixo o cão dentro dele.</p>'+
+    '<div class="card" style="margin-top:16px">'+
+      '<label class="fld">Onde você passa o dia</label>'+
+      '<select id="casa"><option value="fora">Fora de casa</option><option value="casa">Em casa</option><option value="hibrido">Híbrido, alguns dias fora</option></select>'+
+      '<div class="hr"></div>'+
+      '<div id="sls"></div>'+
+    '</div>'+
+    '<div class="day" id="day"></div>'+
+    '<div class="daykey"><b><i style="background:#E8EDF3"></i>você</b>'+
+    '<b><i style="background:#DCE8D8"></i>o que o cão precisa</b>'+
+    '<b><i style="background:#F6E3DA"></i>onde aperta</b></div>'+
+    '<button class="btn" id="ok">Continuar</button>';
+
+  var defs=[['acorda','Acorda',5,10,.5],['sai','Sai de casa',6,12,.5],
+            ['volta','Volta pra casa',12,23,.5],['dorme','Vai dormir',20,26,.5]];
+  var sls=document.getElementById('sls');
+  defs.forEach(function(d){
+    var w=document.createElement('div'); w.style.marginBottom='10px';
+    w.innerHTML='<div class="row"><label class="fld" style="margin:0">'+d[1]+'</label>'+
+      '<span class="muted" id="o_'+d[0]+'"></span></div>'+
+      '<input type="range" id="r_'+d[0]+'" min="'+d[2]+'" max="'+d[3]+'" step="'+d[4]+'" value="'+S.dia[d[0]]+'">';
+    sls.appendChild(w);
+    var r=w.querySelector('input');
+    r.oninput=function(){ S.dia[d[0]]=parseFloat(r.value); draw(); };
+  });
+  document.getElementById('casa').onchange=function(){S.dia.casa=this.value;draw()};
+
+  function hhmm(h){ h=h%24; var H=Math.floor(h), M=Math.round((h-H)*60);
+    return (H<10?'0':'')+H+':'+(M<10?'0':'')+M; }
+
+  function draw(){
+    defs.forEach(function(d){document.getElementById('o_'+d[0]).textContent=hhmm(S.dia[d[0]])});
+    var el=document.getElementById('day'), W=el.clientWidth||320;
+    var h='';
+    for(var i=4;i<=24;i+=4) h+='<div class="hh" style="left:'+((i/24)*100)+'%"></div>';
+    function blk(cls,ini,fim,txt){
+      var a=Math.max(0,ini), b=Math.min(24,fim);
+      if(b<=a) return '';
+      var L=(a/24)*100, Wd=((b-a)/24)*100;
+      return '<div class="blk '+cls+'" style="left:'+L+'%;width:'+Wd+'%">'+(Wd>13?txt:'')+'</div>';
+    }
+    var d=S.dia;
+    h+=blk('you',d.acorda,d.sai,'em casa');
+    h+=blk('you',d.sai,d.volta, d.casa==='casa'?'trabalho (em casa)':'fora');
+    h+=blk('you',d.volta,Math.min(24,d.dorme),'em casa');
+    blocosCao(d).forEach(function(b){ h+=blk('dog',b.ini,b.fim,b.t) });
+    var cf=conflitos(d);
+    cf.forEach(function(c){ h+=blk('clash',c.ini,c.fim,c.t) });
+    el.innerHTML=h;
+    S.dia._conf=cf.length;
+    S.dia._sozinho=d.casa==='casa'?0:(d.volta-d.sai);
+  }
+  draw();
+  document.getElementById('ok').onclick=function(){
+    pnTrack('prontidao_dia',{sozinho:Math.round(S.dia._sozinho),conflitos:S.dia._conf,casa:S.dia.casa});
+    go(rVinh);
+  };
+}
+
+/* --- M4 vinhetas --- */
+function rVinh(){
+  var v=VINHETAS[vIdx];
+  app.innerHTML = prog(3)+
+    '<p class="eyebrow">Parte 4 de 5 · Cenários ('+(vIdx+1)+'/'+VINHETAS.length+')</p>'+
+    '<div class="card"><p style="margin:0;font-size:16px;line-height:1.6">'+esc(v.t)+'</p></div>'+
+    '<p class="muted" style="margin:14px 0 10px">Nenhuma opção é a certa. Marque a mais parecida com o que você faria.</p>'+
+    '<div id="os"></div>';
+  var box=document.getElementById('os');
+  v.o.forEach(function(txt,i){
+    var b=document.createElement('button');
+    b.className='opt'; b.textContent=txt;
+    b.onclick=function(){
+      S.vinh[v.k]=i;
+      pnTrack('prontidao_vinheta',{v:v.k,escolha:i});
+      vIdx++;
+      go(vIdx<VINHETAS.length ? rVinh : rCtx);
+    };
+    box.appendChild(b);
+  });
+}
+
+/* --- M5 contexto --- */
+function rCtx(){
+  var c=CTX[xIdx];
+  app.innerHTML = prog(4)+
+    '<p class="eyebrow">Parte 5 de 5 · Contexto</p>'+
+    '<h2>'+esc(c.q)+'</h2><div id="os" style="margin-top:16px"></div>';
+  var box=document.getElementById('os');
+  c.o.forEach(function(pair){
+    var b=document.createElement('button');
+    b.className='opt'; b.textContent=pair[0];
+    b.onclick=function(){
+      S.ctx[c.k]=pair[1];
+      xIdx++;
+      go(xIdx<CTX.length ? rCtx : rResultado);
+    };
+    box.appendChild(b);
+  });
+}
+
+/* ================= motor de leitura =============================== */
+function calcular(){
+  var R={};
+
+  // 1. gap de expectativa (0..1) — quanto a pessoa subestimou a fricção
+  var g=0, n=0;
+  CALIBRA.forEach(function(c){
+    var meu=S.expect[c.k];
+    if(meu==null) return;
+    var d=(c.real-meu)/c.real;      // >0 = subestimou a fricção
+    g+=Math.max(0,d); n++;
+  });
+  R.gapExp = n? g/n : 0;
+
+  // 2. fragilidade da alocação
+  var f=S.aloc.fontes||[];
+  R.alocRisco = f.indexOf('ninguem')>=0 ? 3 : (f.indexOf('sono')>=0 ? 2 : 1);
+  R.alocFonte = f[0]||'';
+
+  // 3. rotina: horas sozinho + conflitos na linha do dia
+  R.rotina = (S.dia._sozinho>9?3:S.dia._sozinho>6?2:0) + (S.dia._conf>=2?1:0);
+
+  // 4. vinhetas
+  var v=S.vinh;
+  R.vRotina   = (v.v4>=2?2:0) + (v.v1>=2?1:0);
+  R.vDinheiro = (v.v3>=2?2:0) + (v.v3b>=2?2:0);
+  R.vRede     = (v.v5>=1?2:0);
+  R.vComport  = (v.v2>=2?2:0);
+  // consistência: v3 (emergência) vs v3b (custo corrente) devem andar juntos
+  R.incoerencia = (v.v3!=null && v.v3b!=null) ? Math.abs(v.v3 - v.v3b) : 0;
+
+  // 5. contexto
+  var x=S.ctx;
+  R.carga = x.carga||0;
+  R.rede  = (x.consenso||0) + (x.backup||0);
+  R.horiz = x.horizonte||0;
+
+  // ---- eleger o ponto de ruptura -------------------------------
+  var cands=[
+    {k:'rotina',  p:R.rotina + R.vRotina + (R.alocFonte==='sono'?1:0)},
+    {k:'expect',  p:(R.gapExp>0.5?3:R.gapExp>0.25?2:0) + R.vComport},
+    {k:'dinheiro',p:R.vDinheiro + (R.carga>=2?1:0)},
+    {k:'rede',    p:R.rede + R.vRede},
+    {k:'carga',   p:R.carga*1.5 + (R.alocRisco===3?2:0)},
+    {k:'horizonte',p:R.horiz*1.5}
+  ];
+  cands.sort(function(a,b){return b.p-a.p});
+  R.top = cands[0]; R.segundo = cands[1]; R.todos = cands;
+  R.risco = cands[0].p;
+  // ninguém sai daqui com um alarme que os dados não sustentam
+  if(R.risco <= 2 && R.gapExp < 0.2) R.top = {k:'baixo', p:R.risco};
+  return R;
+}
+
+var RUPTURAS = {
+  rotina:{
+    t:'O mês 4, não o dia 1',
+    p:'A chegada quase todo mundo aguenta — ela é emocionante e tem fim. O seu ponto sensível está depois: quando a novidade passa, chove pelo terceiro dia seguido, e o passeio das 7h vira uma negociação diária com você mesmo. Saber disso antes já muda o jogo, porque o que costuma pegar não é falta de vontade — é a rotina não ter sido desenhada pra durar.',
+    d1:'Baixo', dd:'Alto'
+  },
+  expect:{
+    t:'O cão real é mais barulhento que o imaginado',
+    p:'Suas estimativas na primeira parte ficaram bem abaixo do que a pesquisa mostra. Isso importa mais do que parece: o desconforto raramente vem do trabalho em si — vem de achar que algo saiu errado quando, na verdade, está tudo dentro do normal. Roer, latir, fazer xixi fora do lugar e levar meses pra criar vínculo é o roteiro comum, não a exceção.',
+    d1:'Médio', dd:'Alto'
+  },
+  dinheiro:{
+    t:'A conta que chega sem avisar',
+    p:'O custo corrente cabe ou quase cabe. O que pega é o degrau: uma obstrução, uma cirurgia, uma doença crônica. Sem reserva, essa conta vira uma decisão difícil num dia em que você não queria estar decidindo nada. Com reserva, vira só um saque.',
+    d1:'Baixo', dd:'Médio'
+  },
+  rede:{
+    t:'O plano depende de alguém que não foi perguntado',
+    p:'Este é o preditor mais subestimado de todos, e o mais fácil de resolver. Você tem um plano B — mas ele é uma suposição, não um combinado. Quando a viagem, a gripe forte ou a semana impossível chegarem, o plano vai ser testado pela primeira vez exatamente no dia em que não pode falhar.',
+    d1:'Baixo', dd:'Médio'
+  },
+  carga:{
+    t:'A sua vida já está cheia',
+    p:'Não é sobre capacidade — é sobre margem. Um cão não adiciona só tarefas: ele adiciona imprevisibilidade. E, pelo que você respondeu, os últimos meses já vinham operando sem folga. Isso não diz nada sobre o seu preparo; diz sobre o momento.',
+    d1:'Alto', dd:'Alto'
+  },
+  horizonte:{
+    t:'A janela de instabilidade',
+    p:'Um cão acompanha você por 12 a 15 anos, e você marcou mudanças relevantes nos próximos 24 meses. Não é que a mudança impeça — é que ela costuma chegar junto com o período em que o cão daria mais trabalho, e as duas coisas competem pela mesma energia.',
+    d1:'Baixo', dd:'Alto'
+  },
+  baixo:{
+    t:'Nenhum ponto de ruptura claro',
+    p:'Isso é raro o bastante para eu dizer sem rodeio: suas expectativas estão calibradas, sua rotina comporta, sua rede foi combinada de verdade e sua vida não está operando no limite. Não vou inventar um risco para parecer criterioso. O que sobra é a parte que nenhum instrumento prevê — o cão específico que vai chegar, e quem ele for.',
+    d1:'Baixo', dd:'Baixo'
+  }
+};
+
+var CONDICOES = {
+  rotina:'Seu ponto de ruptura encolhe muito se o passeio da manhã deixar de depender da sua vontade naquele dia. Combinar horário fixo com outra pessoa, ou contratar dog walker para dois dias fixos da semana, transforma uma decisão diária em algo que já está resolvido.',
+  expect:'Nada aqui exige mudar sua vida — exige recalibrar. Se você entrar sabendo que problema de comportamento é a regra e não o sinal de que deu errado, e que o vínculo leva meses, a maior parte desse risco já se dissolve antes de existir.',
+  dinheiro:'Uma reserva específica para o cão, separada, na faixa de três a quatro mil reais, muda a natureza da emergência: ela deixa de ser uma decisão e vira um saque. Plano de saúde pet resolve parte, mas leia carência e exclusões.',
+  rede:'Uma conversa. Pergunte hoje para a pessoa que você marcou como plano B se ela toparia mesmo. Se ela topar, seu principal risco desaparece. Se ela não topar, é muito melhor descobrir agora.',
+  carga:'Não é um "não". É um "não agora, e por um motivo concreto". Vale reavaliar quando os últimos três meses tiverem sido normais — não excepcionais, só normais.',
+  horizonte:'Se a mudança grande já tem data, esperar até depois dela custa pouco e resolve muito. Se não tem data, vale checar antes o item mais quebradiço: o próximo lugar onde você vai morar aceita cão do porte que você quer?',
+  baixo:'A única coisa que eu faria no seu lugar é escolher a raça pela rotina que você desenhou na parte 3, não pela aparência. É o único jeito de esse resultado continuar valendo daqui a três anos.'
+};
+
+function rResultado(){
+  var R=calcular();
+  var rup=RUPTURAS[R.top.k], cond=CONDICOES[R.top.k];
+  var segs=Math.round((Date.now()-S.t0)/1000);
+  pnTrack('prontidao_complete',{ruptura:R.top.k,risco:Math.round(R.risco),gap_exp:Math.round(R.gapExp*100),segundos:segs});
+
+  // frase do gap: declarado × revelado
+  var gapDito, gapFeito;
+  var f=(S.aloc.fontes||[])[0];
+  if(f==='ninguem'){
+    gapDito='Você quer um cão.';
+    gapFeito='Quando teve que abrir 11 horas na semana, não achou de onde tirar.';
+  } else if(f==='sono'){
+    gapDito='Você disse que dá conta da rotina.';
+    gapFeito='A hora que você separou para o cão saiu do seu sono — a primeira coisa que a gente devolve numa semana ruim.';
+  } else if(f==='trabalho'){
+    gapDito='Você disse que dá conta da rotina.';
+    gapFeito='Você separou horas tirando do trabalho, que é justamente a parte da semana com menos elasticidade.';
+  } else {
+    gapDito='Você disse que dá conta da rotina.';
+    gapFeito='E, quando teve que cortar, cortou de um lugar que realmente tem folga. Isso conta a seu favor.';
+  }
+  if(R.gapExp>0.4){
+    gapDito='Você esperava um cão bem mais fácil do que a média.';
+    gapFeito='Nas três estimativas, seus números ficaram '+Math.round(R.gapExp*100)+'% abaixo do que a pesquisa encontra.';
+  }
+
+  var extra='';
+  if(R.incoerencia>=2){
+    extra='<div class="card"><p class="eyebrow" style="margin-bottom:6px">Uma inconsistência</p>'+
+      '<p style="margin:0;font-size:14.5px;line-height:1.6">Você respondeu de formas bem diferentes sobre a emergência de R$ 4.800 e sobre o custo mensal de R$ 350 a R$ 600. Costuma significar uma de duas coisas: ou o custo corrente ainda não foi realmente calculado, ou a emergência ainda parece hipotética. Vale sentar com os dois números juntos.</p></div>';
+  }
+
+  app.innerHTML =
+    '<p class="eyebrow">Sua leitura</p>'+
+    '<h1>Não é uma nota. É o que suas respostas revelaram.</h1>'+
+    '<p class="eyebrow" style="margin:24px 0 8px">O gap</p>'+
+    '<div class="gap">'+
+      '<div class="half"><p class="lbl">Você disse</p><p class="val">'+esc(gapDito)+'</p></div>'+
+      '<div class="half"><p class="lbl">Suas escolhas mostraram</p><p class="val">'+esc(gapFeito)+'</p></div>'+
+    '</div>'+
+    '<p class="eyebrow" style="margin:24px 0 8px">Seu ponto de ruptura</p>'+
+    '<div class="rupt"><h2>'+esc(rup.t)+'</h2><p>'+esc(rup.p)+'</p>'+
+      '<div class="split">'+
+        '<div><p class="k">Dia 1</p><p class="v">'+rup.d1+'</p></div>'+
+        '<div><p class="k">Dia a dia</p><p class="v">'+rup.dd+'</p></div>'+
+      '</div></div>'+
+    extra+
+    '<p class="eyebrow" style="margin:24px 0 8px">A condição</p>'+
+    '<div class="card"><p style="margin:0;line-height:1.65">'+esc(cond)+'</p></div>'+
+    '<div style="margin-top:24px">'+
+      '<button class="btn" id="quiz">Ver quais raças combinam com essa rotina</button>'+
+      '<div style="height:9px"></div>'+
+      '<button class="btn-ghost" id="hub">Montar o plano dos primeiros 90 dias</button>'+
+    '</div>'+
+    '<div class="card" style="margin-top:20px;background:var(--sage-pale);border-color:#DCE8D8">'+
+      '<p class="eyebrow" style="margin-bottom:6px">Daqui a dois dias</p>'+
+      '<p style="margin:0 0 12px;font-size:14.5px;line-height:1.6">A empolgação de hoje distorce qualquer decisão. Posso te mandar essa leitura de novo em 48 horas, quando ela tiver baixado — é quando ela vale mais.</p>'+
+      '<input type="text" id="mail" placeholder="seu@email.com" style="margin-bottom:9px">'+
+      '<button class="btn" id="eco">Me mande de novo em 2 dias</button>'+
+      '<p class="muted" id="msg" style="margin:9px 0 0"></p>'+
+    '</div>'+
+    '<p class="src">Perguntas construídas a partir de: Powell et al. (2022), expectativas de tutores nos primeiros meses; Ståhl et al., <em>npj Mental Health Research</em> (2024), escala de "puppy blues"; coorte britânica de filhotes acompanhados até os 21 meses (2024); pesquisa longitudinal sobre expectativa e realidade na relação tutor-cão (2020); Instituto Pet Brasil / Abinpet, custo médio mensal de um cão no Brasil.</p>';
+
+  document.getElementById('quiz').onclick=function(){
+    pnTrack('prontidao_to_quiz',{ruptura:R.top.k});
+    location.href='index.html?from=prontidao';
+  };
+  document.getElementById('hub').onclick=function(){
+    pnTrack('prontidao_to_hub',{ruptura:R.top.k});
+    location.href='meu-cao.html?from=prontidao';
+  };
+  document.getElementById('eco').onclick=function(){
+    var em=document.getElementById('mail').value.trim(), m=document.getElementById('msg');
+    if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(em)){ m.style.color='#A8553A'; m.textContent='Confere o email.'; return; }
+    pnTrack('prontidao_eco_optin',{ruptura:R.top.k});
+    salvar(em,R);
+    m.style.color='var(--sage-deep)'; m.textContent='Combinado. Te escrevo em dois dias.';
+  };
+
+  salvar(null,R);
+}
+
+/* ---------- persistência (mesmo webhook do quiz) ------------------ */
+var WEBHOOK_URL='https://script.google.com/macros/s/AKfycbwVEj56mI7SxCtbL1k7fX-QhPbcWHuE-MpEGFJiPi8jkVjzzJGnnipSppJwqLJprEGoIA/exec';
+function salvar(email,R){
+  if(!WEBHOOK_URL) return;
+  try{
+    fetch(WEBHOOK_URL,{method:'POST',mode:'no-cors',
+      headers:{'Content-Type':'text/plain;charset=utf-8'},
+      body:JSON.stringify({
+        tipo:'prontidao', ts:new Date().toISOString(), email:email||'',
+        ruptura:R.top.k, risco:R.risco, gap_exp:Math.round(R.gapExp*100),
+        expect:S.expect, aloc:S.aloc.fontes, dia:S.dia, vinhetas:S.vinh, ctx:S.ctx,
+        eco_agendado: email? new Date(Date.now()+172800000).toISOString() : ''
+      })});
+  }catch(e){}
+}
+
+rIntro();
+</script>
+</body>
+</html>

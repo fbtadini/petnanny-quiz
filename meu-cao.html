@@ -403,7 +403,7 @@ function submitPreChegada(){
     pesoFaixa:'',sexo:'',nascimento:null,idadeMeses:null,castrado:'',microchip:'',chegada:null,
     notes:'',photo:null,photoPos:{x:50,y:50},docs:[],done:{},
     quiz:(typeof quizCtx==='function')?quizCtx():null, criadoEm:new Date().toISOString()};
-  dogs.push(dog);saveDogs();currentId=dog.id;renderProfile();show('s-profile');setTab('raca');window.scrollTo(0,0);
+  dogs.push(dog);saveDogs();pnTrack('perfil_criado',{tipo:'aguardando',indeciso:indeciso,origem_quiz:!!dog.quiz});currentId=dog.id;renderProfile();show('s-profile');setTab('raca');window.scrollTo(0,0);
 }
 function openAdmin(){renderAdmin();show('s-admin')}
 
@@ -470,7 +470,7 @@ function submitDog(){
   const wasAguard=regAguardando;regAguardando=false;
   const dog=Object.assign({id:uid(),notes:'',photo:null,photoPos:{x:50,y:50},docs:[],done:{},aguardando:wasAguard,quiz:pendingQuizCtx?quizCtx():null,criadoEm:new Date().toISOString()},base);
   pendingQuizCtx=false;
-  dogs.push(dog);saveDogs();currentId=dog.id;renderProfile();show('s-profile');setTab(wasAguard?'raca':'cuidados');
+  dogs.push(dog);saveDogs();pnTrack('perfil_criado',{tipo:wasAguard?'aguardando_convertido':'completo',origem_quiz:!!dog.quiz});currentId=dog.id;renderProfile();show('s-profile');setTab(wasAguard?'raca':'cuidados');
 }
 function editDog(){
   const dog=dogObj();if(!dog)return;editingId=dog.id;
@@ -1642,6 +1642,14 @@ function renderAdmin(){const el=document.getElementById('adminList');const reqs=
 
 loadDogs();fillBreeds();renderList();document.getElementById('f-birth').max=localISO();
 try{if(sessionStorage.getItem('petnanny_from')==='quiz'){sessionStorage.removeItem('petnanny_from');if(typeof gtag==='function')gtag('event','hub_from_quiz',{});}}catch(e){}
+try{
+  var _lastOpen=localStorage.getItem('petnanny_last_open');
+  var _now=Date.now();
+  var _returning=!!_lastOpen;
+  var _daysSince=_returning?Math.round((_now-parseInt(_lastOpen,10))/86400000):null;
+  pnTrack('hub_open',{returning:_returning,days_since_last:_daysSince,dogs_count:dogs.length});
+  localStorage.setItem('petnanny_last_open',String(_now));
+}catch(e){}
 </script>
 <div id="lightbox"></div>
 <div id="ficha"></div>

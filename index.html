@@ -832,6 +832,12 @@
         Cuidar do meu cão com a <em style="font-style:normal">Nanny</em> →
         <span class="adoption-cta-sub-line">Guia da raça, saúde e comportamento — num lugar só</span>
       </a>
+
+      <div class="adoption-cta-divider"><span>ainda em dúvida?</span></div>
+      <a href="prontidao.html" class="btn-secondary" style="text-decoration:none;display:block;text-align:center" onclick="try{pnTrack('quiz_to_prontidao',{origem:'home'})}catch(e){}">
+        Antes da raça: é a hora certa pra você? →
+        <span class="adoption-cta-sub-line" style="display:block">10 minutos sobre a sua rotina, não sobre o cão</span>
+      </a>
       
       <p class="intro-foot">
         Ferramenta de apoio à decisão — não substitui orientação veterinária profissional.<br>
@@ -5705,7 +5711,7 @@ function renderIntentBlock(container){
 function pickIntent(k, btn){
   try{ pnTrack('intencao_pos_quiz',{escolha:k, raca_top:(typeof recommendedBreeds!=='undefined'&&recommendedBreeds[0]?recommendedBreeds[0].key:''), origem:(answers&&answers.origem)||''}); }catch(e){}
   try{ if(typeof pnRegBehavior==='function') pnRegBehavior('intencao_pos_quiz', k); }catch(e){}
-  const msgs={vou_buscar:'Que demais! 🎉 Deixa tudo pronto antes da chegada — a Nanny monta a lista do enxoval e te acompanha nos primeiros 90 dias.<div style="margin-top:10px"><a href="meu-cao.html?from=quiz" onclick="try{pnTrack(\'quiz_to_hub_click\',{escolha:\'vou_buscar\'})}catch(e){}" style="display:inline-block;background:#4a7c59;color:#fff;text-decoration:none;border-radius:11px;padding:12px 18px;font-weight:700;font-size:14px">Criar plano de chegada →</a></div>',decidindo:'Decidir com calma é o certo — a real de cada raça aí em cima ajuda a não se arrepender. E dá pra se preparar já: o plano de chegada funciona mesmo antes de bater o martelo.<div style="margin-top:10px"><a href="meu-cao.html?from=quiz" onclick="try{pnTrack(\'quiz_to_hub_click\',{escolha:\'decidindo\'})}catch(e){}" style="display:inline-block;background:transparent;color:#3d2c1e;border:1.5px solid #ece1d2;text-decoration:none;border-radius:11px;padding:11px 16px;font-weight:600;font-size:13.5px">Montar plano de chegada →</a></div>',adiando:'Faz todo sentido. Quando for a hora, a Nanny vai estar aqui.',curiosidade:'Curtiu? Brinca com o simulador e compartilha o resultado com quem tá pensando em ter um cão. 🐶'};
+  const msgs={vou_buscar:'Que demais! 🎉 Deixa tudo pronto antes da chegada — a Nanny monta a lista do enxoval e te acompanha nos primeiros 90 dias.<div style="margin-top:10px"><a href="meu-cao.html?from=quiz" onclick="try{pnTrack(\'quiz_to_hub_click\',{escolha:\'vou_buscar\'})}catch(e){}" style="display:inline-block;background:#4a7c59;color:#fff;text-decoration:none;border-radius:11px;padding:12px 18px;font-weight:700;font-size:14px">Criar plano de chegada →</a></div>',decidindo:'Decidir com calma é o certo — a real de cada raça aí em cima ajuda a não se arrepender. E dá pra se preparar já: o plano de chegada funciona mesmo antes de bater o martelo.<div style="margin-top:10px"><a href="meu-cao.html?from=quiz" onclick="try{pnTrack(\'quiz_to_hub_click\',{escolha:\'decidindo\'})}catch(e){}" style="display:inline-block;background:transparent;color:#3d2c1e;border:1.5px solid #ece1d2;text-decoration:none;border-radius:11px;padding:11px 16px;font-weight:600;font-size:13.5px">Montar plano de chegada →</a></div>',adiando:'Faz todo sentido. Se quiser entender melhor o que pesaria na sua rotina, tem uma leitura de 10 minutos sobre isso — e a Nanny fica aqui pra quando for a hora.<div style="margin-top:10px"><a href="prontidao.html" onclick="try{pnTrack(\'quiz_to_prontidao\',{origem:\'adiando\'})}catch(e){}" style="display:inline-block;background:transparent;color:#3d2c1e;border:1.5px solid #ece1d2;text-decoration:none;border-radius:11px;padding:11px 16px;font-weight:600;font-size:13.5px">É a hora certa pra mim? →</a></div>',curiosidade:'Curtiu? Brinca com o simulador e compartilha o resultado com quem tá pensando em ter um cão. 🐶'};
   const block=document.getElementById('intentBlock');
   if(block) block.innerHTML='<div style="font-weight:700;font-size:14px;margin-bottom:4px">Valeu por contar! 💛</div><div style="font-size:13px;color:var(--brown-mid);line-height:1.55">'+(msgs[k]||'Obrigado!')+'</div>';
 }
