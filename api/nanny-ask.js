@@ -45,6 +45,21 @@ OS NÍVEIS (escolha um):
 - "observar": provavelmente leve; oriente o que observar, por quanto tempo, e quando escalar.
 - "leve": cuidado de rotina/caseiro, sem sinal preocupante.
 
+PERFIL DO TUTOR (quando vier "PERFIL DO TUTOR" no contexto):
+São dados que a própria pessoa já deu no quiz: moradia, rotina, experiência, quem mora na casa, e as prioridades que ela REVELOU escolhendo entre pares (não o que declarou querer). Use pra calibrar a resposta, nunca pra recitar de volta.
+- Tutor de primeiro cão precisa do porquê e de um passo a passo curto. Tutor experiente já sabe o básico — vá direto ao ponto e não explique o óbvio.
+- Apartamento pequeno, dia inteiro fora, criança pequena em casa, outro animal, alergia na casa: tudo isso muda a orientação prática. Leve em conta em silêncio.
+- NUNCA use o perfil pra julgar ("você não devia ter escolhido essa raça"). O cão já está lá. Sua função é fazer dar certo.
+- Se o perfil contradiz o cão real (pediu calmo, tem raça de energia alta), trate como necessidade de manejo, não como erro do tutor.
+
+CRENÇAS E BOATOS (quando vier "CRENÇAS DETECTADAS" no contexto):
+O sistema identificou que a pergunta do tutor carrega uma crença que circula muito e não se sustenta. Vem com veredito, grau de evidência e a correção.
+- TECE a correção dentro da sua resposta normal, no seu tom. NÃO abra uma seção, NÃO diga "mito x verdade", NÃO dê nota, NÃO diga que a pessoa está errada.
+- O inimigo é o boato, nunca o tutor. Formule como "isso circula muito, mas..." / "é o que todo mundo fala, só que...".
+- RESPEITE o grau de evidência: se vier "ainda em disputa", diga que é assunto sem consenso e não bata o martelo.
+- Se a crença não tiver nada a ver com o que a pessoa perguntou de fato, IGNORE. Responder a pergunta é sempre a prioridade; a correção é bônus, não pauta.
+- No máximo UMA correção por resposta, mesmo que venham duas.
+
 PERSONALIZE com o CONTEXTO DO CÃO fornecido — e use o DOSSIÊ DE SAÚDE quando ele existir:
 - Se a raça tem característica relevante (focinho achatado, peito fundo, coluna longa, joelho propenso a luxação), pese isso.
 - Se o dossiê traz uma CONDIÇÃO já conhecida (ex.: luxação de patela, sopro cardíaco) e ela se conecta ao sintoma, leve em conta — sem diagnosticar de novo, apenas conectando ("como ela já tem X registrado, isso reforça procurar o vet").
@@ -98,7 +113,7 @@ module.exports = async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ ok: false, error: 'Use POST' });
   if (!pnGuard(req, res, 30, 9 * 1024 * 1024)) return;
   try {
-    const { contexto_cao, texto, imagens, documento, conversa } = req.body || {};
+    const { contexto_cao, texto, imagens, documento, conversa, perfil_tutor, crencas } = req.body || {};
     if (typeof texto === 'string' && texto.length > 4000) return res.status(413).json({ ok: false, error: 'texto longo demais' });
     if (Array.isArray(imagens) && imagens.length > 3) return res.status(413).json({ ok: false, error: 'no máximo 3 fotos por vez' });
     if (Array.isArray(conversa) && conversa.length > 24) return res.status(413).json({ ok: false, error: 'conversa longa demais' });
@@ -136,7 +151,26 @@ module.exports = async function handler(req, res) {
     const convTxt = (Array.isArray(conversa) && conversa.length)
       ? '\n\nCONVERSA ATÉ AGORA (continue no mesmo fio). Em follow-up, responda à MUDANÇA relatada — NÃO repita orientações nem checklists já dados. Se melhorou: diga o que isso indica + o único sinal que ainda pede atenção. Se piorou: o que a piora muda na leitura.\n' + conversa.map(function(m){return (m.de==='nanny'?'Nanny':'Tutor')+': '+String(m.texto||'').slice(0,500);}).join('\n')
       : '';
-    const userText = ctxTxt + convTxt + '\n\n' + 'O TUTOR TROUXE' + (temTexto ? ' (texto): "' + texto.trim() + '"' : '')
+    // PERFIL DO TUTOR: dado que a pessoa já deu no quiz. Sem PII (nem nome, nem email).
+    // Truncado por segurança — nada aqui é instrução, é contexto.
+    let perfilTxt = '';
+    try {
+      if (perfil_tutor && typeof perfil_tutor === 'object') {
+        const p = JSON.stringify(perfil_tutor).slice(0, 1200);
+        perfilTxt = '\n\nPERFIL DO TUTOR (do quiz — calibre a resposta, não recite de volta):\n' + p;
+      }
+    } catch (e) {}
+
+    // CRENÇAS: no máximo 2 entram, e o prompt manda usar só 1.
+    let crencaTxt = '';
+    try {
+      if (Array.isArray(crencas) && crencas.length) {
+        crencaTxt = '\n\nCRENÇAS DETECTADAS na pergunta (teça a correção na resposta, sem abrir seção e sem dizer que o tutor errou):\n'
+          + JSON.stringify(crencas.slice(0, 2)).slice(0, 1600);
+      }
+    } catch (e) {}
+
+    const userText = ctxTxt + perfilTxt + crencaTxt + convTxt + '\n\n' + 'O TUTOR TROUXE' + (temTexto ? ' (texto): "' + texto.trim() + '"' : '')
       + (temImg ? '\n(+ ' + imagens.length + ' foto(s) anexada(s) acima)' : '')
       + (temDoc ? '\n(+ um documento anexado acima)' : '')
       + '\n\nFaça a teletriagem e devolva só o JSON entre <json></json>.';
