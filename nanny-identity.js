@@ -1,4 +1,4 @@
-/* nanny-identity.js — ESPINHA DE IDENTIDADE (cliente do hub) — v4
+/* nanny-identity.js — ESPINHA DE IDENTIDADE (cliente do hub) — v5
  * <script src="nanny-identity.js"></script> no meu-cao.html
  * Depende de (já existem no hub): saveDogs(), loadDogs(), renderList(), upcomingReminders(dog)
  *
@@ -8,6 +8,15 @@
  *  - o app reflete o estado real do servidor (se a pessoa saiu pelo email, aparece "pausado").
  *  - "Carregando seu perfil…" enquanto restaura.
  *  - mantém as travas anti-perda da v3.
+ *
+ * v5 — SYNC NÃO-DESTRUTIVO:
+ *  - slimDogs() só compacta se o payload realmente estourar o budget,
+ *    e compacta em degraus (30 -> 15 -> 5). Antes cortava sempre em 20.
+ *  - applyLoad() FUNDE local+servidor em vez de sobrescrever o localStorage.
+ *  - cão que só existe neste aparelho não é mais destruído pelo load.
+ *  - vacinas nunca são compactadas.
+ *  - removida a linha eventos.slice(-150): d.eventos não existe no hub
+ *    (código morto e mina para perda silenciosa futura).
  */
 (function () {
   var SYNC_URL = '/api/nanny-sync', TUTOR_KEY = 'petnanny_tutor', LS_DOGS = 'petnanny_dogs_v1';
@@ -15,21 +24,66 @@
   function getTutor() { try { return JSON.parse(localStorage.getItem(TUTOR_KEY) || 'null'); } catch (e) { return null; } }
   function setTutor(t) { try { localStorage.setItem(TUTOR_KEY, JSON.stringify(t)); } catch (e) {} }
   function currentDogs() { try { return JSON.parse(localStorage.getItem(LS_DOGS) || '[]'); } catch (e) { return []; } }
-  // payload de sync SEM binários: foto e thumbs estouram o limite de ~50k chars por célula do Sheets (o save falharia).
-  // Elas ficam no aparelho; no load, o merge preserva as locais.
-  function slimDog(d){ var c={}; for(var k in d){ if(k==='photo') continue; c[k]=d[k]; }
-    if(Array.isArray(d.files)) c.files=d.files.map(function(f){ return {id:f.id,type:f.type,name:f.name,at:f.at}; });
-    // célula do Sheets estoura em ~50k chars: acima de 20 conversas, as ANTIGAS viajam compactadas
-    // (fica o que alimenta o diário e a previsão: tema, nível, desfecho, datas — cai o texto longo)
-    if(Array.isArray(d.perguntas)&&d.perguntas.length>20){
-      var cut=d.perguntas.length-20;
-      c.perguntas=d.perguntas.map(function(p,i){ if(i>=cut||!p) return p;
-        return { id:p.id, data:p.data, entendi:String(p.entendi||p.texto||'').slice(0,90), nivel:p.nivel,
-                 outcome:p.outcome||'', outcome_data:p.outcome_data||'', pro_vet:p.pro_vet?String(p.pro_vet).slice(0,140):'' }; });
+  var SYNC_BUDGET = 45000;   // célula do Sheets estoura em ~50k chars; margem de 5k
+
+  // Binário nunca sobe: foto e thumb ficam no aparelho (bom pra LGPD).
+  // No load, o merge devolve as locais.
+  function _semBinarios(d) {
+    var c = {};
+    for (var k in d) { if (k === 'photo') continue; c[k] = d[k]; }
+    if (Array.isArray(d.files)) {
+      c.files = d.files.map(function (f) {
+        return { id: f.id, type: f.type, name: f.name, at: f.at };
+      });
     }
-    if(Array.isArray(d.eventos)&&d.eventos.length>150) c.eventos=d.eventos.slice(-150);
-    return c; }
-  function slimDogs(){ return currentDogs().map(slimDog); }
+    return c;
+  }
+
+  // Versão magra de UMA conversa. _c:1 marca "compactado", pra que no merge
+  // ela nunca vença a versão completa que está no aparelho.
+  function _compactar(p) {
+    if (!p) return p;
+    return {
+      id: p.id, data: p.data,
+      entendi: String(p.entendi || p.texto || '').slice(0, 90),
+      nivel: p.nivel,
+      outcome: p.outcome || '', outcome_data: p.outcome_data || '',
+      pro_vet: p.pro_vet ? String(p.pro_vet).slice(0, 140) : '',
+      _c: 1
+    };
+  }
+
+  function _aplicarNivel(dogs, manterInteiras) {
+    return dogs.map(function (d) {
+      if (!Array.isArray(d.perguntas) || d.perguntas.length <= manterInteiras) return d;
+      var corte = d.perguntas.length - manterInteiras;
+      var c = {}; for (var k in d) c[k] = d[k];
+      c.perguntas = d.perguntas.map(function (p, i) { return i >= corte ? p : _compactar(p); });
+      return c;
+    });
+  }
+
+  function slimDogs() {
+    var base = currentDogs().map(_semBinarios);
+
+    // Cabe inteiro? Sobe inteiro. Caso normal — antes nunca acontecia.
+    if (JSON.stringify(base).length <= SYNC_BUDGET) return base;
+
+    // Não coube: compacta em degraus, sempre as conversas MAIS ANTIGAS.
+    var degraus = [30, 15, 5, 0];
+    var tentativa = base;
+    for (var i = 0; i < degraus.length; i++) {
+      tentativa = _aplicarNivel(base, degraus[i]);
+      if (JSON.stringify(tentativa).length <= SYNC_BUDGET) return tentativa;
+    }
+    try {
+      console.warn('[petnanny] sync acima do budget mesmo compactado ('
+        + JSON.stringify(tentativa).length
+        + ' chars). Histórico completo permanece no aparelho.');
+    } catch (e) {}
+    return tentativa;
+  }
+
   function postSync(body) { return fetch(SYNC_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }).then(function (r) { return r.json(); }); }
 
   function buildProximas() {
@@ -73,29 +127,95 @@
   }
   window.nannySync = nannySync;
 
+  /* ── MERGE ─────────────────────────────────────────────────────── */
+
+  function _chave(item, campo) {
+    if (item && item[campo]) return String(item[campo]);
+    return 'k:' + JSON.stringify([item && item.data, item && item.at,
+      String((item && (item.texto || item.entendi || item.nome || '')) || '').slice(0, 60)]);
+  }
+
+  // União local+servidor. Em conflito vence quem tem mais conteúdo,
+  // e compactado (_c) NUNCA vence completo.
+  function _unir(local, servidor, campoId) {
+    var mapa = {}, ordem = [];
+    function por(item) {
+      if (!item) return;
+      var id = _chave(item, campoId);
+      if (!(id in mapa)) { mapa[id] = item; ordem.push(id); return; }
+      var atual = mapa[id];
+      if (item._c && !atual._c) return;
+      if (atual._c && !item._c) { mapa[id] = item; return; }
+      if (JSON.stringify(item).length > JSON.stringify(atual).length) mapa[id] = item;
+    }
+    (local || []).forEach(por);
+    (servidor || []).forEach(por);
+    var out = ordem.map(function (id) { return mapa[id]; });
+    out.sort(function (a, b) {
+      return String((a && (a.data || a.at)) || '').localeCompare(String((b && (b.data || b.at)) || ''));
+    });
+    return out;
+  }
+
+  // files: metadado vem do servidor, thumb só existe local — preserva os dois.
+  function _unirFiles(local, servidor) {
+    var u = _unir(local, servidor, 'id');
+    var thumbs = {};
+    (local || []).forEach(function (f) { if (f && f.id && f.thumb) thumbs[f.id] = f.thumb; });
+    u.forEach(function (f) { if (f && f.id && !f.thumb && thumbs[f.id]) f.thumb = thumbs[f.id]; });
+    return u;
+  }
+
   function applyLoad(j, token) {
     if (!j || !j.ok) return false;
     setTutor({ email: j.email, token: token, optin: j.optin || 'sim' });
+
     var serverDogs = (j.dogs && j.dogs.length) ? j.dogs : null;
-    if (serverDogs) {
-      // o servidor não guarda foto/thumb (payload leve) — preserva as deste aparelho por id
-      try {
-        var loc = currentDogs(), byId = {};
-        loc.forEach(function (d) { if (d && d.id) byId[d.id] = d; });
-        serverDogs.forEach(function (d) {
-          var l = d && byId[d.id]; if (!l) return;
-          if (l.photo && !d.photo) { d.photo = l.photo; d.photoPos = l.photoPos || d.photoPos; }
-          if (Array.isArray(l.files) && l.files.length) {
-            var st = {}; (d.files || []).forEach(function (f) { if (f && f.id) st[f.id] = f; });
-            l.files.forEach(function (f) { if (f && f.thumb) { if (st[f.id]) st[f.id].thumb = f.thumb; else { d.files = d.files || []; d.files.push(f); } } });
-          }
-        });
-      } catch (e) {}
-      try { localStorage.setItem(LS_DOGS, JSON.stringify(serverDogs)); if (window.loadDogs) window.loadDogs(); if (window.renderList) window.renderList(); } catch (e) {}
-    } else {
-      if (currentDogs().length) nannySync(true);   // servidor vazio + local com cão => sobe (não apaga)
+
+    if (!serverDogs) {
+      // servidor vazio: nunca apaga o local, sobe o que tem aqui
+      if (currentDogs().length) nannySync(true);
       if (window.renderList) window.renderList();
+      return true;
     }
+
+    var final;
+    try {
+      var loc = currentDogs(), porId = {};
+      loc.forEach(function (d) { if (d && d.id) porId[d.id] = d; });
+
+      final = serverDogs.map(function (d) {
+        var l = d && d.id ? porId[d.id] : null;
+        if (!l) return d;
+
+        if (l.photo && !d.photo) { d.photo = l.photo; d.photoPos = l.photoPos || d.photoPos; }
+
+        d.perguntas = _unir(l.perguntas, d.perguntas, 'id');
+        d.vacinas   = _unir(l.vacinas,   d.vacinas,   'id');
+        d.files     = _unirFiles(l.files, d.files);
+
+        // campo local que o servidor ainda não conhece não pode sumir
+        for (var k in l) if (!(k in d)) d[k] = l[k];
+        return d;
+      });
+
+      // cão que só existe neste aparelho sobrevive ao load
+      var vistos = {};
+      final.forEach(function (d) { if (d && d.id) vistos[d.id] = 1; });
+      loc.forEach(function (l) { if (l && l.id && !vistos[l.id]) final.push(l); });
+
+    } catch (e) {
+      // falhou o merge: mantém o local intacto, não sobrescreve nada
+      try { console.warn('[petnanny] merge falhou, local preservado', e); } catch (e2) {}
+      if (window.renderList) window.renderList();
+      return true;
+    }
+
+    try {
+      localStorage.setItem(LS_DOGS, JSON.stringify(final));
+      if (window.loadDogs) window.loadDogs();
+      if (window.renderList) window.renderList();
+    } catch (e) {}
     return true;
   }
 
