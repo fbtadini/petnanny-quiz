@@ -1159,21 +1159,18 @@
       <h2 class="results-title" id="resultsTitle">Suas raças com maior compatibilidade</h2>
       <p class="results-sub" id="resultsSub"></p>
     </div>
-    <div class="results-actions-top">
-      <button class="btn-action-compact" onclick="shareWhatsApp(event)"><svg class="ui-ico" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M17.6 6.3A7.85 7.85 0 0 0 12 4a7.95 7.95 0 0 0-6.9 11.9L4 20l4.2-1.1a7.95 7.95 0 0 0 11.7-7 7.85 7.85 0 0 0-2.3-5.6Zm-5.6 12.2a6.6 6.6 0 0 1-3.4-.9l-.2-.1-2.5.6.7-2.4-.2-.3a6.6 6.6 0 1 1 5.6 3.1Zm3.6-4.9c-.2-.1-1.2-.6-1.4-.7-.2-.1-.3-.1-.4.1-.1.2-.5.6-.6.7-.1.1-.2.1-.4 0a5.4 5.4 0 0 1-2.7-2.4c-.2-.4.2-.3.6-1 .1-.1 0-.2 0-.3 0-.1-.4-1-.6-1.3-.1-.3-.3-.3-.4-.3h-.4c-.1 0-.3 0-.5.2-.2.2-.7.7-.7 1.7s.7 2 .8 2.1a8 8 0 0 0 3 2.7c.4.2.7.3 1 .4.4.1.8.1 1.1 0 .3-.1 1-.4 1.2-.8.1-.4.1-.7.1-.8 0-.1-.2-.1-.4-.2Z"/></svg> Compartilhar no WhatsApp</button>
-      <button class="btn-action-compact" onclick="exportPerfilPDF()"><svg class="ui-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg> Salvar em PDF</button>
-    </div>
     <!-- Reação rápida no topo (sem textarea) — captura sinal de quem vai sair sem
          elaborar. Não confunde com a caixa textual no fim da página: aqui é 1-click
          sobre o QUIZ COMO EXPERIÊNCIA; embaixo é texto livre sobre o RESULTADO. -->
-    <div class="quickreact-top" id="quickreactTop">
-      <div class="quickreact-top-label">O quiz fez sentido pra você?</div>
-      <div class="quickreact-top-buttons">
-        <button class="quickreact-emoji" onclick="quickReactTop('nao', event)" aria-label="Não fez sentido">👎</button>
-        <button class="quickreact-emoji" onclick="quickReactTop('parcial', event)" aria-label="Mais ou menos">🤔</button>
-        <button class="quickreact-emoji" onclick="quickReactTop('sim', event)" aria-label="Sim, fez sentido">👍</button>
-      </div>
-    </div>
+    <!-- Toggle Necessidades Especiais — pós-resultado pra não viesar o quiz inicial -->
+    
+    <!-- 1. O que a pessoa veio ver. Antes era o 7º bloco: ela passava por
+         header, 2 botões de share, um pedido de feedback, perfil e comparação
+         ANTES de ver uma única raça. -->
+    <div id="breedCards"></div>
+
+    <!-- 2. Por que estas raças. Vira explicação do resultado em vez de preâmbulo. -->
+    <div id="conjointSection" class="conjoint-section" style="display:none"></div>
     <div id="perfilTutorSection" class="perfil-tutor-section" style="display:none">
       <div class="perfil-tutor-header">SEU PERFIL DE TUTOR</div>
       <div class="perfil-tutor-bloco">
@@ -1189,10 +1186,11 @@
         <ul class="perfil-tutor-alertas" id="perfilTutorAlertas"></ul>
       </div>
     </div>
-    <div id="expectationSection" class="expectation-section" style="display:none"></div>
-    <div id="conjointSection" class="conjoint-section" style="display:none"></div>
-    <div id="breedCards"></div>
 
+    <!-- 3. A raça que ela tinha em mente, comparada ao topo. -->
+    <div id="expectationSection" class="expectation-section" style="display:none"></div>
+
+    <!-- 4. Refinar o resultado. -->
     <div class="whatif-cta" id="whatifCta">
       <div class="whatif-cta-icon">🔄</div>
       <div class="whatif-cta-body">
@@ -1201,8 +1199,6 @@
       </div>
       <button class="whatif-cta-btn" onclick="enterWhatif()">Simular cenários →</button>
     </div>
-
-    <!-- Toggle Necessidades Especiais — pós-resultado pra não viesar o quiz inicial -->
     <div class="ne-cta" id="neCta">
       <div class="ne-cta-icon">💚</div>
       <div class="ne-cta-body">
@@ -1213,6 +1209,13 @@
       <button class="ne-cta-btn" id="neCtaBtn" onclick="toggleNeFilter()">Ativar ajuste →</button>
     </div>
 
+    <!-- 5. Compartilhar/salvar: depois de ler, não antes.
+         O bloco duplicado do topo (quickreact "O quiz fez sentido pra você?")
+         foi REMOVIDO: pedia avaliação antes de a pessoa ver o resultado, e
+         repetia o feedback que já existe no rodapé. -->
+    <!-- results-actions-top removido: WhatsApp e PDF já existem no btn-cta-wrap abaixo -->
+
+    <!-- Último: feedback (uma vez só) + compartilhar + ir pro hub + aviso legal -->
     <div class="btn-cta-wrap">
       <div class="feedback-invite" id="feedbackInvite">
         <div class="feedback-invite-header">
@@ -5407,7 +5410,7 @@ function showResults(){
         <button onclick="enterWhatif()" style="margin-top:16px;width:100%;background:#4a7c59;color:#fff;border:0;border-radius:11px;padding:13px 16px;font-family:'DM Sans',sans-serif;font-weight:700;font-size:14px;cursor:pointer">🔮 Simular flexibilizações — o que mudaria no resultado?</button>
       </div>`;
     document.getElementById('expectationSection').style.display='none';
-    document.querySelector('.results-actions-top').style.display='none';
+    var _at=document.querySelector('.results-actions-top'); if(_at) _at.style.display='none';
     showScreen('results');
     return;
   }
@@ -7082,6 +7085,7 @@ function scrollToFeedback(){const box=document.getElementById('feedbackBox');con
 // Captura zero-fricção. Bloqueia múltiplas reações na mesma sessão.
 function quickReactTop(reaction, ev){
   const widget = document.getElementById('quickreactTop');
+  if(!widget) return;   // bloco do topo foi removido (duplicava o feedback do rodapé)
   if(!widget || widget.dataset.submitted) return;
   widget.dataset.submitted = '1';
   // Marca emoji selecionado

@@ -161,6 +161,9 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent)}
 .tab{flex:1;padding:10px 4px;text-align:center;font-weight:600;font-size:13px;color:var(--brown-mid);background:var(--card);border:1px solid var(--line);border-radius:11px;cursor:pointer}.tab.on{background:var(--brown);color:#fff;border-color:var(--brown)}
 /* ===== tema v2 — controlado por html[data-theme], com toggle manual ===== */
 html[data-theme="dark"]{--cream:#16110d;--warm:#241c15;--brown:#efe6da;--brown-mid:#c3b19b;--brown-light:#84735c;--accent:#e8733a;--accent-deep:#f0925e;--accent-light:#3a2313;--green:#7fae8c;--green-light:#22301f;--line:#372c21;--shadow:0 4px 18px rgba(0,0,0,.45);--card:#211a13;--field:#2a2118;--ct-pri:#efe6da;--ct-sec:#ddd1c1;--ct-mut:#b7a58f;--ct-line:#372c21;--ct-green:#7fae8c;--ct-greensoft:#8fb397;--ct-cream:#2a2118;--ct-peach:#38281a;--ct-amber:#d4a83a;--ct-red:#e07a52;--ct-track:#372c21;--chip-up:#253522;--chip-down:#3a2a1c}
+  /* contraste no escuro: cores fixas que ficavam ilegíveis */
+  html[data-theme="dark"] .watch{color:var(--brown-mid) !important}
+  html[data-theme="dark"] .disc{background:#1b2733 !important;border-color:#2c3d4d !important;color:#a8c4dd !important}
 html[data-theme="dark"] .topbar{background:rgba(22,17,13,.92)}
 html[data-theme="dark"] .dog-head{background:linear-gradient(135deg,var(--card),var(--warm))}
 html[data-theme="dark"] .tab.on{background:var(--accent);border-color:var(--accent);color:#fff}
