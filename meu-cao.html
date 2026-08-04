@@ -206,6 +206,16 @@ html[data-theme="dark"] [style*="color:#3f6a94"]{color:#9dc1e4!important}
 .r-date .d{font-family:'Playfair Display',serif;font-weight:800;font-size:19px;color:var(--accent-deep);line-height:1}.r-date .mo{font-size:10px;text-transform:uppercase;color:var(--accent-deep);margin-top:2px}
 .r-t{font-weight:600;font-size:14px}.r-sub{font-size:12px;color:var(--brown-mid)}
 .admin-row{display:flex;justify-content:space-between;padding:11px 0;border-bottom:1px solid var(--line);font-size:14px}
+
+  /* ── Piso tipográfico e alvo de toque (mesmo critério do index) ────────
+   * .tab tinha 38px e é a navegação principal do hub — três abas, tocadas
+   * o tempo todo. .chip a 34px e .chip.sm a 28px ficam abaixo do mínimo. */
+  .ai-disc,.doc-group,.dt-rm,.foot,.repos-hint,.r-date .mo{font-size:12px}
+  .tab{min-height:44px;display:inline-flex;align-items:center;justify-content:center}
+  .seg button,.seg.small button{min-height:44px}
+  .chip{min-height:36px;display:inline-flex;align-items:center}
+  .chip.sm,.chip.sm2{min-height:34px}
+  .chip.up.big{min-height:44px}
 </style>
 </head>
 <body>
