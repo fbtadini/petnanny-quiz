@@ -298,6 +298,7 @@ html[data-theme="dark"] [style*="color:#3f6a94"]{color:#9dc1e4!important}
     <div class="repos-hint" id="reposHint">Arraste a foto pra ajustar · toque de novo pra salvar</div>
     <div style="display:flex;gap:8px;margin:2px 0 10px;flex-wrap:wrap"><button class="chip" onclick="editDog()">✎ Editar dados</button><button class="chip" onclick="window.nannyVetResumo&&nannyVetResumo()">🩺 Resumo pro vet (PDF)</button></div>
     <div id="p-acolher" style="display:none"></div>
+    <div id="p-casa-segura"></div>
     <div class="tabs">
       <div class="tab on" data-tab="hoje" onclick="setTab('hoje')">Hoje</div>
       <div class="tab" data-tab="saude" onclick="setTab('saude')">Saúde</div>
@@ -1098,6 +1099,10 @@ function renderProfile(){const dog=dogObj();if(!dog)return goHome();migrateDog(d
   else{const pd=pesoDisplay(dog);document.getElementById('p-meta').textContent=`${raca} · ${ageLabel(ageInMonths(dog))}${pd?(' · '+pd):''}${dog.sexo?(' · '+(dog.sexo==='femea'?'fêmea':'macho')):''}`;}
   const pc=document.getElementById('p-chip');if(dog.microchip){pc.style.display='block';pc.textContent='🔖 Microchip: '+dog.microchip}else{pc.style.display='none'}
   setAvatar();renderAcolher(dog);renderGuide(dog);
+  // Casa segura: no pré-chegada já vai junto do plano (dentro de p-acolher);
+  // depois da chegada vive no próprio container.
+  (function(){var cs=document.getElementById('p-casa-segura'); if(!cs) return;
+    cs.innerHTML = dog.aguardando ? '' : casaSeguraHTML(dog);})();
   // Pré-chegada: a promessa da tela é "peso, vacinas e o resto entram quando ele
   // chegar" — então a máquina de cuidados NÃO renderiza no modo aguardando.
   // O dossiê continua (contrato, pedigree e carteira que o criador/ONG manda
@@ -1154,9 +1159,63 @@ function markMarco(id){var dog=dogObj();if(!dog)return;dog.marcos=dog.marcos||{}
 window.markMarco=markMarco;
 function nannyGraduar(){var dog=dogObj();if(!dog)return;dog.acolherSeen=dog.acolherSeen||{};dog.acolherSeen.grad=1;if(typeof saveDogs==='function')saveDogs();setTab('hoje');window.scrollTo({top:0,behavior:'smooth'});renderProfile();}
 window.nannyGraduar=nannyGraduar;
+/* ── Casa segura ─────────────────────────────────────────────────────
+ * Checklist condicional de preparação da casa (casa-segura.js).
+ * Itens que não se aplicam a este cão não aparecem. Resposta vira dado.
+ */
+function casaSeguraCtx(dog){
+  var b=getBreed(dog);
+  return {breed:b, idadeMeses:ageInMonths(dog)};
+}
+function casaSeguraHTML(dog,opts){
+  if(!window.CasaSegura) return '';
+  opts=opts||{};
+  var itens=CasaSegura.itensPara(dog,Object.assign(casaSeguraCtx(dog),{max:opts.max||5}));
+  if(!itens.length) return '';
+  var st=dog.casaSegura||{};
+  var feitos=Object.keys(st).filter(function(k){return st[k].r==='sim';}).length;
+
+  // Só o primeiro pendente abre. Cinco acordeões abertos viram parede de texto
+  // pra quem já está ansioso — e lista que não é lida não protege ninguém.
+  var jaAbriu=false;
+  var rows=itens.map(function(it){
+    var r=(st[it.id]||{}).r;
+    var pergunta=it._incerto?('Se for o seu caso — '+it.pergunta.charAt(0).toLowerCase()+it.pergunta.slice(1)):it.pergunta;
+    var badge=it.prio===1?'<span style="font-size:10px;font-weight:700;color:#a4553a;background:#fbeae4;padding:1px 6px;border-radius:9px;margin-left:6px">prioridade</span>':'';
+    var aberto=(!r && !jaAbriu)?' open':''; if(!r) jaAbriu=true;
+    return '<details class="cs-item"'+aberto+' style="border:1px solid var(--line,#e8e2d8);border-radius:11px;padding:9px 11px;margin:7px 0;background:'+(r==='sim'?'#f2f7f1':'#fff')+'">'
+      +'<summary style="cursor:pointer;font-size:13.5px;font-weight:600;color:var(--brown);list-style:none">'
+        +(r==='sim'?'✅ ':(r==='ainda_nao'?'🕓 ':'○ '))+it.titulo+badge+'</summary>'
+      +'<p style="margin:7px 0 5px;font-size:12.5px;color:var(--brown-mid);line-height:1.55">'+it.porque+'</p>'
+      +'<p style="margin:0 0 9px;font-size:12.5px;color:var(--brown);line-height:1.55"><b>O que fazer:</b> '+it.acao+'</p>'
+      +'<div style="font-size:12.5px;color:var(--brown-mid);margin-bottom:5px">'+pergunta+'</div>'
+      +'<div style="display:flex;gap:7px">'
+        +'<button type="button" onclick="marcarCasaSegura(\''+it.id+'\',\'sim\')" style="flex:1;padding:6px;border-radius:8px;border:1px solid '+(r==='sim'?'#4a7c59':'#d9d2c7')+';background:'+(r==='sim'?'#4a7c59':'#fff')+';color:'+(r==='sim'?'#fff':'var(--brown)')+';font-size:12.5px;font-weight:600;cursor:pointer">Já está feito</button>'
+        +'<button type="button" onclick="marcarCasaSegura(\''+it.id+'\',\'ainda_nao\')" style="flex:1;padding:6px;border-radius:8px;border:1px solid '+(r==='ainda_nao'?'#a4553a':'#d9d2c7')+';background:'+(r==='ainda_nao'?'#fbeae4':'#fff')+';color:var(--brown);font-size:12.5px;font-weight:600;cursor:pointer">Ainda não</button>'
+      +'</div>'
+    +'</details>';
+  }).join('');
+
+  return '<div class="card" style="margin-top:12px;border-color:#e3d9c9">'
+    +'<div class="sec-label">🏠 Casa segura'+(feitos?(' <span style="font-weight:500;color:var(--brown-mid)">· '+feitos+' já resolvidos</span>'):'')+'</div>'
+    +'<p style="margin:0 0 6px;font-size:12.5px;color:var(--brown-mid);line-height:1.5">'
+      +(opts.pre?'O que dá pra deixar pronto antes de ele chegar. São os itens que não dão segunda chance.'
+               :'Alguns itens da casa mudam conforme ele cresce. Marque o que já está resolvido.')
+    +'</p>'+rows+'</div>';
+}
+function marcarCasaSegura(id,r){
+  var dog=dogObj(); if(!dog||!window.CasaSegura) return;
+  CasaSegura.marcar(dog,id,r);
+  if(typeof saveDogs==='function') saveDogs();
+  if(dog.aguardando){ renderAcolher(dog); }
+  else { var box=document.getElementById('p-casa-segura'); if(box) box.innerHTML=casaSeguraHTML(dog); }
+}
+window.marcarCasaSegura=marcarCasaSegura;
+window.casaSeguraHTML=casaSeguraHTML;
+
 function renderAcolher(dog){
   const box=document.getElementById('p-acolher'); if(!box) return;
-  if(dog.aguardando){box.style.display='block';box.innerHTML=preChegadaHTML(dog);return;}
+  if(dog.aguardando){box.style.display='block';box.innerHTML=preChegadaHTML(dog)+casaSeguraHTML(dog,{pre:true,max:6});return;}
   if(!dog.chegada){box.style.display='none';box.innerHTML='';return;}
   const d=Math.floor((startOfToday()-new Date(dog.chegada+'T00:00:00'))/86400000);
   if(isNaN(d)||d<0){box.style.display='none';box.innerHTML='';return;}
@@ -1653,6 +1712,7 @@ try{
 </script>
 <div id="lightbox"></div>
 <div id="ficha"></div>
+<script src="casa-segura.js?v=1"></script>
 <script src="nanny-identity.js?v=5"></script>
 <script src="nanny-ask-ui.js"></script>
 <script src="nanny-hoje.js"></script>
