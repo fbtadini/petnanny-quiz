@@ -72,6 +72,19 @@
   html[data-theme="dark"] input,html[data-theme="dark"] select,html[data-theme="dark"] textarea{background:#2a2118;color:var(--brown);border-color:var(--warm)}
   html[data-theme="dark"] img{opacity:.92}
   html[data-theme="dark"] #pn-theme-btn{box-shadow:0 2px 10px rgba(0,0,0,.4)}
+
+  /* ── TEMA ESCURO: superfícies e textos com cor fixa ────────────────
+   * O dark foi feito sobrescrevendo classe a classe, então toda regra com
+   * background claro hardcoded ficava clara no escuro — com texto em
+   * var(--brown), que no escuro é quase branco. Resultado: invisível.
+   * Gerado a partir da varredura do próprio CSS. */
+  html[data-theme="dark"] .block-header,html[data-theme="dark"] .cj-card:hover,html[data-theme="dark"] .cj-progress-bar,html[data-theme="dark"] .cj-same-chip,html[data-theme="dark"] .conjoint-tradeoff-box,html[data-theme="dark"] .terms-tldr,html[data-theme="dark"] .terms-full,html[data-theme="dark"] .cj-conflict-card,html[data-theme="dark"] .stated-size-btn,html[data-theme="dark"] .stated-revealed-note,html[data-theme="dark"] .option.disabled,html[data-theme="dark"] .breed-photo-frame,html[data-theme="dark"] .breed-link-cbkc,html[data-theme="dark"] .breed-link-info,html[data-theme="dark"] .breed-cost-row,html[data-theme="dark"] .cost-med,html[data-theme="dark"] .cost-high,html[data-theme="dark"] .btn-share-pdf,html[data-theme="dark"] .btn-share-pdf:hover,html[data-theme="dark"] .perfil-tutor-footer-warn,html[data-theme="dark"] .quickreact-top,html[data-theme="dark"] .assumptions-block.assumptions-warn,html[data-theme="dark"] .similar-breeds-block,html[data-theme="dark"] .whatif-cta,html[data-theme="dark"] .whatif-stepper,html[data-theme="dark"] .whatif-diff-summary.unchanged,html[data-theme="dark"] .whatif-out,html[data-theme="dark"] .feedback-invite,html[data-theme="dark"] .expectation-section.not-matched,html[data-theme="dark"] .fallback-note{background:var(--accent-light) !important}
+  html[data-theme="dark"] .cj-card,html[data-theme="dark"] .terms-accept-row,html[data-theme="dark"] .stated-size-btn:hover,html[data-theme="dark"] .breed-photo-wrap,html[data-theme="dark"] .breed-photo-frame.loaded,html[data-theme="dark"] .quickreact-emoji,html[data-theme="dark"] .btn-quickreact,html[data-theme="dark"] .adoption-tip,html[data-theme="dark"] .fallback-pick{background:var(--white) !important}
+  html[data-theme="dark"] .cj-result-card,html[data-theme="dark"] .breed-variant-box,html[data-theme="dark"] .breed-coat-box{background:#1b2733 !important}
+  html[data-theme="dark"] .cj-coherence-card,html[data-theme="dark"] .stated-size-btn.selected,html[data-theme="dark"] .breed-link-adopt,html[data-theme="dark"] .cost-low,html[data-theme="dark"] .perfil-tutor-section,html[data-theme="dark"] .quickreact-top.thanked,html[data-theme="dark"] .ne-cta,html[data-theme="dark"] .ne-cta.active,html[data-theme="dark"] .whatif-diff-summary,html[data-theme="dark"] .whatif-breed-row.new,html[data-theme="dark"] .expectation-section.matched,html[data-theme="dark"] .expectation-score-box.top,html[data-theme="dark"] .adoption-ficha,html[data-theme="dark"] .adoption-badge{background:var(--green-light) !important}
+  html[data-theme="dark"] .block-header-label,html[data-theme="dark"] .cj-same-chip .cj-same-ck,html[data-theme="dark"] .cj-attr-line-name,html[data-theme="dark"] .cj-attr-line-ref,html[data-theme="dark"] .conjoint-tradeoff-text,html[data-theme="dark"] .conjoint-tradeoff-text strong,html[data-theme="dark"] .terms-tldr-title,html[data-theme="dark"] .terms-tldr-list,html[data-theme="dark"] .terms-tldr-list strong,html[data-theme="dark"] .terms-full p,html[data-theme="dark"] .terms-list,html[data-theme="dark"] .terms-checkbox-text,html[data-theme="dark"] .cj-result-eyebrow,html[data-theme="dark"] .cj-result-title,html[data-theme="dark"] .cj-result-desc,html[data-theme="dark"] .cj-conflict-eyebrow,html[data-theme="dark"] .cj-conflict-title,html[data-theme="dark"] .cj-conflict-desc,html[data-theme="dark"] .cj-coherence-eyebrow,html[data-theme="dark"] .cj-coherence-arch,html[data-theme="dark"] .cj-coherence-explain,html[data-theme="dark"] .cj-coherence-explain strong,html[data-theme="dark"] .stated-revealed-eyebrow,html[data-theme="dark"] .stated-revealed-body,html[data-theme="dark"] .disabled-reason,html[data-theme="dark"] .breed-link-adopt,html[data-theme="dark"] .breed-link-cbkc,html[data-theme="dark"] .breed-link-info,html[data-theme="dark"] .cost-low,html[data-theme="dark"] .cost-med,html[data-theme="dark"] .cost-high,html[data-theme="dark"] .perfil-tutor-header,html[data-theme="dark"] .perfil-tutor-sublabel,html[data-theme="dark"] .perfil-tutor-chip,html[data-theme="dark"] .perfil-tutor-footer-warn,html[data-theme="dark"] .perfil-tutor-footer-srd,html[data-theme="dark"] .quickreact-top-label,html[data-theme="dark"] .quickreact-top.thanked .quickreact-top-label,html[data-theme="dark"] .assumptions-header-ok,html[data-theme="dark"] .assumptions-header-warn,html[data-theme="dark"] .assumption-ok,html[data-theme="dark"] .assumption-warn,html[data-theme="dark"] .assumptions-warn .assumptions-footer,html[data-theme="dark"] .similar-badge-top,html[data-theme="dark"] .similar-badge-out,html[data-theme="dark"] .ne-cta-title,html[data-theme="dark"] .ne-cta-sub,html[data-theme="dark"] .ne-cta-result,html[data-theme="dark"] .ne-cta-result strong,html[data-theme="dark"] .ne-result-label,html[data-theme="dark"] .ne-result-breed-name,html[data-theme="dark"] .ne-result-breed-meta,html[data-theme="dark"] .ne-result-reason,html[data-theme="dark"] .whatif-decisiva-tag,html[data-theme="dark"] .whatif-diff-summary,html[data-theme="dark"] .whatif-diff-summary strong,html[data-theme="dark"] .whatif-breed-row-tag.new-tag,html[data-theme="dark"] .whatif-out-title,html[data-theme="dark"] .whatif-out-list,html[data-theme="dark"] .perfil-tutor-alertas-title,html[data-theme="dark"] .expectation-section.matched .expectation-title,html[data-theme="dark"] .expectation-section.not-matched .expectation-title,html[data-theme="dark"] .expectation-coherence-note,html[data-theme="dark"] .expectation-coherence-note strong,html[data-theme="dark"] .expectation-coherence-warn,html[data-theme="dark"] .expectation-coherence-warn strong,html[data-theme="dark"] .expectation-score-box.top .expectation-score-value,html[data-theme="dark"] .adoption-ficha-header,html[data-theme="dark"] .adoption-ficha-intro,html[data-theme="dark"] .adoption-ficha-label,html[data-theme="dark"] .adoption-ficha-value,html[data-theme="dark"] .adoption-ficha-footer,html[data-theme="dark"] .adoption-ficha-footer em,html[data-theme="dark"] .adoption-ficha-pdf-btn,html[data-theme="dark"] .adoption-ficha-perfil-label,html[data-theme="dark"] .adoption-ficha-perfil-prosa,html[data-theme="dark"] .adoption-ficha-perfil-arch,html[data-theme="dark"] .adoption-ficha-perfil-insights-title,html[data-theme="dark"] .adoption-ficha-perfil-insights-list,html[data-theme="dark"] .adoption-ne-toggle-text,html[data-theme="dark"] .adoption-ne-toggle-text strong,html[data-theme="dark"] .adoption-ne-toggle-text small,html[data-theme="dark"] .adoption-section-title,html[data-theme="dark"] .adoption-collapse-text,html[data-theme="dark"] .adoption-collapse-meta,html[data-theme="dark"] .adoption-collapse-chevron,html[data-theme="dark"] .adoption-checklist li,html[data-theme="dark"] .adoption-checklist li::before,html[data-theme="dark"] .adoption-redflag-list li,html[data-theme="dark"] .adoption-redflag-list li::before,html[data-theme="dark"] .adoption-tip,html[data-theme="dark"] .fallback-note,html[data-theme="dark"] .adoption-badge,html[data-theme="dark"] .adoption-source-link,html[data-theme="dark"] .breed-variant-box,html[data-theme="dark"] .breed-coat-box,html[data-theme="dark"] .pelagem-recommendation strong,html[data-theme="dark"] .pelagem-reason{color:var(--brown) !important}
+  html[data-theme="dark"] [style*="color:#3a2e22"],html[data-theme="dark"] [style*="color:#3d2c1e"]{color:var(--brown) !important}
+  html[data-theme="dark"] [style*="background:#fff"],html[data-theme="dark"] [style*="background:#fef"],html[data-theme="dark"] [style*="background:#f4"]{background:var(--white) !important}
   *{box-sizing:border-box;margin:0;padding:0}
   body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--brown);min-height:100vh;overflow-x:hidden}
   .header{padding:20px 24px;display:flex;align-items:center;justify-content:space-between;max-width:640px;margin:0 auto}
@@ -745,6 +758,8 @@
        cortar uma raça no meio. */
     body.printing-perfil .perfil-tutor-section{background:#f4ede2 !important;border:1px solid #c4b5a3 !important;margin-bottom:18px}
     body.printing-perfil .breed-card{page-break-inside:avoid;margin-bottom:14px;border:1px solid #ddd !important;background:#fff !important;box-shadow:none !important}
+    body.printing-perfil .breed-details{max-height:none !important;opacity:1 !important;overflow:visible !important}
+    body.printing-perfil .conjoint-section{display:block !important;margin-bottom:18px}
     body.printing-perfil .breed-image, body.printing-perfil .breed-photos{display:none !important}  /* fotos puxam APIs externas — não confiável em print offline */
     body.printing-perfil .breed-card-actions, body.printing-perfil .breed-action-btn{display:none !important}
     body.printing-perfil .cj-coherence-card{background:#eef4e8 !important;margin-bottom:14px}
@@ -828,7 +843,7 @@
       </div>
 
       <div class="adoption-cta-divider"><span>já tem um cão?</span></div>
-      <a href="meu-cao.html" class="btn-primary" style="background:var(--brown) !important;box-shadow:0 4px 16px rgba(61,44,30,0.25);min-height:64px;text-decoration:none;margin-top:0">
+      <a href="meu-cao.html" onclick="try{pnMarcarSaidaParaHub()}catch(e){}" class="btn-primary" style="background:var(--brown) !important;box-shadow:0 4px 16px rgba(61,44,30,0.25);min-height:64px;text-decoration:none;margin-top:0">
         Cuidar do meu cão com a <em style="font-style:normal">Nanny</em> →
         <span class="adoption-cta-sub-line">Guia da raça, saúde e comportamento — num lugar só</span>
       </a>
@@ -1219,7 +1234,7 @@
       <button class="btn-share btn-share-pdf" onclick="exportPerfilPDF()" style="margin-top:10px"><svg style="width:18px;height:18px;vertical-align:-3px;margin-right:6px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>Salvar meu perfil em PDF</button>
 
       <div class="secondary-actions">
-        <a href="meu-cao.html" class="btn-secondary" style="text-decoration:none;display:block">🐾 Já tem um cão (ou já decidiu)? Cuide dele com a Nanny →</a>
+        <a href="meu-cao.html" onclick="try{pnMarcarSaidaParaHub()}catch(e){}" class="btn-secondary" style="text-decoration:none;display:block">🐾 Já tem um cão (ou já decidiu)? Cuide dele com a Nanny →</a>
         <button class="btn-secondary" onclick="restart()"><svg class="ui-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 15.5-6.3M21 4v5h-5M21 12a9 9 0 0 1-15.5 6.3M3 20v-5h5"/></svg> Refazer o quiz</button>
       </div>
       <div style="margin-top:28px;padding:18px 20px;background:var(--warm);border-radius:12px;font-size:11.5px;color:var(--brown-mid);line-height:1.7;text-align:left">
@@ -3180,6 +3195,50 @@ function clearProgress(){try{localStorage.removeItem(STORAGE_KEY);}catch(e){}}
 // no localStorage (TTL 24h) e quando a pessoa clicar em "Começar minha avaliação"
 // de novo, startQuiz() detecta progresso salvo e oferece retomar de onde parou.
 // Esconde a barra de progresso porque ela só faz sentido durante o quiz.
+/* ── Voltar do hub sem perder o resultado ───────────────────────────────
+ * showScreen() é só troca de classe CSS: o quiz não cria NENHUMA entrada de
+ * histórico. O link pro meu-cao.html é navegação real, então o botão voltar
+ * recarrega o index.html do zero e cai na tela inicial — o resultado some.
+ *
+ * Solução: ao sair pro hub, marca a saída em sessionStorage (sobrevive à
+ * navegação, morre ao fechar a aba). No boot, se a marca existe e o quiz
+ * chegou ao fim, re-renderiza o resultado.
+ */
+var PN_VOLTA='pn_voltar_resultado';
+
+function pnMarcarSaidaParaHub(){
+  try{ if(typeof saveProgress==='function') saveProgress();
+       sessionStorage.setItem(PN_VOLTA,'1'); }catch(e){}
+}
+window.pnMarcarSaidaParaHub=pnMarcarSaidaParaHub;
+
+function pnRestaurarResultado(){
+  try{
+    if(sessionStorage.getItem(PN_VOLTA)!=='1') return false;
+    sessionStorage.removeItem(PN_VOLTA);
+    // só restaura se o quiz REALMENTE terminou (existe resultado gravado)
+    var fim=JSON.parse(localStorage.getItem('petnanny_quiz_result')||'null');
+    if(!fim) return false;
+    var prog=JSON.parse(localStorage.getItem(STORAGE_KEY)||'null');
+    if(!prog||!prog.answers) return false;
+
+    answers=prog.answers;
+    if(typeof currentQ!=='undefined' && prog.currentQ!=null) currentQ=prog.currentQ;
+
+    // Silencia telemetria durante o replay: é a MESMA sessão de resultado,
+    // contar de novo inflaria as métricas e reenviaria o webhook.
+    var _t=window.pnTrack, _b=window.pnSendBehaviorUpdate;
+    window.pnTrack=function(){}; window.pnSendBehaviorUpdate=function(){};
+    try{ showResults(); } finally { window.pnTrack=_t; window.pnSendBehaviorUpdate=_b; }
+    return true;
+  }catch(e){ try{sessionStorage.removeItem(PN_VOLTA);}catch(e2){} return false; }
+}
+
+document.addEventListener('DOMContentLoaded',function(){
+  // roda depois do boot normal — se falhar, a tela inicial continua de pé
+  setTimeout(function(){ try{ pnRestaurarResultado(); }catch(e){} },0);
+});
+
 function goToHome(){
   document.getElementById('progressWrap').style.display='none';
   showScreen('intro');
@@ -5711,7 +5770,7 @@ function renderIntentBlock(container){
 function pickIntent(k, btn){
   try{ pnTrack('intencao_pos_quiz',{escolha:k, raca_top:(typeof recommendedBreeds!=='undefined'&&recommendedBreeds[0]?recommendedBreeds[0].key:''), origem:(answers&&answers.origem)||''}); }catch(e){}
   try{ if(typeof pnRegBehavior==='function') pnRegBehavior('intencao_pos_quiz', k); }catch(e){}
-  const msgs={vou_buscar:'Que demais! 🎉 Deixa tudo pronto antes da chegada — a Nanny monta a lista do enxoval e te acompanha nos primeiros 90 dias.<div style="margin-top:10px"><a href="meu-cao.html?from=quiz" onclick="try{pnTrack(\'quiz_to_hub_click\',{escolha:\'vou_buscar\'})}catch(e){}" style="display:inline-block;background:#4a7c59;color:#fff;text-decoration:none;border-radius:11px;padding:12px 18px;font-weight:700;font-size:14px">Criar plano de chegada →</a></div>',decidindo:'Decidir com calma é o certo — a real de cada raça aí em cima ajuda a não se arrepender. E dá pra se preparar já: o plano de chegada funciona mesmo antes de bater o martelo.<div style="margin-top:10px"><a href="meu-cao.html?from=quiz" onclick="try{pnTrack(\'quiz_to_hub_click\',{escolha:\'decidindo\'})}catch(e){}" style="display:inline-block;background:transparent;color:#3d2c1e;border:1.5px solid #ece1d2;text-decoration:none;border-radius:11px;padding:11px 16px;font-weight:600;font-size:13.5px">Montar plano de chegada →</a></div>',adiando:'Faz todo sentido. Se quiser entender melhor o que pesaria na sua rotina, tem uma leitura de 10 minutos sobre isso — e a Nanny fica aqui pra quando for a hora.<div style="margin-top:10px"><a href="prontidao.html" onclick="try{pnTrack(\'quiz_to_prontidao\',{origem:\'adiando\'})}catch(e){}" style="display:inline-block;background:transparent;color:#3d2c1e;border:1.5px solid #ece1d2;text-decoration:none;border-radius:11px;padding:11px 16px;font-weight:600;font-size:13.5px">É a hora certa pra mim? →</a></div>',curiosidade:'Curtiu? Brinca com o simulador e compartilha o resultado com quem tá pensando em ter um cão. 🐶'};
+  const msgs={vou_buscar:'Que demais! 🎉 Deixa tudo pronto antes da chegada — a Nanny monta a lista do enxoval e te acompanha nos primeiros 90 dias.<div style="margin-top:10px"><a href="meu-cao.html?from=quiz" onclick="try{pnMarcarSaidaParaHub()}catch(e){};try{pnTrack(\'quiz_to_hub_click\',{escolha:\'vou_buscar\'})}catch(e){}" style="display:inline-block;background:#4a7c59;color:#fff;text-decoration:none;border-radius:11px;padding:12px 18px;font-weight:700;font-size:14px">Criar plano de chegada →</a></div>',decidindo:'Decidir com calma é o certo — a real de cada raça aí em cima ajuda a não se arrepender. E dá pra se preparar já: o plano de chegada funciona mesmo antes de bater o martelo.<div style="margin-top:10px"><a href="meu-cao.html?from=quiz" onclick="try{pnMarcarSaidaParaHub()}catch(e){};try{pnTrack(\'quiz_to_hub_click\',{escolha:\'decidindo\'})}catch(e){}" style="display:inline-block;background:transparent;color:#3d2c1e;border:1.5px solid #ece1d2;text-decoration:none;border-radius:11px;padding:11px 16px;font-weight:600;font-size:13.5px">Montar plano de chegada →</a></div>',adiando:'Faz todo sentido. Se quiser entender melhor o que pesaria na sua rotina, tem uma leitura de 10 minutos sobre isso — e a Nanny fica aqui pra quando for a hora.<div style="margin-top:10px"><a href="prontidao.html" onclick="try{pnTrack(\'quiz_to_prontidao\',{origem:\'adiando\'})}catch(e){}" style="display:inline-block;background:transparent;color:#3d2c1e;border:1.5px solid #ece1d2;text-decoration:none;border-radius:11px;padding:11px 16px;font-weight:600;font-size:13.5px">É a hora certa pra mim? →</a></div>',curiosidade:'Curtiu? Brinca com o simulador e compartilha o resultado com quem tá pensando em ter um cão. 🐶'};
   const block=document.getElementById('intentBlock');
   if(block) block.innerHTML='<div style="font-weight:700;font-size:14px;margin-bottom:4px">Valeu por contar! 💛</div><div style="font-size:13px;color:var(--brown-mid);line-height:1.55">'+(msgs[k]||'Obrigado!')+'</div>';
 }
@@ -5939,7 +5998,7 @@ function renderExpectationSection(){
       +`<ul class="adoption-checklist">${perguntasOng.map(t=>'<li>'+t+'</li>').join('')}</ul>`
       +`<p style="font-size:13px;color:#7c2c1f;margin:14px 0 8px 0"><strong>🚩 Sinais de alerta — desconfie se a ONG:</strong></p>`
       +`<ul class="adoption-redflag-list">${redFlags.map(t=>'<li>'+t+'</li>').join('')}</ul>`
-      +`<div class="adoption-tip" style="margin-top:12px">💡 <strong>No dia da visita:</strong> crie seu <a href="meu-cao.html?from=quiz" onclick="try{pnTrack('quiz_to_hub_click',{escolha:'avaliador'})}catch(e){}" style="color:#3d5e30;font-weight:700">plano de chegada</a> antes de ir — ele tem um <strong>avaliador de candidato</strong> pra usar na frente do cão: 2 minutos, veredito cruzado com este seu perfil e as perguntas certas pro protetor.</div>`
+      +`<div class="adoption-tip" style="margin-top:12px">💡 <strong>No dia da visita:</strong> crie seu <a href="meu-cao.html?from=quiz" onclick="try{pnMarcarSaidaParaHub()}catch(e){};try{pnTrack('quiz_to_hub_click',{escolha:'avaliador'})}catch(e){}" style="color:#3d5e30;font-weight:700">plano de chegada</a> antes de ir — ele tem um <strong>avaliador de candidato</strong> pra usar na frente do cão: 2 minutos, veredito cruzado com este seu perfil e as perguntas certas pro protetor.</div>`
       +`</div>`;
 
     // Seção 3.5: A entrevista do outro lado — a ONG também avalia VOCÊ.
@@ -6259,18 +6318,29 @@ function exportPerfilPDF(){
   const expectation = document.getElementById('expectationSection');
   if(expectation && expectation.style.display !== 'none') wrap.appendChild(expectation.cloneNode(true));
 
-  // Top 3 raças — clone container do resultsGrid, mas só os cards (filtra fotos
-  // por escala pra não explodir o PDF)
-  const breedsContainer = document.querySelector('.results-content');
-  if(breedsContainer){
+  // Conjoint (coerência entre o que a pessoa disse e o que escolheu) — é
+  // justamente a parte que explica o resultado. Faltava no PDF.
+  const conjoint = document.getElementById('conjointSection');
+  if(conjoint && conjoint.style.display !== 'none') wrap.appendChild(conjoint.cloneNode(true));
+
+  // Top 3 raças. BUG CORRIGIDO: o seletor era '.results-content', classe que
+  // NÃO EXISTE no HTML — querySelector devolvia null e os cards nunca entravam
+  // no PDF. O container real é #breedCards.
+  const breedsContainer = document.getElementById('breedCards');
+  if(breedsContainer && breedsContainer.children.length){
     const breedsClone = breedsContainer.cloneNode(true);
-    // Remove blocos que não fazem sentido em PDF
-    breedsClone.querySelectorAll('.quickreact-top, .results-actions-top, #feedbackBox, #feedbackInvite, .ficha-pdf-btn, .adoption-collapse').forEach(el => el.remove());
+    breedsClone.querySelectorAll('.quickreact-top, .results-actions-top, #feedbackBox, #feedbackInvite, .ficha-pdf-btn, .adoption-collapse, .breed-card-actions, .whatif-cta, .ne-cta').forEach(el => el.remove());
+    // Cards vêm colapsados na tela; no papel não há como expandir.
+    breedsClone.querySelectorAll('.breed-card').forEach(c => c.classList.add('expanded'));
     wrap.appendChild(breedsClone);
   }
 
-  // Rodapé
-  wrap.innerHTML += '<div class="perfil-print-footer">Gere o seu em petnanny.com.br</div>';
+  // Rodapé. BUG CORRIGIDO: era `innerHTML +=`, que re-serializa e re-parseia
+  // todo o conteúdo já anexado — perde estado dos clones. Agora é appendChild.
+  const foot = document.createElement('div');
+  foot.className = 'perfil-print-footer';
+  foot.textContent = 'Gere o seu em petnanny.com.br';
+  wrap.appendChild(foot);
 
   document.body.appendChild(wrap);
   document.body.classList.add('printing-perfil');
